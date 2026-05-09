@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Full Adder — LogicVault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #f5f6f8;
+    --surface:   #ffffff;
+    --surface2:  #f0f2f5;
+    --border:    #dde1e8;
+    --border2:   #c8cdd8;
+    --green:     #0a7c52;
+    --green-dim: #0e9e6a;
+    --amber:     #a0620a;
+    --blue:      #1a5fb0;
+    --red:       #c0392b;
+    --purple:    #5e35b1;
+    --text:      #1a1f2e;
+    --text-dim:  #4a5568;
+    --text-faint:#9aa3b2;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+    --display:   'Syne', sans-serif;
+    --sidebar-w: 260px;
+    --top-h:     56px;
+    --radius:    6px;
+    --radius-lg: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Topbar ─────────────────────────────────────────── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: var(--top-h);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 1.25rem;
+    gap: 1rem;
+  }
+  .topbar-logo {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.5px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .topbar-logo span { color: var(--text-dim); }
+  .topbar-tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    border: 1px solid var(--border2);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 4px;
+  }
+  .topbar-search {
+    margin-left: auto;
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    gap: 8px;
+    width: 220px;
+    height: 34px;
+  }
+  .topbar-search svg { color: var(--text-dim); flex-shrink: 0; }
+  .topbar-search input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-family: var(--mono);
+    font-size: 0.78rem; width: 100%;
+  }
+  .topbar-search input::placeholder { color: var(--text-faint); }
+  .topbar-github {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 0.75rem;
+    color: var(--text-dim); text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 5px 12px; border-radius: var(--radius);
+    transition: border-color .2s, color .2s;
+  }
+  .topbar-github:hover { border-color: var(--border2); color: var(--text); }
+  .sidebar-toggle {
+    display: none;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); padding: 4px;
+  }
+
+  /* ── Layout ─────────────────────────────────────────── */
+  .layout {
+    display: flex;
+    margin-top: var(--top-h);
+    flex: 1;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--top-h);
+    bottom: 0;
+    left: 0;
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.25rem 0 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .nav-section { margin-bottom: 0.25rem; }
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 0.9rem 1.1rem 0.35rem;
+    display: block;
+  }
+  .nav-group-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; background: none; border: none; cursor: pointer;
+    padding: 5px 1.1rem 5px 1.1rem;
+    color: var(--text-dim);
+    font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+    text-align: left;
+    border-radius: 0;
+    transition: color .15s, background .15s;
+  }
+  .nav-group-toggle:hover { color: var(--text); background: var(--surface2); }
+  .nav-group-toggle svg { flex-shrink: 0; transition: transform .2s; }
+  .nav-group-toggle.open svg { transform: rotate(90deg); }
+
+  .nav-items { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+  .nav-items.open { max-height: 1000px; }
+
+  .nav-item {
+    display: block;
+    padding: 4px 1.1rem 4px 1.9rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: color .15s, background .15s, border-color .15s;
+    font-family: var(--sans);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active {
+    color: var(--green);
+    border-left-color: var(--green);
+    background: #edf7f3;
+  }
+
+  /* ── Main Content ───────────────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-width: 0;
+    max-width: 860px;
+    padding: 2.5rem 2.5rem 5rem;
+  }
+
+  /* ── Breadcrumb ─────────────────────────────────────── */
+  .breadcrumb {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--green); }
+  .breadcrumb-sep { color: var(--text-faint); }
+  .breadcrumb-current { color: var(--text); }
+
+  /* ── Page Header ────────────────────────────────────── */
+  .page-header { margin-bottom: 2rem; }
+  .page-header-meta {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 0.6rem; flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono); font-size: 0.65rem;
+    padding: 3px 8px; border-radius: 20px;
+    letter-spacing: .04em;
+    border: 1px solid;
+  }
+  .badge-green  { color: var(--green);  border-color: #9ecebb; background: #edf7f3; }
+  .badge-amber  { color: var(--amber);  border-color: #d4a96a; background: #fdf3e3; }
+  .badge-blue   { color: var(--blue);   border-color: #93b8e0; background: #eaf1fb; }
+  .badge-purple { color: var(--purple); border-color: #b8a4dc; background: #f2eefb; }
+  .badge-red    { color: var(--red);    border-color: #e0a09a; background: #fdf0ef; }
+
+  .page-title {
+    font-family: var(--display);
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.15;
+    margin-bottom: 0.6rem;
+  }
+  .page-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    max-width: 620px;
+    line-height: 1.65;
+  }
+
+  /* ── Quick Facts ────────────────────────────────────── */
+  .qf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin: 1.75rem 0;
+  }
+  .qf-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 0.9rem;
+  }
+  .qf-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .qf-value {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  /* ── Section ────────────────────────────────────────── */
+  .section { margin-bottom: 2.5rem; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.6rem;
+  }
+  .section-icon {
+    width: 26px; height: 26px;
+    background: #e6f5ef;
+    border: 1px solid #9ecebb;
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-icon svg { color: var(--green); }
+  .section-title {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a1f2e;
+  }
+  .section-anchor {
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--text-faint); text-decoration: none;
+    margin-left: auto; opacity: 0; transition: opacity .2s;
+  }
+  .section-header:hover .section-anchor { opacity: 1; }
+
+  /* ── Truth Table ────────────────────────────────────── */
+  .tt-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+  table.truth-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono); font-size: 0.82rem;
+    min-width: 320px;
+  }
+  .truth-table thead th {
+    background: var(--surface);
+    color: var(--text-dim);
+    font-weight: 500;
+    padding: 10px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: .03em;
+  }
+  .truth-table thead th.out-col { color: var(--green); }
+  .truth-table thead .divider { border-left: 1px solid var(--border2); }
+  .truth-table tbody td {
+    padding: 8px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .truth-table tbody tr:last-child td { border-bottom: none; }
+  .truth-table tbody tr:hover td { background: var(--surface2); }
+  .truth-table tbody td.val-1 { color: var(--green); font-weight: 500; }
+  .truth-table tbody td.val-0 { color: var(--text-faint); }
+  .truth-table tbody td.out-col { border-left: 1px solid var(--border2); }
+
+  /* ── Boolean Expression ─────────────────────────────── */
+  .bool-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    margin-bottom: 0.75rem;
+  }
+  .bool-label {
+    font-size: 0.65rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 6px;
+  }
+  .bool-expr { color: var(--text); line-height: 1.8; }
+  .bool-expr .var { color: var(--blue); }
+  .bool-expr .op  { color: var(--amber); }
+  .bool-expr .bar { text-decoration: overline; }
+  .bool-expr .out { color: var(--green); font-weight: 600; }
+
+  /* ── Circuit Diagram placeholder ───────────────────── */
+  .diagram-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    min-height: 240px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    color: var(--text-faint);
+    position: relative;
+    overflow: hidden;
+  }
+  .diagram-box::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: .5;
+  }
+  .diagram-placeholder {
+    position: relative; z-index: 1;
+    text-align: center;
+  }
+  .diagram-placeholder svg { color: var(--text-faint); margin-bottom: 8px; }
+  .diagram-placeholder p {
+    font-family: var(--mono); font-size: 0.78rem;
+    color: var(--text-faint); line-height: 1.6;
+  }
+  .diagram-tabs {
+    display: flex; gap: 4px;
+    margin-bottom: 0;
+    padding: 0.75rem 1rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .dtab {
+    font-family: var(--mono); font-size: 0.72rem;
+    padding: 4px 12px; border-radius: 4px;
+    cursor: pointer; color: var(--text-dim);
+    background: none; border: 1px solid transparent;
+    transition: all .15s;
+  }
+  .dtab.active { background: var(--surface2); border-color: var(--border); color: var(--green); }
+  .dtab:hover:not(.active) { color: var(--text); }
+  .diagram-box.tabbed { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+  /* ── Code Block ─────────────────────────────────────── */
+  .code-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .code-header {
+    display: flex; align-items: center;
+    padding: 8px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+  .code-lang {
+    font-family: var(--mono); font-size: 0.68rem;
+    color: var(--green); letter-spacing: .05em;
+    background: #edf7f3;
+    border: 1px solid #9ecebb;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .code-filename { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+  .code-copy {
+    margin-left: auto;
+    background: none; border: 1px solid var(--border);
+    color: var(--text-dim); font-family: var(--mono); font-size: 0.68rem;
+    padding: 3px 10px; border-radius: 4px; cursor: pointer;
+    transition: all .15s;
+  }
+  .code-copy:hover { border-color: var(--border2); color: var(--text); }
+  .code-copy.copied { color: var(--green); border-color: var(--green-dim); }
+  pre.code-body {
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.75;
+    color: var(--text);
+    margin: 0;
+  }
+  /* Very lightweight syntax coloring */
+  .kw   { color: #5e35b1; }
+  .str  { color: #0a7c52; }
+  .cmt  { color: #9aa3b2; font-style: italic; }
+  .num  { color: #a0620a; }
+  .port { color: #1a5fb0; }
+  .sig  { color: #a05c00; }
+
+  /* ── Code Tab Switcher ──────────────────────────────── */
+  .code-tabs { display: flex; gap: 4px; margin-bottom: -1px; }
+  .ctab {
+    font-family: var(--mono); font-size: 0.72rem;
+    padding: 6px 14px; cursor: pointer;
+    color: var(--text-dim); background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    transition: all .15s;
+  }
+  .ctab.active { background: var(--surface); color: var(--green); border-bottom: 1px solid var(--surface); }
+  .ctab:hover:not(.active) { color: var(--text); }
+  .code-panel { display: none; }
+  .code-panel.active { display: block; }
+  .code-panel .code-wrap { border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg); }
+
+  /* ── Callout ────────────────────────────────────────── */
+  .callout {
+    display: flex; gap: 12px;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius);
+    margin: 1rem 0;
+    border: 1px solid;
+    font-size: 0.85rem;
+  }
+  .callout-info   { background: #eaf1fb; border-color: #93b8e0; color: var(--text-dim); }
+  .callout-warn   { background: #fdf3e3; border-color: #d4a96a; color: var(--text-dim); }
+  .callout-tip    { background: #edf7f3; border-color: #9ecebb; color: var(--text-dim); }
+  .callout svg    { flex-shrink: 0; margin-top: 1px; }
+  .callout-info svg  { color: var(--blue); }
+  .callout-warn svg  { color: var(--amber); }
+  .callout-tip svg   { color: var(--green); }
+  .callout strong    { color: var(--text); }
+
+  /* ── Timing Diagram ─────────────────────────────────── */
+  .timing-svg {
+    width: 100%; display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  /* ── Interview Notes ────────────────────────────────── */
+  .interview-list {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .interview-list li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 0.85rem; color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.65rem 0.9rem;
+  }
+  .interview-list li::before {
+    content: '?';
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--amber); background: #fdf3e3;
+    border: 1px solid #d4a96a;
+    border-radius: 4px;
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* ── Related ────────────────────────────────────────── */
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 10px;
+  }
+  .related-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 0.9rem;
+    text-decoration: none;
+    transition: border-color .2s, background .2s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .related-card:hover { border-color: var(--green-dim); background: var(--surface2); }
+  .related-card-name {
+    font-family: var(--mono); font-size: 0.8rem;
+    color: var(--text); font-weight: 500;
+  }
+  .related-card-cat { font-size: 0.72rem; color: var(--text-faint); }
+
+  /* ── On-Page TOC ────────────────────────────────────── */
+  .toc {
+    position: fixed;
+    top: calc(var(--top-h) + 2rem);
+    right: 2rem;
+    width: 170px;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+  }
+  .toc-label {
+    color: var(--text-faint); font-size: 0.62rem;
+    letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .toc-items { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .toc-items a {
+    color: var(--text-dim); text-decoration: none;
+    padding: 2px 6px; border-left: 2px solid transparent;
+    display: block; transition: all .15s;
+    font-size: 0.72rem;
+  }
+  .toc-items a:hover { color: var(--text); border-left-color: var(--border2); }
+  .toc-items a.active { color: var(--green); border-left-color: var(--green); }
+
+  /* ── Prose ──────────────────────────────────────────── */
+  .prose p { color: var(--text-dim); font-size: 0.88rem; line-height: 1.75; margin-bottom: 0.75rem; }
+  .prose code {
+    font-family: var(--mono); font-size: 0.8rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px; color: var(--green);
+  }
+  .prose strong { color: var(--text); }
+  .prose a { color: var(--blue); text-decoration: none; }
+  .prose a:hover { text-decoration: underline; }
+
+  /* ── Footer ─────────────────────────────────────────── */
+  .page-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .page-footer a {
+    font-family: var(--mono); font-size: 0.75rem;
+    color: var(--text-dim); text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .page-footer a:hover { color: var(--green); }
+  .page-footer-edit {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint);
+  }
+
+  /* ── Responsive ─────────────────────────────────────── */
+  @media (max-width: 1200px) { .toc { display: none; } }
+  @media (max-width: 900px) {
+    .main { max-width: 100%; }
+  }
+  @media (max-width: 720px) {
+    :root { --sidebar-w: 0px; }
+    .sidebar { transform: translateX(-100%); width: 260px; transition: transform .25s; z-index: 90; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 1.5rem 1.1rem 4rem; }
+    .sidebar-toggle { display: block; }
+    .page-title { font-size: 1.65rem; }
+    .topbar-search { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══════════════════════════════════════════════ -->
+<header class="topbar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <a href="index.html" class="topbar-logo">LogicVault <span class="topbar-tag">v1.0</span></a>
+
+  <div class="topbar-search">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+    </svg>
+    <input type="text" placeholder="Search circuits…" id="search-input"/>
+  </div>
+
+  <a href="https://github.com/YOUR_USERNAME/logicvault" class="topbar-github">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+    </svg>
+    GitHub
+  </a>
+</header>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+
+  <div class="nav-section">
+    <span class="nav-section-label">Getting Started</span>
+    <a href="index.html" class="nav-item">Introduction</a>
+    <a href="how-to-use.html" class="nav-item">How to Use</a>
+    <a href="notation.html" class="nav-item">Notation Guide</a>
+  </div>
+
+  <!-- COMBINATIONAL -->
+  <div class="nav-section">
+    <span class="nav-section-label">Combinational Logic</span>
+
+    <button class="nav-group-toggle open" onclick="toggleGroup(this)">
+      <span>Basic Logic Gates</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items open">
+      <a href="gates/and.html"  class="nav-item">AND</a>
+      <a href="gates/or.html"   class="nav-item">OR</a>
+      <a href="gates/not.html"  class="nav-item">NOT</a>
+      <a href="gates/nand.html" class="nav-item">NAND</a>
+      <a href="gates/nor.html"  class="nav-item">NOR</a>
+      <a href="gates/xor.html"  class="nav-item">XOR</a>
+      <a href="gates/xnor.html" class="nav-item">XNOR</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Boolean Logic</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="boolean/algebra.html" class="nav-item">Boolean Algebra</a>
+      <a href="boolean/kmap.html" class="nav-item">K-Map</a>
+      <a href="boolean/qmc.html" class="nav-item">Quine–McCluskey</a>
+      <a href="boolean/sop-pos.html" class="nav-item">SOP / POS Forms</a>
+      <a href="boolean/hazards.html" class="nav-item">Hazard Analysis</a>
+    </div>
+
+    <button class="nav-group-toggle open" onclick="toggleGroup(this)">
+      <span>Arithmetic Circuits</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items open">
+      <a href="arithmetic/half-adder.html" class="nav-item">Half Adder</a>
+      <a href="arithmetic/full-adder.html" class="nav-item active">Full Adder</a>
+      <a href="arithmetic/ripple-carry.html" class="nav-item">Ripple Carry Adder</a>
+      <a href="arithmetic/cla.html" class="nav-item">Carry Lookahead Adder</a>
+      <a href="arithmetic/carry-select.html" class="nav-item">Carry Select Adder</a>
+      <a href="arithmetic/kogge-stone.html" class="nav-item">Kogge-Stone</a>
+      <a href="arithmetic/brent-kung.html" class="nav-item">Brent-Kung</a>
+      <a href="arithmetic/half-sub.html" class="nav-item">Half Subtractor</a>
+      <a href="arithmetic/full-sub.html" class="nav-item">Full Subtractor</a>
+      <a href="arithmetic/array-mult.html" class="nav-item">Array Multiplier</a>
+      <a href="arithmetic/booth.html" class="nav-item">Booth Multiplier</a>
+      <a href="arithmetic/wallace.html" class="nav-item">Wallace Tree</a>
+      <a href="arithmetic/comparator.html" class="nav-item">Comparators</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Data Routing</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="routing/mux-2.html" class="nav-item">2:1 MUX</a>
+      <a href="routing/mux-4.html" class="nav-item">4:1 MUX</a>
+      <a href="routing/mux-8.html" class="nav-item">8:1 MUX</a>
+      <a href="routing/demux.html" class="nav-item">DEMUX</a>
+      <a href="routing/tri-state.html" class="nav-item">Tri-state Buffer</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Encoders / Decoders</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="codec/binary-encoder.html" class="nav-item">Binary Encoder</a>
+      <a href="codec/priority-encoder.html" class="nav-item">Priority Encoder</a>
+      <a href="codec/binary-decoder.html" class="nav-item">Binary Decoder</a>
+      <a href="codec/bcd-decoder.html" class="nav-item">BCD Decoder</a>
+      <a href="codec/gray.html" class="nav-item">Binary ↔ Gray</a>
+      <a href="codec/seven-seg.html" class="nav-item">7-Segment Decoder</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Error Detection</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="edc/parity-gen.html" class="nav-item">Parity Generator</a>
+      <a href="edc/parity-chk.html" class="nav-item">Parity Checker</a>
+      <a href="edc/hamming.html" class="nav-item">Hamming Code</a>
+      <a href="edc/crc.html" class="nav-item">CRC Logic</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>FPGA / Prog. Logic</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="fpga/lut.html" class="nav-item">LUT Mapping</a>
+      <a href="fpga/pla.html" class="nav-item">PLA</a>
+      <a href="fpga/pal.html" class="nav-item">PAL</a>
+      <a href="fpga/barrel-shifter.html" class="nav-item">Barrel Shifter</a>
+      <a href="fpga/popcount.html" class="nav-item">Population Count</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>CMOS Design</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="cmos/pull-networks.html" class="nav-item">Pull-up/down Networks</a>
+      <a href="cmos/logical-effort.html" class="nav-item">Logical Effort</a>
+      <a href="cmos/transmission-gate.html" class="nav-item">Transmission Gate</a>
+      <a href="cmos/domino.html" class="nav-item">Domino Logic</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Timing Concepts</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="timing/propagation-delay.html" class="nav-item">Propagation Delay</a>
+      <a href="timing/critical-path.html" class="nav-item">Critical Path</a>
+      <a href="timing/fan-in-out.html" class="nav-item">Fan-in / Fan-out</a>
+      <a href="timing/hazards.html" class="nav-item">Static / Dynamic Hazards</a>
+    </div>
+  </div>
+
+  <!-- SEQUENTIAL -->
+  <div class="nav-section">
+    <span class="nav-section-label">Sequential Logic</span>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Latches</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="seq/sr-latch.html" class="nav-item">SR Latch</a>
+      <a href="seq/d-latch.html" class="nav-item">D Latch</a>
+      <a href="seq/jk-latch.html" class="nav-item">JK Latch</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Flip-Flops</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="seq/d-ff.html" class="nav-item">D Flip-Flop</a>
+      <a href="seq/jk-ff.html" class="nav-item">JK Flip-Flop</a>
+      <a href="seq/t-ff.html" class="nav-item">T Flip-Flop</a>
+      <a href="seq/master-slave.html" class="nav-item">Master-Slave FF</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Registers</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="seq/siso.html" class="nav-item">SISO Shift Register</a>
+      <a href="seq/sipo.html" class="nav-item">SIPO Shift Register</a>
+      <a href="seq/piso.html" class="nav-item">PISO Shift Register</a>
+      <a href="seq/pipo.html" class="nav-item">PIPO Shift Register</a>
+      <a href="seq/universal-sr.html" class="nav-item">Universal Shift Reg</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Counters</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="seq/ripple-counter.html" class="nav-item">Ripple Counter</a>
+      <a href="seq/sync-counter.html" class="nav-item">Synchronous Counter</a>
+      <a href="seq/ring-counter.html" class="nav-item">Ring Counter</a>
+      <a href="seq/johnson.html" class="nav-item">Johnson Counter</a>
+      <a href="seq/mod-n.html" class="nav-item">Mod-N Counter</a>
+      <a href="seq/gray-counter.html" class="nav-item">Gray Code Counter</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>FSM</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="fsm/moore.html" class="nav-item">Moore FSM</a>
+      <a href="fsm/mealy.html" class="nav-item">Mealy FSM</a>
+      <a href="fsm/seq-detector.html" class="nav-item">Sequence Detector</a>
+      <a href="fsm/traffic-ctrl.html" class="nav-item">Traffic Controller</a>
+      <a href="fsm/uart-ctrl.html" class="nav-item">UART Controller FSM</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Synchronization & CDC</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="sync/two-flop.html" class="nav-item">Two-Flop Synchronizer</a>
+      <a href="sync/async-fifo.html" class="nav-item">Async FIFO</a>
+      <a href="sync/gray-ptr.html" class="nav-item">Gray-Code Pointers</a>
+      <a href="sync/reset-sync.html" class="nav-item">Reset Synchronizer</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Memory Circuits</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="mem/sync-fifo.html" class="nav-item">Synchronous FIFO</a>
+      <a href="mem/async-fifo.html" class="nav-item">Asynchronous FIFO</a>
+      <a href="mem/lifo.html" class="nav-item">LIFO / Stack</a>
+      <a href="mem/circ-buf.html" class="nav-item">Circular Buffer</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Pipelining</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="pipeline/basics.html" class="nav-item">Pipeline Basics</a>
+      <a href="pipeline/data-hazard.html" class="nav-item">Data Hazards</a>
+      <a href="pipeline/stall-logic.html" class="nav-item">Stall Logic</a>
+      <a href="pipeline/forwarding.html" class="nav-item">Forwarding Logic</a>
+      <a href="pipeline/retiming.html" class="nav-item">Retiming</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Timing — Sequential</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="seq-timing/setup-hold.html" class="nav-item">Setup / Hold Time</a>
+      <a href="seq-timing/metastability.html" class="nav-item">Metastability</a>
+      <a href="seq-timing/clock-skew.html" class="nav-item">Clock Skew & Jitter</a>
+      <a href="seq-timing/scan-chain.html" class="nav-item">Scan Chains (DFT)</a>
+      <a href="seq-timing/lfsr.html" class="nav-item">LFSR</a>
+    </div>
+
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>Protocol Controllers</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="proto/uart.html" class="nav-item">UART TX/RX</a>
+      <a href="proto/spi.html" class="nav-item">SPI Controller</a>
+      <a href="proto/i2c.html" class="nav-item">I2C Controller</a>
+      <a href="proto/axi.html" class="nav-item">AXI Handshake</a>
+    </div>
+  </div>
+
+  <!-- SYSTEM -->
+  <div class="nav-section">
+    <span class="nav-section-label">System-Level</span>
+    <button class="nav-group-toggle" onclick="toggleGroup(this)">
+      <span>ALU Design</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items">
+      <a href="system/alu.html" class="nav-item">ALU</a>
+      <a href="system/priority-arbiter.html" class="nav-item">Priority Arbiter</a>
+      <a href="system/round-robin.html" class="nav-item">Round Robin Selector</a>
+    </div>
+  </div>
+
+</nav>
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quick-facts">Quick Facts</a></li>
+      <li><a href="#truth-table">Truth Table</a></li>
+      <li><a href="#boolean">Boolean Expression</a></li>
+      <li><a href="#circuit">Circuit Diagram</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#timing">Timing Behavior</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+      <li><a href="#related">Related Circuits</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="index.html">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="arithmetic/">Arithmetic Circuits</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Full Adder</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Combinational</span>
+      <span class="badge badge-amber">Arithmetic</span>
+      <span class="badge badge-blue">Must Know</span>
+    </div>
+    <h1 class="page-title">Full Adder</h1>
+    <p class="page-subtitle">
+      A fundamental 1-bit arithmetic circuit that computes the sum of three binary inputs —
+      two data bits and a carry-in — producing a sum bit and a carry-out. It is the core
+      building block of all multi-bit adder architectures.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Inputs</p>
+        <p class="qf-value">A, B, Cin</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Outputs</p>
+        <p class="qf-value">Sum, Cout</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Gate count</p>
+        <p class="qf-value">~9 gates</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Logic depth</p>
+        <p class="qf-value">3 levels</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Circuit type</p>
+        <p class="qf-value">Combinational</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Composed of</p>
+        <p class="qf-value">2× Half Adder</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Truth Table -->
+  <section class="section" id="truth-table">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Truth Table</h2>
+      <a href="#truth-table" class="section-anchor">#</a>
+    </div>
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>A</th><th>B</th><th>Cin</th>
+            <th class="out-col divider">Sum</th>
+            <th class="out-col">Cout</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0 out-col">0</td><td class="val-0">0</td></tr>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1 out-col">1</td><td class="val-0">0</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1 out-col">1</td><td class="val-0">0</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0 out-col">0</td><td class="val-1">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1 out-col">1</td><td class="val-0">0</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0 out-col">0</td><td class="val-1">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0 out-col">0</td><td class="val-1">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1 out-col">1</td><td class="val-1">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Boolean Expression -->
+  <section class="section" id="boolean">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+      </div>
+      <h2 class="section-title">Boolean Expression</h2>
+      <a href="#boolean" class="section-anchor">#</a>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Sum</p>
+      <p class="bool-expr">
+        <span class="out">Sum</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span> <span class="op">⊕</span> <span class="var">Cin</span>
+      </p>
+    </div>
+    <div class="bool-box">
+      <p class="bool-label">Carry-out</p>
+      <p class="bool-expr">
+        <span class="out">Cout</span> = (<span class="var">A</span> <span class="op">·</span> <span class="var">B</span>) <span class="op">+</span> (<span class="var">Cin</span> <span class="op">·</span> (<span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span>))
+      </p>
+    </div>
+    <div class="bool-box">
+      <p class="bool-label">Canonical SOP — Sum (minterms)</p>
+      <p class="bool-expr" style="font-size:.78rem;">
+        <span class="out">Sum</span> = Σm(1, 2, 4, 7) &nbsp;|&nbsp;
+        <span class="out">Cout</span> = Σm(3, 5, 6, 7)
+      </p>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Key insight:</strong> The Sum output is a 3-input XOR — odd parity of inputs. The carry-out is the majority function: 1 when two or more inputs are 1.</p>
+    </div>
+  </section>
+
+  <!-- Circuit Diagram -->
+  <section class="section" id="circuit">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/><path d="M6 8H3M21 16h-3"/></svg>
+      </div>
+      <h2 class="section-title">Circuit Diagram</h2>
+      <a href="#circuit" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-tabs">
+      <button class="dtab active" onclick="switchDiagram(this,'gate')">Gate-level</button>
+      <button class="dtab" onclick="switchDiagram(this,'block')">Block diagram</button>
+      <button class="dtab" onclick="switchDiagram(this,'cmos')">CMOS transistor</button>
+    </div>
+
+    <div class="diagram-box tabbed" id="diagram-gate">
+      <!-- Replace this placeholder with an actual SVG circuit diagram -->
+      <div class="diagram-placeholder">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+        <p>Insert gate-level schematic SVG here.<br/>Export from KiCad, Logisim, or draw.io.</p>
+      </div>
+    </div>
+    <div class="diagram-box tabbed" id="diagram-block" style="display:none">
+      <!-- Block diagram: two half-adders + OR gate -->
+      <svg viewBox="0 0 520 220" width="100%" style="max-width:520px; background:none;">
+        <defs>
+          <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#4da6ff"/>
+          </marker>
+        </defs>
+        <!-- HA1 -->
+        <rect x="120" y="60" width="100" height="60" rx="6" fill="#ffffff" stroke="#dde1e8"/>
+        <text x="170" y="86" fill="#1a1f2e" font-family="IBM Plex Mono,monospace" font-size="11" text-anchor="middle">Half</text>
+        <text x="170" y="100" fill="#1a1f2e" font-family="IBM Plex Mono,monospace" font-size="11" text-anchor="middle">Adder 1</text>
+        <!-- HA2 -->
+        <rect x="120" y="140" width="100" height="60" rx="6" fill="#ffffff" stroke="#dde1e8"/>
+        <text x="170" y="166" fill="#1a1f2e" font-family="IBM Plex Mono,monospace" font-size="11" text-anchor="middle">Half</text>
+        <text x="170" y="180" fill="#1a1f2e" font-family="IBM Plex Mono,monospace" font-size="11" text-anchor="middle">Adder 2</text>
+        <!-- OR Gate -->
+        <rect x="310" y="110" width="80" height="40" rx="6" fill="#ffffff" stroke="#dde1e8"/>
+        <text x="350" y="135" fill="#1a1f2e" font-family="IBM Plex Mono,monospace" font-size="11" text-anchor="middle">OR</text>
+        <!-- Input labels -->
+        <text x="30" y="84" fill="#9aa3b2" font-family="IBM Plex Mono,monospace" font-size="11">A</text>
+        <text x="30" y="108" fill="#9aa3b2" font-family="IBM Plex Mono,monospace" font-size="11">B</text>
+        <text x="30" y="168" fill="#9aa3b2" font-family="IBM Plex Mono,monospace" font-size="11">Cin</text>
+        <!-- Wires -->
+        <line x1="50" y1="80" x2="120" y2="80" stroke="#1a5fb0" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="50" y1="102" x2="120" y2="102" stroke="#1a5fb0" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="50" y1="165" x2="120" y2="165" stroke="#1a5fb0" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- HA1 Sum → HA2 in -->
+        <line x1="220" y1="82" x2="260" y2="82" stroke="#0a7c52" stroke-width="1.5"/>
+        <line x1="260" y1="82" x2="260" y2="148" stroke="#0a7c52" stroke-width="1.5"/>
+        <line x1="260" y1="148" x2="120" y2="148" stroke="#0a7c52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- HA1 Cout → OR -->
+        <line x1="220" y1="108" x2="280" y2="108" stroke="#a0620a" stroke-width="1.5"/>
+        <line x1="280" y1="108" x2="280" y2="118" stroke="#a0620a" stroke-width="1.5"/>
+        <line x1="280" y1="118" x2="310" y2="118" stroke="#a0620a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- HA2 Cout → OR -->
+        <line x1="220" y1="172" x2="285" y2="172" stroke="#a0620a" stroke-width="1.5"/>
+        <line x1="285" y1="172" x2="285" y2="142" stroke="#a0620a" stroke-width="1.5"/>
+        <line x1="285" y1="142" x2="310" y2="142" stroke="#a0620a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- OR → Cout -->
+        <line x1="390" y1="130" x2="480" y2="130" stroke="#a0620a" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- HA2 Sum → output -->
+        <line x1="220" y1="155" x2="480" y2="155" stroke="#0a7c52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <!-- Output labels -->
+        <text x="484" y="134" fill="#a0620a" font-family="IBM Plex Mono,monospace" font-size="11">Cout</text>
+        <text x="484" y="159" fill="#0a7c52" font-family="IBM Plex Mono,monospace" font-size="11">Sum</text>
+      </svg>
+    </div>
+    <div class="diagram-box tabbed" id="diagram-cmos" style="display:none">
+      <div class="diagram-placeholder">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+        <p>CMOS transistor-level diagram.<br/>Add your schematic SVG here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verilog / VHDL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL Implementation</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'vlog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'sv')">SystemVerilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-vlog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">full_adder.v</span>
+          <button class="code-copy" onclick="copyCode(this,'vlog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vlog-code"><span class="cmt">// Full Adder — gate-level / dataflow</span>
+<span class="kw">module</span> <span class="sig">full_adder</span> (
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">a</span>,
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">b</span>,
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">cin</span>,
+    <span class="kw">output</span> <span class="kw">wire</span> <span class="port">sum</span>,
+    <span class="kw">output</span> <span class="kw">wire</span> <span class="port">cout</span>
+);
+    <span class="cmt">// Dataflow style</span>
+    <span class="kw">assign</span> <span class="port">sum</span>  = <span class="port">a</span> ^ <span class="port">b</span> ^ <span class="port">cin</span>;
+    <span class="kw">assign</span> <span class="port">cout</span> = (<span class="port">a</span> &amp; <span class="port">b</span>) | (<span class="port">cin</span> &amp; (<span class="port">a</span> ^ <span class="port">b</span>));
+
+<span class="kw">endmodule</span>
+
+
+<span class="cmt">// ─── Structural: two Half Adders ───────────────────</span>
+<span class="kw">module</span> <span class="sig">half_adder</span> (<span class="kw">input</span> <span class="port">a</span>, <span class="port">b</span>, <span class="kw">output</span> <span class="port">sum</span>, <span class="port">cout</span>);
+    <span class="kw">assign</span> <span class="port">sum</span>  = <span class="port">a</span> ^ <span class="port">b</span>;
+    <span class="kw">assign</span> <span class="port">cout</span> = <span class="port">a</span> &amp; <span class="port">b</span>;
+<span class="kw">endmodule</span>
+
+<span class="kw">module</span> <span class="sig">full_adder_struct</span> (
+    <span class="kw">input</span>  <span class="port">a</span>, <span class="port">b</span>, <span class="port">cin</span>,
+    <span class="kw">output</span> <span class="port">sum</span>, <span class="port">cout</span>
+);
+    <span class="kw">wire</span> <span class="sig">s1</span>, <span class="sig">c1</span>, <span class="sig">c2</span>;
+    <span class="sig">half_adder</span> HA1 (.a(<span class="port">a</span>),  .b(<span class="port">b</span>),  .sum(<span class="sig">s1</span>), .cout(<span class="sig">c1</span>));
+    <span class="sig">half_adder</span> HA2 (.a(<span class="sig">s1</span>), .b(<span class="port">cin</span>), .sum(<span class="port">sum</span>), .cout(<span class="sig">c2</span>));
+    <span class="kw">assign</span> <span class="port">cout</span> = <span class="sig">c1</span> | <span class="sig">c2</span>;
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-sv">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">SystemVerilog</span>
+          <span class="code-filename">full_adder.sv</span>
+          <button class="code-copy" onclick="copyCode(this,'sv-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="sv-code"><span class="kw">module</span> <span class="sig">full_adder</span>
+    <span class="kw">import</span> pkg_types::*;
+(
+    <span class="kw">input</span>  <span class="kw">logic</span> <span class="port">a</span>, <span class="port">b</span>, <span class="port">cin</span>,
+    <span class="kw">output</span> <span class="kw">logic</span> <span class="port">sum</span>, <span class="port">cout</span>
+);
+    <span class="kw">assign</span> {<span class="port">cout</span>, <span class="port">sum</span>} = <span class="port">a</span> + <span class="port">b</span> + <span class="port">cin</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// ─── Testbench ──────────────────────────────────────</span>
+<span class="kw">module</span> <span class="sig">tb_full_adder</span>;
+    <span class="kw">logic</span> <span class="sig">a</span>, <span class="sig">b</span>, <span class="sig">cin</span>, <span class="sig">sum</span>, <span class="sig">cout</span>;
+    <span class="sig">full_adder</span> dut (.*);
+
+    <span class="kw">initial</span> <span class="kw">begin</span>
+        $display(<span class="str">"A B Cin | Sum Cout"</span>);
+        <span class="kw">for</span> (<span class="kw">int</span> <span class="sig">i</span> = <span class="num">0</span>; <span class="sig">i</span> &lt; <span class="num">8</span>; <span class="sig">i</span>++) <span class="kw">begin</span>
+            {<span class="sig">a</span>, <span class="sig">b</span>, <span class="sig">cin</span>} = <span class="sig">i</span>[<span class="num">2</span>:<span class="num">0</span>];
+            #<span class="num">10</span>;
+            $display(<span class="str">"%b %b  %b  | %b    %b"</span>,
+                     <span class="sig">a</span>, <span class="sig">b</span>, <span class="sig">cin</span>, <span class="sig">sum</span>, <span class="sig">cout</span>);
+        <span class="kw">end</span>
+        $finish;
+    <span class="kw">end</span>
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">full_adder.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.ALL;
+
+<span class="kw">entity</span> <span class="sig">full_adder</span> <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>    : <span class="kw">in</span>  STD_LOGIC;
+        <span class="port">b</span>    : <span class="kw">in</span>  STD_LOGIC;
+        <span class="port">cin</span>  : <span class="kw">in</span>  STD_LOGIC;
+        <span class="port">sum</span>  : <span class="kw">out</span> STD_LOGIC;
+        <span class="port">cout</span> : <span class="kw">out</span> STD_LOGIC
+    );
+<span class="kw">end</span> <span class="kw">entity</span>;
+
+<span class="kw">architecture</span> <span class="sig">dataflow</span> <span class="kw">of</span> <span class="sig">full_adder</span> <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">sum</span>  &lt;= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span> <span class="kw">xor</span> <span class="port">cin</span>;
+    <span class="port">cout</span> &lt;= (<span class="port">a</span> <span class="kw">and</span> <span class="port">b</span>) <span class="kw">or</span>
+             (<span class="port">cin</span> <span class="kw">and</span> (<span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>));
+<span class="kw">end</span> <span class="kw">architecture</span>;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timing -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h2 class="section-title">Timing Behavior</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <!-- Timing waveform SVG -->
+    <svg class="timing-svg" viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
+      <rect width="680" height="220" fill="#f8f9fb"/>
+      <!-- Grid lines -->
+      <g stroke="#dde1e8" stroke-width="0.5">
+        <line x1="120" y1="10" x2="120" y2="210"/>
+        <line x1="210" y1="10" x2="210" y2="210"/>
+        <line x1="300" y1="10" x2="300" y2="210"/>
+        <line x1="390" y1="10" x2="390" y2="210"/>
+        <line x1="480" y1="10" x2="480" y2="210"/>
+        <line x1="570" y1="10" x2="570" y2="210"/>
+        <line x1="660" y1="10" x2="660" y2="210"/>
+      </g>
+      <!-- Labels -->
+      <text x="10" y="42"  fill="#4a5568" font-family="IBM Plex Mono,monospace" font-size="10" dominant-baseline="middle">A</text>
+      <text x="10" y="82"  fill="#4a5568" font-family="IBM Plex Mono,monospace" font-size="10" dominant-baseline="middle">B</text>
+      <text x="10" y="122" fill="#4a5568" font-family="IBM Plex Mono,monospace" font-size="10" dominant-baseline="middle">Cin</text>
+      <text x="10" y="162" fill="#0a7c52" font-family="IBM Plex Mono,monospace" font-size="10" dominant-baseline="middle">Sum</text>
+      <text x="10" y="200" fill="#a0620a" font-family="IBM Plex Mono,monospace" font-size="10" dominant-baseline="middle">Cout</text>
+      <!-- Waveforms — A -->
+      <polyline points="120,50 210,50 210,30 300,30 300,50 390,50 390,30 480,30 480,50 570,50 570,30 660,30"
+        fill="none" stroke="#1a5fb0" stroke-width="1.5"/>
+      <!-- B -->
+      <polyline points="120,90 210,90 210,90 300,70 300,90 390,70 390,70 480,70 480,90 570,70 570,90 660,90"
+        fill="none" stroke="#1a5fb0" stroke-width="1.5"/>
+      <!-- Cin -->
+      <polyline points="120,130 210,130 210,110 300,130 300,110 390,130 390,110 480,130 480,110 570,130 570,130 660,110"
+        fill="none" stroke="#1a5fb0" stroke-width="1.5"/>
+      <!-- Sum (offset for propagation) -->
+      <polyline points="120,170 220,170 220,150 260,150 260,170 315,170 315,150 395,150 395,170 445,170 445,150 490,150 490,170 545,170 545,150 580,150 580,170 660,170"
+        fill="none" stroke="#0a7c52" stroke-width="1.5"/>
+      <!-- Cout -->
+      <polyline points="120,210 220,210 220,210 305,210 305,190 395,190 395,210 445,210 445,190 490,190 490,210 550,210 550,190 660,190"
+        fill="none" stroke="#a0620a" stroke-width="1.5"/>
+      <!-- tpd arrow -->
+      <line x1="210" y1="205" x2="222" y2="205" stroke="#9aa3b2" stroke-width="1" marker-end="url(#arr)"/>
+      <text x="225" y="208" fill="#9aa3b2" font-family="IBM Plex Mono,monospace" font-size="8">tpd</text>
+    </svg>
+
+    <div class="prose" style="margin-top:1rem;">
+      <p>The <strong>critical path</strong> runs from any input through the XOR chain to <code>Sum</code> (2 XOR gate delays) and through the AND-OR to <code>Cout</code> (typically 2–3 gate delays depending on implementation).</p>
+      <p>In a ripple-carry adder, the <code>Cout</code> propagation delay accumulates across N stages, making carry the timing bottleneck. This motivates carry-lookahead and prefix adder architectures.</p>
+    </div>
+
+    <div class="callout callout-warn">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Hazard note:</strong> XOR-based Sum path can exhibit dynamic hazards. Insert glitch filters when synthesizing for asynchronous downstream logic.</p>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+    <ul class="interview-list">
+      <li>What is the critical path of a full adder and which output drives it?</li>
+      <li>How does ripple-carry delay scale with bit-width, and what's the O(n) vs O(log n) alternative?</li>
+      <li>Can you implement a full adder using only NAND gates? How many?</li>
+      <li>Derive the full adder from two half adders. Why can't a single half adder do the job?</li>
+      <li>In FPGA synthesis, how does the carry chain implement a full adder differently from LUT logic?</li>
+      <li>What is the generate (G) and propagate (P) signal of a full adder, and why do they matter?</li>
+    </ul>
+  </section>
+
+  <!-- Related Circuits -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Circuits</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="half-adder.html" class="related-card">
+        <span class="related-card-name">Half Adder</span>
+        <span class="related-card-cat">Prerequisite</span>
+      </a>
+      <a href="ripple-carry.html" class="related-card">
+        <span class="related-card-name">Ripple Carry Adder</span>
+        <span class="related-card-cat">Builds on this</span>
+      </a>
+      <a href="cla.html" class="related-card">
+        <span class="related-card-name">Carry Lookahead Adder</span>
+        <span class="related-card-cat">Optimization</span>
+      </a>
+      <a href="full-sub.html" class="related-card">
+        <span class="related-card-name">Full Subtractor</span>
+        <span class="related-card-cat">Dual operation</span>
+      </a>
+      <a href="kogge-stone.html" class="related-card">
+        <span class="related-card-name">Kogge-Stone</span>
+        <span class="related-card-cat">Prefix adder</span>
+      </a>
+      <a href="../fpga/carry-chain.html" class="related-card">
+        <span class="related-card-name">FPGA Carry Chain</span>
+        <span class="related-card-cat">Implementation</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="half-adder.html">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Half Adder
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="ripple-carry.html">
+        Ripple Carry Adder
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div><!-- .layout -->
+
+<script>
+  function toggleGroup(btn) {
+    btn.classList.toggle('open');
+    const items = btn.nextElementSibling;
+    items.classList.toggle('open');
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  function switchDiagram(btn, id) {
+    document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    ['gate','block','cmos'].forEach(k => {
+      const el = document.getElementById('diagram-' + k);
+      if (el) el.style.display = k === id ? '' : 'none';
+    });
+  }
+
+  function switchCode(btn, id) {
+    document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+  }
+
+  function copyCode(btn, id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    navigator.clipboard.writeText(el.innerText).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
+  // Active TOC tracking
+  const sections = ['overview','quick-facts','truth-table','boolean','circuit','verilog','timing','interview','related'];
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const link = document.querySelector('.toc-items a[href="#' + e.target.id + '"]');
+      if (link) link.classList.toggle('active', e.isIntersecting);
+    });
+  }, { rootMargin: '-10% 0px -70% 0px' });
+
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+
+  // Keyboard shortcut: / to focus search
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      document.getElementById('search-input')?.focus();
+    }
+  });
+</script>
+</body>
+</html>
