@@ -1,0 +1,157 @@
+---
+layout: null
+title: Boolean Logic
+nav: boolean
+sidebar: boolean-index
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Boolean Logic — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .topic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .topic-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .topic-card h3 {
+    color: var(--green);
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .topic-card p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .topic-card .card-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--green-1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .topic-card .card-icon svg {
+    color: var(--green);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Boolean Logic</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Foundation</span>
+      <span class="badge badge-blue">Theory</span>
+    </div>
+    <h1 class="page-title">Boolean Logic</h1>
+    <p class="page-subtitle">
+      Boolean algebra forms the mathematical foundation of digital circuits. This section covers the laws, theorems, and minimization techniques essential for designing efficient digital systems.
+    </p>
+  </div>
+
+  <!-- Topic Grid -->
+  <div class="topic-grid">
+    <a href="{{ '/boolean/algebra.html' | relative_url }}" class="topic-card">
+      <div class="card-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </div>
+      <h3>Boolean Algebra</h3>
+      <p>Fundamental laws and theorems including identity, complement, De Morgan's laws, absorption, and the duality principle.</p>
+    </a>
+
+    <a href="{{ '/boolean/kmap.html' | relative_url }}" class="topic-card">
+      <div class="card-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+      </div>
+      <h3>Karnaugh Maps</h3>
+      <p>Visual minimization method for 2-6 variables. Learn grouping rules, Gray code adjacency, and don't care conditions.</p>
+    </a>
+
+    <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="topic-card">
+      <div class="card-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"/></svg>
+      </div>
+      <h3>SOP / POS Forms</h3>
+      <p>Canonical representations using minterms and maxterms. Understand conversion between forms and gate implementations.</p>
+    </a>
+
+    <a href="{{ '/boolean/qmc.html' | relative_url }}" class="topic-card">
+      <div class="card-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+      </div>
+      <h3>Quine-McCluskey</h3>
+      <p>Algorithmic minimization for any number of variables. Tabular method with prime implicants and essential PI selection.</p>
+    </a>
+
+    <a href="{{ '/boolean/hazards.html' | relative_url }}" class="topic-card">
+      <div class="card-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3>Hazard Analysis</h3>
+      <p>Static and dynamic hazards in combinational circuits. Detection via K-Maps and elimination using redundant terms.</p>
+    </a>
+  </div>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/gates/xnor.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        XNOR Gate
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/boolean/algebra.html' | relative_url }}">
+        Boolean Algebra
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

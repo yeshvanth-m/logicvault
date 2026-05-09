@@ -1,11 +1,14 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
   <diagram name="Page-1" id="PfGn_q_-MclZoyOPb0Yb">
-    <mxGraphModel dx="1426" dy="875" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+    <mxGraphModel dx="679" dy="417" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="_XF0-BaDBtfc2B7AOGBa-1" value="" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.logic_gates.logic_gate;operation=or;negating=1;negSize=0.15;" vertex="1" parent="1">
-          <mxGeometry x="500" y="420" width="100" height="60" as="geometry" />
+        <mxCell id="RmXKm_T9FJCy7VUafHjJ-11" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="280" y="210" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="DQ5iVIYwW6_9FDfUFkqg-1" value="" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.logic_gates.logic_gate;operation=or;negating=1;negSize=0.15;" vertex="1" parent="1">
+          <mxGeometry x="290" y="220" width="100" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

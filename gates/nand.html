@@ -30,7 +30,9 @@ group: gates
       <li><a href="#overview">Overview</a></li>
       <li><a href="#quick-facts">Quick Facts</a></li>
       <li><a href="#truth-table">Truth Table</a></li>
+      <li><a href="#multi-input">3-Input NAND</a></li>
       <li><a href="#boolean">Boolean Expression</a></li>
+      <li><a href="#universal">Why Universal</a></li>
       <li><a href="#circuit">Circuit Diagram</a></li>
       <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
       <li><a href="#related">Related Circuits</a></li>
@@ -115,6 +117,46 @@ group: gates
     </div>
   </section>
 
+  <!-- 3-Input NAND -->
+  <section class="section" id="multi-input">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+      </div>
+      <h2 class="section-title">3-Input NAND Gate</h2>
+      <a href="#multi-input" class="section-anchor">#</a>
+    </div>
+    <div class="prose">
+      <p>NAND gates can have any number of inputs. The output is 0 only when <strong>all</strong> inputs are 1.</p>
+    </div>
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>A</th><th>B</th><th>C</th>
+            <th class="out-col divider">Y</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0 out-col">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">3-Input Expression</p>
+      <p class="bool-expr">
+        <span class="out">Y</span> = (<span class="var">A</span> <span class="op">·</span> <span class="var">B</span> <span class="op">·</span> <span class="var">C</span>)<span class="op">'</span>
+      </p>
+    </div>
+  </section>
+
   <!-- Boolean Expression -->
   <section class="section" id="boolean">
     <div class="section-header">
@@ -138,6 +180,44 @@ group: gates
     </div>
   </section>
 
+  <!-- Why Universal? -->
+  <section class="section" id="universal">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h2 class="section-title">Why NAND is Universal</h2>
+      <a href="#universal" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>A <strong>universal gate</strong> can implement any Boolean function using only that gate type. NAND achieves this because it can construct NOT, AND, and OR — the complete Boolean basis:</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">NOT from NAND</p>
+        <p class="qf-value" style="font-family: var(--mono); font-size: 0.9rem;">A' = (A · A)'</p>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">Connect both inputs together</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">AND from NAND</p>
+        <p class="qf-value" style="font-family: var(--mono); font-size: 0.9rem;">A · B = ((A · B)')'</p>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">NAND followed by NOT (2 gates)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">OR from NAND</p>
+        <p class="qf-value" style="font-family: var(--mono); font-size: 0.9rem;">A + B = (A' · B')'</p>
+        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">De Morgan: invert inputs, then NAND (3 gates)</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Practical implication:</strong> Entire processors can be built using only NAND gates. Early computers and the Apollo Guidance Computer used exclusively NOR gates for similar reasons.</p>
+    </div>
+  </section>
+
   <!-- Circuit Diagram -->
   <section class="section" id="circuit">
     <div class="section-header">
@@ -154,20 +234,7 @@ group: gates
     </div>
 
     <div id="diagram-gate" class="diagram-box">
-      <svg viewBox="0 0 180 100" xmlns="http://www.w3.org/2000/svg" class="gate-svg">
-        <!-- NAND gate symbol (AND + circle) -->
-        <path d="M 30,20 L 30,80 L 70,80 A 30,30 0 0,0 70,20 Z" fill="none" stroke="#1a5fb0" stroke-width="2"/>
-        <circle cx="103" cy="50" r="5" fill="none" stroke="#1a5fb0" stroke-width="2"/>
-        <!-- Input lines -->
-        <line x1="10" y1="35" x2="30" y2="35" stroke="#1a5fb0" stroke-width="1.5"/>
-        <line x1="10" y1="65" x2="30" y2="65" stroke="#1a5fb0" stroke-width="1.5"/>
-        <!-- Output line -->
-        <line x1="108" y1="50" x2="130" y2="50" stroke="#0a7c52" stroke-width="1.5"/>
-        <!-- Labels -->
-        <text x="5" y="38" fill="#4a5568" font-family="monospace" font-size="11">A</text>
-        <text x="5" y="68" fill="#4a5568" font-family="monospace" font-size="11">B</text>
-        <text x="135" y="53" fill="#0a7c52" font-family="monospace" font-size="11">Y</text>
-      </svg>
+      <img src="{{ '/diagrams/gates/nand.png' | relative_url }}" alt="NAND Gate Logic Symbol" class="gate-svg" style="max-width: 400px; height: auto; position: relative; z-index: 1; background: white; padding: 20px; border-radius: 8px;">
     </div>
 
     <div id="diagram-cmos" class="diagram-box" style="display:none;">

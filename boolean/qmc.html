@@ -1,0 +1,1044 @@
+---
+layout: null
+title: Quine-McCluskey Algorithm
+nav: gates
+sidebar: qmc
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quine-McCluskey Algorithm — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .qmc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    font-family: var(--mono);
+  }
+  .qmc-table th, .qmc-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .qmc-table th {
+    background: var(--surface2);
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .qmc-table td {
+    background: var(--surface);
+  }
+  .qmc-table .group-header {
+    background: var(--green-1);
+    color: var(--green);
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .qmc-table .checked {
+    text-decoration: line-through;
+    color: var(--text-faint);
+  }
+  .qmc-table .prime {
+    color: var(--green);
+    font-weight: 600;
+  }
+  .qmc-table .dash {
+    color: var(--amber);
+    font-weight: 700;
+  }
+  .step-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .step-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .step-number {
+    background: var(--green);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .pi-chart {
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  .pi-chart table {
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .pi-chart th, .pi-chart td {
+    padding: 0.5rem 0.6rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    min-width: 35px;
+  }
+  .pi-chart th {
+    background: var(--surface2);
+    font-weight: 600;
+  }
+  .pi-chart td {
+    background: var(--surface);
+  }
+  .pi-chart .epi {
+    background: rgba(10, 124, 82, 0.15);
+  }
+  .pi-chart .dot {
+    color: var(--green);
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  .algorithm-box {
+    background: var(--surface2);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .algorithm-box h5 {
+    color: var(--green);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+  .algorithm-box ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.8;
+  }
+  .final-result {
+    font-family: var(--mono);
+    font-size: 1.25rem;
+    background: var(--green-1);
+    border: 2px solid var(--green);
+    color: var(--green);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .comparison-table th, .comparison-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  .comparison-table th {
+    background: var(--surface2);
+    font-weight: 600;
+  }
+  .comparison-table td {
+    background: var(--surface);
+  }
+  /* QMC Solver Styles */
+  .solver-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .solver-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .solver-controls label {
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .solver-controls select, .solver-controls input {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.95rem;
+  }
+  .solver-controls input {
+    width: 200px;
+    font-family: var(--mono);
+  }
+  .solver-btn {
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .solver-btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .solver-btn-primary:hover {
+    background: var(--green-dark);
+  }
+  .solver-btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .solver-btn-secondary:hover {
+    background: var(--border);
+  }
+  .solver-output {
+    margin-top: 1.5rem;
+  }
+  .solver-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .solver-step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    cursor: pointer;
+    user-select: none;
+  }
+  .solver-step-header:hover {
+    background: var(--border);
+  }
+  .solver-step-num {
+    background: var(--green);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+  .solver-step-title {
+    font-weight: 600;
+    flex: 1;
+  }
+  .solver-step-toggle {
+    color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .solver-step.open .solver-step-toggle {
+    transform: rotate(90deg);
+  }
+  .solver-step-content {
+    padding: 1rem;
+    display: none;
+    overflow-x: auto;
+  }
+  .solver-step.open .solver-step-content {
+    display: block;
+  }
+  .solver-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    font-family: var(--mono);
+  }
+  .solver-table th, .solver-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .solver-table th {
+    background: var(--surface2);
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .solver-table .group-row {
+    background: var(--green-1);
+    color: var(--green);
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .solver-table .checked {
+    text-decoration: line-through;
+    color: var(--text-faint);
+  }
+  .solver-table .dash {
+    color: var(--amber);
+    font-weight: 700;
+  }
+  .solver-table .prime {
+    color: var(--green);
+    font-weight: 600;
+  }
+  .solver-table .epi-row {
+    background: rgba(10, 124, 82, 0.1);
+  }
+  .solver-table .dot {
+    color: var(--green);
+    font-weight: bold;
+  }
+  .solver-result {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--green-1);
+    border: 2px solid var(--green);
+    border-radius: var(--radius);
+  }
+  .solver-result-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .solver-result-expr {
+    font-family: var(--mono);
+    font-size: 1.25rem;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .solver-hint {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+  .solver-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .solver-example-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+  .solver-example-btn:hover {
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#solver">QMC Solver</a></li>
+      <li><a href="#algorithm">The Algorithm</a></li>
+      <li><a href="#example">Worked Example</a></li>
+      <li><a href="#pi-chart">Prime Implicant Chart</a></li>
+      <li><a href="#comparison">K-Map vs QMC</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/boolean/' | relative_url }}">Boolean Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Quine-McCluskey</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Algorithmic</span>
+      <span class="badge badge-blue">Tabular Method</span>
+    </div>
+    <h1 class="page-title">Quine-McCluskey Algorithm</h1>
+    <p class="page-subtitle">
+      The Quine-McCluskey (QMC) method is a tabular algorithm for Boolean function minimization. Unlike K-Maps, it scales to any number of variables and is suitable for computer implementation.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Developed by</p>
+        <p class="qf-value">Quine (1952), McCluskey (1956)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Variables</p>
+        <p class="qf-value">Any number (practical ~15)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Complexity</p>
+        <p class="qf-value">O(3ⁿ) worst case</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Result</p>
+        <p class="qf-value">Guaranteed minimum</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive QMC Solver -->
+  <section class="section" id="solver">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+      </div>
+      <h2 class="section-title">Interactive QMC Solver</h2>
+      <a href="#solver" class="section-anchor">#</a>
+    </div>
+
+    <div class="solver-container">
+      <div class="solver-controls">
+        <label for="qmc-vars">Variables:</label>
+        <select id="qmc-vars">
+          <option value="3">3 Variables (A, B, C)</option>
+          <option value="4" selected>4 Variables (A, B, C, D)</option>
+          <option value="5">5 Variables (A, B, C, D, E)</option>
+        </select>
+        <label for="qmc-minterms">Minterms:</label>
+        <input type="text" id="qmc-minterms" placeholder="e.g., 0,1,2,5,6,7" />
+        <button class="solver-btn solver-btn-primary" id="qmc-solve-btn">Solve</button>
+        <button class="solver-btn solver-btn-secondary" id="qmc-clear-btn">Clear</button>
+      </div>
+
+      <p class="solver-hint">Enter minterm indices separated by commas. Use 'd' prefix for don't cares (e.g., d3,d4).</p>
+      <div class="solver-examples">
+        <span style="font-size: 0.85rem; color: var(--text-dim);">Examples:</span>
+        <button class="solver-example-btn" data-minterms="0,1,2,5,6,7,8,9,10,14" data-vars="4">Σm(0,1,2,5,6,7,8,9,10,14)</button>
+        <button class="solver-example-btn" data-minterms="1,3,5,7" data-vars="3">Σm(1,3,5,7)</button>
+        <button class="solver-example-btn" data-minterms="0,2,4,5,6,d7" data-vars="3">Σm(0,2,4,5,6)+d(7)</button>
+      </div>
+
+      <div class="solver-output" id="qmc-output" style="display: none;">
+        <!-- Generated by JavaScript -->
+      </div>
+
+      <div class="solver-result" id="qmc-result" style="display: none;">
+        <div class="solver-result-label">Minimized SOP Expression:</div>
+        <div class="solver-result-expr" id="qmc-result-expr">F = </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Algorithm -->
+  <section class="section" id="algorithm">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+      </div>
+      <h2 class="section-title">The Algorithm</h2>
+      <a href="#algorithm" class="section-anchor">#</a>
+    </div>
+
+    <div class="algorithm-box">
+      <h5>Quine-McCluskey Steps</h5>
+      <ol>
+        <li><strong>List minterms</strong> in binary and group by number of 1s</li>
+        <li><strong>Compare adjacent groups</strong> — combine terms differing by one bit</li>
+        <li><strong>Mark combined terms</strong> with a dash (-) for the differing bit</li>
+        <li><strong>Repeat step 2-3</strong> until no more combinations possible</li>
+        <li><strong>Unchecked terms</strong> are Prime Implicants (PIs)</li>
+        <li><strong>Build PI chart</strong> to find Essential Prime Implicants (EPIs)</li>
+        <li><strong>Select minimum cover</strong> of remaining minterms</li>
+      </ol>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Why it works:</strong> XY + XY' = X (absorption). QMC systematically finds all such combinations, then selects the minimum set.</p>
+    </div>
+  </section>
+
+  <!-- Worked Example -->
+  <section class="section" id="example">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h2 class="section-title">Worked Example</h2>
+      <a href="#example" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Minimize: <strong>F(A,B,C,D) = Σm(0,1,2,5,6,7,8,9,10,14)</strong></p>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="step-section">
+      <h4><span class="step-number">1</span> Group by number of 1s</h4>
+      
+      <table class="qmc-table">
+        <thead>
+          <tr><th>Group</th><th>Minterm</th><th>A B C D</th><th>1-count</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-header"><td colspan="4">Group 0 (zero 1s)</td></tr>
+          <tr><td>0</td><td>m0</td><td>0 0 0 0</td><td>0</td></tr>
+          
+          <tr class="group-header"><td colspan="4">Group 1 (one 1)</td></tr>
+          <tr><td>1</td><td>m1</td><td>0 0 0 1</td><td>1</td></tr>
+          <tr><td>1</td><td>m2</td><td>0 0 1 0</td><td>1</td></tr>
+          <tr><td>1</td><td>m8</td><td>1 0 0 0</td><td>1</td></tr>
+          
+          <tr class="group-header"><td colspan="4">Group 2 (two 1s)</td></tr>
+          <tr><td>2</td><td>m5</td><td>0 1 0 1</td><td>2</td></tr>
+          <tr><td>2</td><td>m6</td><td>0 1 1 0</td><td>2</td></tr>
+          <tr><td>2</td><td>m9</td><td>1 0 0 1</td><td>2</td></tr>
+          <tr><td>2</td><td>m10</td><td>1 0 1 0</td><td>2</td></tr>
+          
+          <tr class="group-header"><td colspan="4">Group 3 (three 1s)</td></tr>
+          <tr><td>3</td><td>m7</td><td>0 1 1 1</td><td>3</td></tr>
+          <tr><td>3</td><td>m14</td><td>1 1 1 0</td><td>3</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-section">
+      <h4><span class="step-number">2</span> First pass — combine adjacent groups</h4>
+      
+      <table class="qmc-table">
+        <thead>
+          <tr><th>Combined</th><th>A B C D</th><th>Minterms</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-header"><td colspan="3">From Groups 0-1</td></tr>
+          <tr><td class="checked">✓</td><td>0 0 0 <span class="dash">-</span></td><td>(0,1)</td></tr>
+          <tr><td class="checked">✓</td><td>0 0 <span class="dash">-</span> 0</td><td>(0,2)</td></tr>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 0 0 0</td><td>(0,8)</td></tr>
+          
+          <tr class="group-header"><td colspan="3">From Groups 1-2</td></tr>
+          <tr><td class="checked">✓</td><td>0 <span class="dash">-</span> 0 1</td><td>(1,5)</td></tr>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 0 0 1</td><td>(1,9)</td></tr>
+          <tr><td class="checked">✓</td><td>0 <span class="dash">-</span> 1 0</td><td>(2,6)</td></tr>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 0 1 0</td><td>(2,10)</td></tr>
+          <tr><td class="checked">✓</td><td>1 0 0 <span class="dash">-</span></td><td>(8,9)</td></tr>
+          <tr><td class="checked">✓</td><td>1 0 <span class="dash">-</span> 0</td><td>(8,10)</td></tr>
+          
+          <tr class="group-header"><td colspan="3">From Groups 2-3</td></tr>
+          <tr><td class="checked">✓</td><td>0 1 <span class="dash">-</span> 1</td><td>(5,7)</td></tr>
+          <tr><td class="checked">✓</td><td>0 1 1 <span class="dash">-</span></td><td>(6,7)</td></tr>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 1 1 0</td><td>(6,14)</td></tr>
+          <tr><td class="checked">✓</td><td>1 <span class="dash">-</span> 1 0</td><td>(10,14)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-section">
+      <h4><span class="step-number">3</span> Second pass — combine again</h4>
+      
+      <table class="qmc-table">
+        <thead>
+          <tr><th>Combined</th><th>A B C D</th><th>Minterms</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 0 0 <span class="dash">-</span></td><td>(0,1,8,9)</td></tr>
+          <tr><td class="checked">✓</td><td><span class="dash">-</span> 0 <span class="dash">-</span> 0</td><td>(0,2,8,10)</td></tr>
+          <tr><td class="prime">PI</td><td>0 <span class="dash">-</span> <span class="dash">-</span> 1</td><td>(1,5,3,7) *invalid</td></tr>
+        </tbody>
+      </table>
+      
+      <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-dim);">*Some combinations are invalid because they don't share matching bits in the same positions.</p>
+    </div>
+
+    <!-- Prime Implicants -->
+    <div class="step-section">
+      <h4><span class="step-number">4</span> Identify Prime Implicants</h4>
+      
+      <p>Terms that could not be combined further:</p>
+      
+      <table class="qmc-table">
+        <thead>
+          <tr><th>PI</th><th>A B C D</th><th>Covers</th><th>Expression</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="color: var(--green); font-weight: 600;">P1</td><td><span class="dash">-</span> 0 0 <span class="dash">-</span></td><td>0,1,8,9</td><td>B'C'</td></tr>
+          <tr><td style="color: var(--green); font-weight: 600;">P2</td><td><span class="dash">-</span> 0 <span class="dash">-</span> 0</td><td>0,2,8,10</td><td>B'D'</td></tr>
+          <tr><td style="color: var(--green); font-weight: 600;">P3</td><td>0 1 1 <span class="dash">-</span></td><td>6,7</td><td>A'BC</td></tr>
+          <tr><td style="color: var(--green); font-weight: 600;">P4</td><td>0 <span class="dash">-</span> 0 1</td><td>1,5</td><td>A'C'D</td></tr>
+          <tr><td style="color: var(--green); font-weight: 600;">P5</td><td><span class="dash">-</span> 1 1 0</td><td>6,14</td><td>BCD'</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Prime Implicant Chart -->
+  <section class="section" id="pi-chart">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Prime Implicant Chart</h2>
+      <a href="#pi-chart" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Find Essential Prime Implicants (EPIs) — PIs that are the only cover for some minterm.</p>
+    </div>
+
+    <div class="pi-chart">
+      <table>
+        <thead>
+          <tr>
+            <th>PI</th>
+            <th>0</th><th>1</th><th>2</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>14</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="epi">
+            <td><strong>P1</strong></td>
+            <td class="dot">●</td><td class="dot">●</td><td></td><td></td><td></td><td></td><td class="dot">●</td><td class="dot">●</td><td></td><td></td>
+          </tr>
+          <tr class="epi">
+            <td><strong>P2</strong></td>
+            <td class="dot">●</td><td></td><td class="dot">●</td><td></td><td></td><td></td><td class="dot">●</td><td></td><td class="dot">●</td><td></td>
+          </tr>
+          <tr>
+            <td>P3</td>
+            <td></td><td></td><td></td><td></td><td class="dot">●</td><td class="dot">●</td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr>
+            <td>P4</td>
+            <td></td><td class="dot">●</td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr>
+            <td>P5</td>
+            <td></td><td></td><td></td><td></td><td class="dot">●</td><td></td><td></td><td></td><td></td><td class="dot">●</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>EPIs:</strong> P1 (only PI covering m9), P2 (only PI covering m2, m10). After selecting P1 and P2, remaining: m5, m6, m7, m14. Select P3 for m7 and P5 for m14. P4 becomes redundant.</p>
+    </div>
+
+    <div class="final-result">F = B'C' + B'D' + A'BC + BCD'</div>
+  </section>
+
+  <!-- K-Map vs QMC -->
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"/></svg>
+      </div>
+      <h2 class="section-title">K-Map vs Quine-McCluskey</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr><th>Aspect</th><th>K-Map</th><th>Quine-McCluskey</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Variables</strong></td><td>Practical up to 5-6</td><td>Any number (practical ~15)</td></tr>
+        <tr><td><strong>Method</strong></td><td>Visual / Pattern recognition</td><td>Algorithmic / Systematic</td></tr>
+        <tr><td><strong>Human use</strong></td><td>Easy for small functions</td><td>Tedious but reliable</td></tr>
+        <tr><td><strong>Computer use</strong></td><td>Not suitable</td><td>Easily programmable</td></tr>
+        <tr><td><strong>Result</strong></td><td>May miss optimal solution</td><td>Guarantees minimum</td></tr>
+        <tr><td><strong>Don't cares</strong></td><td>Easy to incorporate</td><td>Treat as optional minterms</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/kmap.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Karnaugh Maps</span>
+        <span class="related-card-cat">Visual alternative</span>
+      </a>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">SOP / POS Forms</span>
+        <span class="related-card-cat">Canonical forms</span>
+      </a>
+      <a href="{{ '/boolean/hazards.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Hazard Analysis</span>
+        <span class="related-card-cat">Timing issues</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        SOP / POS
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/boolean/hazards.html' | relative_url }}">
+        Hazard Analysis
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+<script>
+(function() {
+  // QMC Solver Implementation
+  const varsSelect = document.getElementById('qmc-vars');
+  const mintermsInput = document.getElementById('qmc-minterms');
+  const solveBtn = document.getElementById('qmc-solve-btn');
+  const clearBtn = document.getElementById('qmc-clear-btn');
+  const outputDiv = document.getElementById('qmc-output');
+  const resultDiv = document.getElementById('qmc-result');
+  const resultExpr = document.getElementById('qmc-result-expr');
+  const exampleBtns = document.querySelectorAll('.solver-example-btn');
+
+  const varNames = ['A', 'B', 'C', 'D', 'E'];
+
+  function countOnes(n) {
+    let count = 0;
+    while (n) { count += n & 1; n >>= 1; }
+    return count;
+  }
+
+  function toBinary(n, bits) {
+    return n.toString(2).padStart(bits, '0');
+  }
+
+  function formatBinary(str) {
+    return str.split('').map(c => c === '-' ? '<span class="dash">-</span>' : c).join(' ');
+  }
+
+  function diffByOneBit(a, b) {
+    let diff = -1;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) {
+        if (a[i] === '-' || b[i] === '-') return -1;
+        if (diff !== -1) return -1;
+        diff = i;
+      }
+    }
+    return diff;
+  }
+
+  function combine(a, b, pos) {
+    return a.substring(0, pos) + '-' + a.substring(pos + 1);
+  }
+
+  function termToExpression(term, numVars) {
+    let expr = '';
+    for (let i = 0; i < numVars; i++) {
+      if (term[i] === '1') expr += varNames[i];
+      else if (term[i] === '0') expr += varNames[i] + "'";
+    }
+    return expr || '1';
+  }
+
+  function solve() {
+    const numVars = parseInt(varsSelect.value);
+    const maxMinterm = Math.pow(2, numVars) - 1;
+    const input = mintermsInput.value.trim();
+    
+    if (!input) {
+      alert('Please enter minterms.');
+      return;
+    }
+
+    const parts = input.split(',').map(s => s.trim().toLowerCase());
+    const minterms = [];
+    const dontCares = [];
+
+    for (const p of parts) {
+      if (!p) continue;
+      const isDontCare = p.startsWith('d');
+      const num = parseInt(isDontCare ? p.substring(1) : p);
+      if (isNaN(num) || num < 0 || num > maxMinterm) {
+        alert(`Invalid minterm: ${p}. Must be 0-${maxMinterm}.`);
+        return;
+      }
+      if (isDontCare) dontCares.push(num);
+      else minterms.push(num);
+    }
+
+    if (minterms.length === 0) {
+      alert('Please enter at least one minterm (not don\'t care).');
+      return;
+    }
+
+    // Run QMC algorithm
+    const result = quineMcCluskey(minterms, dontCares, numVars);
+    displayResult(result, minterms, numVars);
+  }
+
+  function quineMcCluskey(minterms, dontCares, numVars) {
+    const all = [...minterms, ...dontCares].sort((a, b) => a - b);
+    const steps = [];
+
+    // Step 1: Group by number of 1s
+    let groups = {};
+    for (const m of all) {
+      const ones = countOnes(m);
+      if (!groups[ones]) groups[ones] = [];
+      groups[ones].push({ term: toBinary(m, numVars), minterms: [m], checked: false });
+    }
+    steps.push({ title: 'Group by number of 1s', groups: JSON.parse(JSON.stringify(groups)) });
+
+    // Iteratively combine
+    let passNum = 1;
+    while (true) {
+      const newGroups = {};
+      const groupKeys = Object.keys(groups).map(Number).sort((a, b) => a - b);
+      const combined = new Set();
+
+      for (let i = 0; i < groupKeys.length - 1; i++) {
+        const g1 = groups[groupKeys[i]];
+        const g2 = groups[groupKeys[i + 1]];
+
+        for (const t1 of g1) {
+          for (const t2 of g2) {
+            const pos = diffByOneBit(t1.term, t2.term);
+            if (pos !== -1) {
+              const newTerm = combine(t1.term, t2.term, pos);
+              const newMinterms = [...new Set([...t1.minterms, ...t2.minterms])].sort((a, b) => a - b);
+              const ones = countOnes(parseInt(newTerm.replace(/-/g, '0'), 2));
+
+              if (!newGroups[ones]) newGroups[ones] = [];
+              const exists = newGroups[ones].some(x => x.term === newTerm);
+              if (!exists) {
+                newGroups[ones].push({ term: newTerm, minterms: newMinterms, checked: false });
+              }
+
+              t1.checked = true;
+              t2.checked = true;
+              combined.add(JSON.stringify(t1.minterms));
+              combined.add(JSON.stringify(t2.minterms));
+            }
+          }
+        }
+      }
+
+      if (Object.keys(newGroups).length === 0) break;
+
+      steps.push({ title: `Pass ${passNum} - Combine adjacent groups`, groups: JSON.parse(JSON.stringify(groups)), isPass: true });
+      groups = newGroups;
+      passNum++;
+    }
+
+    // Collect prime implicants (unchecked terms from all passes)
+    const primeImplicants = [];
+    for (const step of steps) {
+      for (const ones of Object.keys(step.groups)) {
+        for (const term of step.groups[ones]) {
+          if (!term.checked) {
+            const exists = primeImplicants.some(pi => pi.term === term.term);
+            if (!exists) primeImplicants.push(term);
+          }
+        }
+      }
+    }
+    // Also check current groups
+    for (const ones of Object.keys(groups)) {
+      for (const term of groups[ones]) {
+        if (!term.checked) {
+          const exists = primeImplicants.some(pi => pi.term === term.term);
+          if (!exists) primeImplicants.push(term);
+        }
+      }
+    }
+
+    return { steps, primeImplicants, minterms, dontCares };
+  }
+
+  function findEssentialPIs(primeImplicants, minterms) {
+    const essential = [];
+    const covered = new Set();
+
+    // Find EPIs - PIs that are the only cover for some minterm
+    for (const m of minterms) {
+      const covering = primeImplicants.filter(pi => pi.minterms.includes(m));
+      if (covering.length === 1) {
+        if (!essential.includes(covering[0])) {
+          essential.push(covering[0]);
+          covering[0].minterms.forEach(x => covered.add(x));
+        }
+      }
+    }
+
+    // Greedy cover remaining
+    const remaining = primeImplicants.filter(pi => !essential.includes(pi));
+    remaining.sort((a, b) => b.minterms.length - a.minterms.length);
+
+    for (const pi of remaining) {
+      const uncovered = minterms.filter(m => !covered.has(m));
+      if (uncovered.length === 0) break;
+      if (pi.minterms.some(m => uncovered.includes(m))) {
+        essential.push(pi);
+        pi.minterms.forEach(x => covered.add(x));
+      }
+    }
+
+    return essential;
+  }
+
+  function displayResult(result, minterms, numVars) {
+    let html = '';
+
+    // Step 1: Initial grouping
+    html += `<div class="solver-step open">
+      <div class="solver-step-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="solver-step-num">1</span>
+        <span class="solver-step-title">Group minterms by number of 1s</span>
+        <svg class="solver-step-toggle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="solver-step-content">
+        <table class="solver-table">
+          <tr><th>Group</th><th>Minterm</th><th>Binary</th></tr>`;
+
+    if (result.steps.length > 0) {
+      const firstStep = result.steps[0];
+      for (const ones of Object.keys(firstStep.groups).sort((a,b) => a-b)) {
+        html += `<tr class="group-row"><td colspan="3">Group ${ones} (${ones} ones)</td></tr>`;
+        for (const term of firstStep.groups[ones]) {
+          html += `<tr><td>${ones}</td><td>m${term.minterms.join(',')}</td><td>${formatBinary(term.term)}</td></tr>`;
+        }
+      }
+    }
+    html += '</table></div></div>';
+
+    // Combination passes
+    let passIdx = 2;
+    for (let i = 1; i < result.steps.length; i++) {
+      const step = result.steps[i];
+      if (step.isPass) {
+        html += `<div class="solver-step">
+          <div class="solver-step-header" onclick="this.parentElement.classList.toggle('open')">
+            <span class="solver-step-num">${passIdx}</span>
+            <span class="solver-step-title">${step.title}</span>
+            <svg class="solver-step-toggle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="solver-step-content">
+            <table class="solver-table">
+              <tr><th>Status</th><th>Binary</th><th>Minterms</th></tr>`;
+
+        for (const ones of Object.keys(step.groups).sort((a,b) => a-b)) {
+          for (const term of step.groups[ones]) {
+            const status = term.checked ? '<span class="checked">✓</span>' : '<span class="prime">PI</span>';
+            html += `<tr><td>${status}</td><td>${formatBinary(term.term)}</td><td>(${term.minterms.join(',')})</td></tr>`;
+          }
+        }
+        html += '</table></div></div>';
+        passIdx++;
+      }
+    }
+
+    // Prime Implicants
+    html += `<div class="solver-step open">
+      <div class="solver-step-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="solver-step-num">${passIdx}</span>
+        <span class="solver-step-title">Prime Implicants</span>
+        <svg class="solver-step-toggle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="solver-step-content">
+        <table class="solver-table">
+          <tr><th>PI</th><th>Binary</th><th>Covers</th><th>Expression</th></tr>`;
+
+    result.primeImplicants.forEach((pi, idx) => {
+      html += `<tr><td>P${idx + 1}</td><td>${formatBinary(pi.term)}</td><td>${pi.minterms.join(',')}</td><td>${termToExpression(pi.term, numVars)}</td></tr>`;
+    });
+    html += '</table></div></div>';
+    passIdx++;
+
+    // PI Chart
+    const essentialPIs = findEssentialPIs(result.primeImplicants, minterms);
+
+    html += `<div class="solver-step open">
+      <div class="solver-step-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="solver-step-num">${passIdx}</span>
+        <span class="solver-step-title">Prime Implicant Chart</span>
+        <svg class="solver-step-toggle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="solver-step-content">
+        <table class="solver-table">
+          <tr><th>PI</th>${minterms.map(m => `<th>${m}</th>`).join('')}</tr>`;
+
+    result.primeImplicants.forEach((pi, idx) => {
+      const isEPI = essentialPIs.includes(pi);
+      html += `<tr class="${isEPI ? 'epi-row' : ''}">`;
+      html += `<td><strong>P${idx + 1}</strong></td>`;
+      for (const m of minterms) {
+        html += `<td>${pi.minterms.includes(m) ? '<span class="dot">●</span>' : ''}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</table></div></div>';
+
+    outputDiv.innerHTML = html;
+    outputDiv.style.display = 'block';
+
+    // Final result
+    const expr = essentialPIs.map(pi => termToExpression(pi.term, numVars)).join(' + ');
+    resultExpr.textContent = 'F = ' + (expr || '0');
+    resultDiv.style.display = 'block';
+  }
+
+  function clear() {
+    mintermsInput.value = '';
+    outputDiv.style.display = 'none';
+    outputDiv.innerHTML = '';
+    resultDiv.style.display = 'none';
+  }
+
+  // Event listeners
+  solveBtn.addEventListener('click', solve);
+  clearBtn.addEventListener('click', clear);
+  mintermsInput.addEventListener('keypress', e => { if (e.key === 'Enter') solve(); });
+
+  exampleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      mintermsInput.value = btn.dataset.minterms;
+      varsSelect.value = btn.dataset.vars;
+    });
+  });
+})();
+</script>
+</body>
+</html>

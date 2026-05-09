@@ -5,6 +5,7 @@
     <a href="{{ '/' | relative_url }}" class="nav-item{% if page.sidebar == 'home' %} active{% endif %}">Introduction</a>
     <a href="{{ '/how-to-use.html' | relative_url }}" class="nav-item{% if page.sidebar == 'howto' %} active{% endif %}">How to Use</a>
     <a href="{{ '/notation.html' | relative_url }}" class="nav-item{% if page.sidebar == 'notation' %} active{% endif %}">Notation Guide</a>
+    <a href="{{ '/number-systems.html' | relative_url }}" class="nav-item{% if page.sidebar == 'number-systems' %} active{% endif %}">Number Systems</a>
   </div>
 
   <!-- COMBINATIONAL -->
@@ -31,11 +32,11 @@
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
     <div class="nav-items{% if page.group == 'boolean' %} open{% endif %}">
-      <a href="{{ '/docs/boolean/algebra/' | relative_url }}" class="nav-item{% if page.sidebar == 'bool-algebra' %} active{% endif %}">Boolean Algebra</a>
-      <a href="{{ '/docs/boolean/kmap/' | relative_url }}" class="nav-item{% if page.sidebar == 'kmap' %} active{% endif %}">K-Map</a>
-      <a href="{{ '/docs/boolean/qmc/' | relative_url }}" class="nav-item{% if page.sidebar == 'qmc' %} active{% endif %}">Quine–McCluskey</a>
-      <a href="{{ '/docs/boolean/sop-pos/' | relative_url }}" class="nav-item{% if page.sidebar == 'sop-pos' %} active{% endif %}">SOP / POS Forms</a>
-      <a href="{{ '/docs/boolean/hazards/' | relative_url }}" class="nav-item{% if page.sidebar == 'hazards' %} active{% endif %}">Hazard Analysis</a>
+      <a href="{{ '/boolean/algebra.html' | relative_url }}" class="nav-item{% if page.sidebar == 'algebra' %} active{% endif %}">Boolean Algebra</a>
+      <a href="{{ '/boolean/kmap.html' | relative_url }}" class="nav-item{% if page.sidebar == 'kmap' %} active{% endif %}">K-Map</a>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="nav-item{% if page.sidebar == 'sop-pos' %} active{% endif %}">SOP / POS Forms</a>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}" class="nav-item{% if page.sidebar == 'qmc' %} active{% endif %}">Quine–McCluskey</a>
+      <a href="{{ '/boolean/hazards.html' | relative_url }}" class="nav-item{% if page.sidebar == 'hazards' %} active{% endif %}">Hazard Analysis</a>
     </div>
 
     <button class="nav-group-toggle{% if page.group == 'arithmetic' %} open{% endif %}" onclick="toggleGroup(this)">

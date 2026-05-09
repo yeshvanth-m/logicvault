@@ -4,6 +4,9 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="RmXKm_T9FJCy7VUafHjJ-11" value="" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=none;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="280" y="210" width="120" height="80" as="geometry" />
+        </mxCell>
         <mxCell id="RmXKm_T9FJCy7VUafHjJ-10" value="" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;shape=mxgraph.electrical.logic_gates.logic_gate;operation=and;" vertex="1" parent="1">
           <mxGeometry x="290" y="220" width="100" height="60" as="geometry" />
         </mxCell>

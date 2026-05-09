@@ -1,0 +1,464 @@
+---
+layout: null
+title: SOP and POS Forms
+nav: gates
+sidebar: sop-pos
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SOP and POS Forms — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .form-comparison {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border-top: 4px solid var(--green);
+  }
+  .form-card.pos-card {
+    border-top-color: var(--blue);
+  }
+  .form-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .form-card .form-full {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .form-card .form-structure {
+    font-family: var(--mono);
+    font-size: 1rem;
+    background: var(--surface2);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+  }
+  .form-card ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+  .term-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .term-table th, .term-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .term-table th {
+    background: var(--surface2);
+    font-weight: 600;
+  }
+  .term-table td {
+    background: var(--surface);
+    font-family: var(--mono);
+  }
+  .term-table .minterm {
+    color: var(--green);
+  }
+  .term-table .maxterm {
+    color: var(--blue);
+  }
+  .example-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .example-section h4 {
+    color: var(--green);
+    margin-bottom: 1rem;
+  }
+  .example-section .truth-table {
+    margin: 1rem 0;
+  }
+  .conversion-box {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin: 1rem 0;
+    font-family: var(--mono);
+    line-height: 2;
+  }
+  .conversion-arrow {
+    color: var(--green);
+    font-weight: bold;
+  }
+  .gate-impl {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: var(--surface2);
+    border-radius: var(--radius);
+  }
+  .gate-impl-label {
+    font-weight: 600;
+    min-width: 80px;
+  }
+  .gate-impl-gates {
+    font-family: var(--mono);
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#comparison">SOP vs POS</a></li>
+      <li><a href="#minterms">Minterms & Maxterms</a></li>
+      <li><a href="#canonical">Canonical Forms</a></li>
+      <li><a href="#conversion">Form Conversion</a></li>
+      <li><a href="#implementation">Gate Implementation</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/boolean/' | relative_url }}">Boolean Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">SOP / POS Forms</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Canonical Forms</span>
+      <span class="badge badge-blue">Representation</span>
+    </div>
+    <h1 class="page-title">SOP and POS Forms</h1>
+    <p class="page-subtitle">
+      Sum of Products (SOP) and Product of Sums (POS) are the two standard canonical forms for Boolean expressions. Understanding both is essential for logic minimization and circuit implementation.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">SOP Structure</p>
+        <p class="qf-value">OR of ANDs</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">POS Structure</p>
+        <p class="qf-value">AND of ORs</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">SOP Implementation</p>
+        <p class="qf-value">AND-OR / NAND-NAND</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">POS Implementation</p>
+        <p class="qf-value">OR-AND / NOR-NOR</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOP vs POS Comparison -->
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"/></svg>
+      </div>
+      <h2 class="section-title">SOP vs POS Comparison</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <div class="form-comparison">
+      <div class="form-card">
+        <h3 style="color: var(--green);">Sum of Products (SOP)</h3>
+        <p class="form-full">Also called: Disjunctive Normal Form (DNF)</p>
+        <div class="form-structure">F = (A·B) + (A'·C) + (B·C')</div>
+        <ul>
+          <li>OR (+) of AND (·) terms</li>
+          <li>Each AND term is a <strong>product term</strong></li>
+          <li>Uses minterms (m)</li>
+          <li>Notation: F = Σm(1,3,5,7)</li>
+          <li>K-Map: group the 1s</li>
+        </ul>
+      </div>
+
+      <div class="form-card pos-card">
+        <h3 style="color: var(--blue);">Product of Sums (POS)</h3>
+        <p class="form-full">Also called: Conjunctive Normal Form (CNF)</p>
+        <div class="form-structure">F = (A+B) · (A'+C) · (B+C')</div>
+        <ul>
+          <li>AND (·) of OR (+) terms</li>
+          <li>Each OR term is a <strong>sum term</strong></li>
+          <li>Uses maxterms (M)</li>
+          <li>Notation: F = ΠM(0,2,4,6)</li>
+          <li>K-Map: group the 0s</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Minterms & Maxterms -->
+  <section class="section" id="minterms">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Minterms & Maxterms</h2>
+      <a href="#minterms" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>For n variables, there are 2ⁿ minterms and 2ⁿ maxterms. Each row of a truth table corresponds to one minterm and one maxterm.</p>
+    </div>
+
+    <table class="term-table">
+      <thead>
+        <tr>
+          <th>A</th>
+          <th>B</th>
+          <th>C</th>
+          <th>Decimal</th>
+          <th>Minterm (m)</th>
+          <th>Maxterm (M)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0</td><td>0</td><td>0</td><td>0</td>
+          <td class="minterm">A'B'C'</td>
+          <td class="maxterm">A+B+C</td>
+        </tr>
+        <tr>
+          <td>0</td><td>0</td><td>1</td><td>1</td>
+          <td class="minterm">A'B'C</td>
+          <td class="maxterm">A+B+C'</td>
+        </tr>
+        <tr>
+          <td>0</td><td>1</td><td>0</td><td>2</td>
+          <td class="minterm">A'BC'</td>
+          <td class="maxterm">A+B'+C</td>
+        </tr>
+        <tr>
+          <td>0</td><td>1</td><td>1</td><td>3</td>
+          <td class="minterm">A'BC</td>
+          <td class="maxterm">A+B'+C'</td>
+        </tr>
+        <tr>
+          <td>1</td><td>0</td><td>0</td><td>4</td>
+          <td class="minterm">AB'C'</td>
+          <td class="maxterm">A'+B+C</td>
+        </tr>
+        <tr>
+          <td>1</td><td>0</td><td>1</td><td>5</td>
+          <td class="minterm">AB'C</td>
+          <td class="maxterm">A'+B+C'</td>
+        </tr>
+        <tr>
+          <td>1</td><td>1</td><td>0</td><td>6</td>
+          <td class="minterm">ABC'</td>
+          <td class="maxterm">A'+B'+C</td>
+        </tr>
+        <tr>
+          <td>1</td><td>1</td><td>1</td><td>7</td>
+          <td class="minterm">ABC</td>
+          <td class="maxterm">A'+B'+C'</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Pattern:</strong> Minterm uses the variable as-is for 1, complemented for 0. Maxterm is the opposite — complemented for 1, as-is for 0.</p>
+    </div>
+  </section>
+
+  <!-- Canonical Forms -->
+  <section class="section" id="canonical">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h2 class="section-title">Canonical Forms</h2>
+      <a href="#canonical" class="section-anchor">#</a>
+    </div>
+
+    <div class="example-section">
+      <h4>Example: F(A,B,C) with truth table outputs 0,1,0,1,1,0,1,0</h4>
+      
+      <table class="truth-table" style="max-width: 400px;">
+        <thead>
+          <tr><th>Row</th><th>A</th><th>B</th><th>C</th><th>F</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>0</td><td>0</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>1</td><td>0</td><td>0</td><td>1</td><td class="val-1">1</td></tr>
+          <tr><td>2</td><td>0</td><td>1</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>3</td><td>0</td><td>1</td><td>1</td><td class="val-1">1</td></tr>
+          <tr><td>4</td><td>1</td><td>0</td><td>0</td><td class="val-1">1</td></tr>
+          <tr><td>5</td><td>1</td><td>0</td><td>1</td><td class="val-0">0</td></tr>
+          <tr><td>6</td><td>1</td><td>1</td><td>0</td><td class="val-1">1</td></tr>
+          <tr><td>7</td><td>1</td><td>1</td><td>1</td><td class="val-0">0</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 1.5rem;">
+        <p><strong style="color: var(--green);">Canonical SOP:</strong> Sum the minterms where F=1</p>
+        <div class="conversion-box">
+          F = Σm(1,3,4,6)<br>
+          F = A'B'C + A'BC + AB'C' + ABC'
+        </div>
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <p><strong style="color: var(--blue);">Canonical POS:</strong> Product the maxterms where F=0</p>
+        <div class="conversion-box">
+          F = ΠM(0,2,5,7)<br>
+          F = (A+B+C)(A+B'+C)(A'+B+C')(A'+B'+C')
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Form Conversion -->
+  <section class="section" id="conversion">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <h2 class="section-title">Form Conversion</h2>
+      <a href="#conversion" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Converting between SOP and POS is straightforward using complements:</p>
+    </div>
+
+    <div class="conversion-box">
+      <strong>SOP ↔ POS Conversion:</strong><br><br>
+      If F = Σm(1,3,4,6) <span class="conversion-arrow">→</span> F = ΠM(0,2,5,7)<br>
+      <span style="color: var(--text-dim);">// Maxterm indices = all indices NOT in minterm list</span><br><br>
+      
+      For 3 variables (indices 0-7):<br>
+      Minterms: {1,3,4,6} <span class="conversion-arrow">→</span> Maxterms: {0,2,5,7}
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Quick rule:</strong> SOP uses minterms where output is 1. POS uses maxterms where output is 0. Together they cover all 2ⁿ rows.</p>
+    </div>
+  </section>
+
+  <!-- Gate Implementation -->
+  <section class="section" id="implementation">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+      </div>
+      <h2 class="section-title">Gate Implementation</h2>
+      <a href="#implementation" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each form maps naturally to a two-level gate structure:</p>
+    </div>
+
+    <div class="gate-impl">
+      <span class="gate-impl-label" style="color: var(--green);">SOP:</span>
+      <span class="gate-impl-gates">Inverters → AND gates → OR gate</span>
+    </div>
+    <div class="gate-impl">
+      <span class="gate-impl-label" style="color: var(--green);">SOP (NAND):</span>
+      <span class="gate-impl-gates">NAND → NAND (using De Morgan)</span>
+    </div>
+    <div class="gate-impl">
+      <span class="gate-impl-label" style="color: var(--blue);">POS:</span>
+      <span class="gate-impl-gates">Inverters → OR gates → AND gate</span>
+    </div>
+    <div class="gate-impl">
+      <span class="gate-impl-label" style="color: var(--blue);">POS (NOR):</span>
+      <span class="gate-impl-gates">NOR → NOR (using De Morgan)</span>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>NAND-NAND = AND-OR:</strong> Because (AB)' followed by ((AB)'·(CD)')' = AB + CD. This is why NAND-only implementations are preferred in CMOS.</p>
+    </div>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/kmap.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Karnaugh Maps</span>
+        <span class="related-card-cat">Visual minimization</span>
+      </a>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Quine-McCluskey</span>
+        <span class="related-card-cat">Algorithmic minimization</span>
+      </a>
+      <a href="{{ '/gates/nand.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">NAND Gate</span>
+        <span class="related-card-cat">Universal implementation</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/boolean/kmap.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        K-Map
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}">
+        Quine-McCluskey
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

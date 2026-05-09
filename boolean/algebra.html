@@ -1,0 +1,473 @@
+---
+layout: null
+title: Boolean Algebra
+nav: gates
+sidebar: bool-algebra
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Boolean Algebra — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .law-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .law-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+  }
+  .law-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .law-card h4 {
+    color: var(--green);
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .law-card .law-expr {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--surface2);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+  }
+  .law-card .law-dual {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    color: var(--blue);
+    background: rgba(26, 95, 176, 0.08);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+  }
+  .law-card .law-note {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.75rem;
+    line-height: 1.5;
+  }
+  .example-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .example-box h4 {
+    color: var(--green);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+  .example-box .step {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .example-box .step:last-child {
+    border-bottom: none;
+  }
+  .example-box .step-label {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-left: 1rem;
+  }
+  .theorem-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+  }
+  .theorem-table th, .theorem-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  .theorem-table th {
+    background: var(--surface2);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .theorem-table td {
+    background: var(--surface);
+    font-family: var(--mono);
+  }
+  .theorem-table tr:hover td {
+    background: rgba(10, 124, 82, 0.04);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#basic-laws">Basic Laws</a></li>
+      <li><a href="#theorems">Key Theorems</a></li>
+      <li><a href="#demorgan">De Morgan's Laws</a></li>
+      <li><a href="#simplification">Simplification Examples</a></li>
+      <li><a href="#duality">Duality Principle</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/boolean/' | relative_url }}">Boolean Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Boolean Algebra</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Fundamentals</span>
+      <span class="badge badge-blue">Theory</span>
+    </div>
+    <h1 class="page-title">Boolean Algebra</h1>
+    <p class="page-subtitle">
+      Boolean algebra is the mathematical foundation for digital logic design. It defines operations on binary values (0 and 1) and provides laws for simplifying and manipulating logical expressions.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Invented by</p>
+        <p class="qf-value">George Boole (1854)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Binary values</p>
+        <p class="qf-value">0 (False), 1 (True)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Basic operations</p>
+        <p class="qf-value">AND, OR, NOT</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Application</p>
+        <p class="qf-value">Circuit minimization</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Basic Laws -->
+  <section class="section" id="basic-laws">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h2 class="section-title">Basic Laws</h2>
+      <a href="#basic-laws" class="section-anchor">#</a>
+    </div>
+
+    <div class="law-grid">
+      <div class="law-card">
+        <h4>🔄 Identity Law</h4>
+        <div class="law-expr">A + 0 = A</div>
+        <div class="law-dual">A · 1 = A</div>
+        <p class="law-note">ORing with 0 or ANDing with 1 leaves the value unchanged.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>🔳 Null Law</h4>
+        <div class="law-expr">A + 1 = 1</div>
+        <div class="law-dual">A · 0 = 0</div>
+        <p class="law-note">ORing with 1 gives 1; ANDing with 0 gives 0.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>🪞 Idempotent Law</h4>
+        <div class="law-expr">A + A = A</div>
+        <div class="law-dual">A · A = A</div>
+        <p class="law-note">ORing or ANDing a variable with itself has no effect.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>⚡ Complement Law</h4>
+        <div class="law-expr">A + A' = 1</div>
+        <div class="law-dual">A · A' = 0</div>
+        <p class="law-note">A variable ORed with its complement is 1; ANDed is 0.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>🔁 Double Negation</h4>
+        <div class="law-expr">(A')' = A</div>
+        <div class="law-dual">—</div>
+        <p class="law-note">Inverting twice returns the original value.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>🔀 Commutative Law</h4>
+        <div class="law-expr">A + B = B + A</div>
+        <div class="law-dual">A · B = B · A</div>
+        <p class="law-note">Order of operands doesn't matter.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>📦 Associative Law</h4>
+        <div class="law-expr">(A + B) + C = A + (B + C)</div>
+        <div class="law-dual">(A · B) · C = A · (B · C)</div>
+        <p class="law-note">Grouping of operands doesn't matter.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>🌳 Distributive Law</h4>
+        <div class="law-expr">A · (B + C) = A·B + A·C</div>
+        <div class="law-dual">A + (B · C) = (A+B) · (A+C)</div>
+        <p class="law-note">AND distributes over OR, and OR distributes over AND.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Theorems -->
+  <section class="section" id="theorems">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      </div>
+      <h2 class="section-title">Key Theorems</h2>
+      <a href="#theorems" class="section-anchor">#</a>
+    </div>
+
+    <table class="theorem-table">
+      <thead>
+        <tr>
+          <th>Theorem</th>
+          <th>OR Form</th>
+          <th>AND Form (Dual)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family: var(--sans); font-weight: 500;">Absorption</td>
+          <td>A + A·B = A</td>
+          <td>A · (A + B) = A</td>
+        </tr>
+        <tr>
+          <td style="font-family: var(--sans); font-weight: 500;">Redundancy</td>
+          <td>A + A'·B = A + B</td>
+          <td>A · (A' + B) = A · B</td>
+        </tr>
+        <tr>
+          <td style="font-family: var(--sans); font-weight: 500;">Consensus</td>
+          <td>A·B + A'·C + B·C = A·B + A'·C</td>
+          <td>(A+B)·(A'+C)·(B+C) = (A+B)·(A'+C)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Absorption is key:</strong> It's the most frequently used theorem in manual simplification. Remember: A "absorbs" A·B because if A is true, A·B doesn't add anything.</p>
+    </div>
+  </section>
+
+  <!-- De Morgan's Laws -->
+  <section class="section" id="demorgan">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+      </div>
+      <h2 class="section-title">De Morgan's Laws</h2>
+      <a href="#demorgan" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>De Morgan's laws are essential for converting between AND and OR operations, and for pushing inversions inward or outward in expressions.</p>
+    </div>
+
+    <div class="law-grid">
+      <div class="law-card">
+        <h4>📐 First Law</h4>
+        <div class="law-expr" style="font-size: 1.1rem;">(A + B)' = A' · B'</div>
+        <p class="law-note">"Break the bar, change the sign" — The complement of OR becomes AND of complements.</p>
+      </div>
+
+      <div class="law-card">
+        <h4>📐 Second Law</h4>
+        <div class="law-expr" style="font-size: 1.1rem;">(A · B)' = A' + B'</div>
+        <p class="law-note">"Break the bar, change the sign" — The complement of AND becomes OR of complements.</p>
+      </div>
+    </div>
+
+    <div class="example-box">
+      <h4>Example: Applying De Morgan's Law</h4>
+      <div class="step">Original: (A·B + C)'</div>
+      <div class="step">Apply De Morgan: (A·B)' · C' <span class="step-label">// break bar, + → ·</span></div>
+      <div class="step">Apply De Morgan again: (A' + B') · C' <span class="step-label">// break bar on A·B</span></div>
+      <div class="step">Result: A'·C' + B'·C' <span class="step-label">// distribute if needed</span></div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Hardware insight:</strong> De Morgan's laws explain why NAND = bubbled OR and NOR = bubbled AND. This is the foundation of NAND-only or NOR-only implementations.</p>
+    </div>
+  </section>
+
+  <!-- Simplification Examples -->
+  <section class="section" id="simplification">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <h2 class="section-title">Simplification Examples</h2>
+      <a href="#simplification" class="section-anchor">#</a>
+    </div>
+
+    <div class="example-box">
+      <h4>Example 1: Using Absorption</h4>
+      <div class="step">F = A·B + A·B·C</div>
+      <div class="step">F = A·B · (1 + C) <span class="step-label">// factor out A·B</span></div>
+      <div class="step">F = A·B · 1 <span class="step-label">// (1 + C) = 1 by null law</span></div>
+      <div class="step">F = A·B <span class="step-label">// simplified!</span></div>
+    </div>
+
+    <div class="example-box">
+      <h4>Example 2: Using Complement + Distribution</h4>
+      <div class="step">F = A·B + A·B' + A'·B</div>
+      <div class="step">F = A·(B + B') + A'·B <span class="step-label">// factor A from first two terms</span></div>
+      <div class="step">F = A·1 + A'·B <span class="step-label">// B + B' = 1</span></div>
+      <div class="step">F = A + A'·B <span class="step-label">// identity law</span></div>
+      <div class="step">F = A + B <span class="step-label">// redundancy theorem!</span></div>
+    </div>
+
+    <div class="example-box">
+      <h4>Example 3: Complex Expression</h4>
+      <div class="step">F = (A + B)·(A + C)</div>
+      <div class="step">F = A·A + A·C + B·A + B·C <span class="step-label">// distribute (FOIL)</span></div>
+      <div class="step">F = A + A·C + A·B + B·C <span class="step-label">// A·A = A</span></div>
+      <div class="step">F = A·(1 + C + B) + B·C <span class="step-label">// factor A</span></div>
+      <div class="step">F = A + B·C <span class="step-label">// 1 + anything = 1</span></div>
+    </div>
+  </section>
+
+  <!-- Duality Principle -->
+  <section class="section" id="duality">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>
+      </div>
+      <h2 class="section-title">Duality Principle</h2>
+      <a href="#duality" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Every Boolean algebraic expression has a <strong>dual</strong>. To find the dual:</p>
+      <ul style="margin: 1rem 0 1rem 1.5rem;">
+        <li>Swap all AND (·) with OR (+)</li>
+        <li>Swap all OR (+) with AND (·)</li>
+        <li>Swap all 0s with 1s</li>
+        <li>Swap all 1s with 0s</li>
+        <li>Keep variables and complements unchanged</li>
+      </ul>
+    </div>
+
+    <table class="theorem-table">
+      <thead>
+        <tr>
+          <th>Original Expression</th>
+          <th>Dual Expression</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A + 0 = A</td>
+          <td>A · 1 = A</td>
+        </tr>
+        <tr>
+          <td>A + A' = 1</td>
+          <td>A · A' = 0</td>
+        </tr>
+        <tr>
+          <td>A + A·B = A</td>
+          <td>A · (A + B) = A</td>
+        </tr>
+        <tr>
+          <td>(A + B)' = A'·B'</td>
+          <td>(A · B)' = A' + B'</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Why duality matters:</strong> If you prove a theorem, you get its dual for free! This halves the work in proving Boolean identities.</p>
+    </div>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/kmap.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Karnaugh Maps</span>
+        <span class="related-card-cat">Visual simplification</span>
+      </a>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">SOP / POS Forms</span>
+        <span class="related-card-cat">Canonical forms</span>
+      </a>
+      <a href="{{ '/gates/nand.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">NAND Gate</span>
+        <span class="related-card-cat">Universal gate</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/boolean/kmap.html' | relative_url }}">
+        K-Map
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

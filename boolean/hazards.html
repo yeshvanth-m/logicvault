@@ -1,0 +1,508 @@
+---
+layout: null
+title: Hazard Analysis
+nav: gates
+sidebar: hazards
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hazard Analysis — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .hazard-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .hazard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    border-top: 4px solid var(--amber);
+  }
+  .hazard-card.static-1 {
+    border-top-color: var(--green);
+  }
+  .hazard-card.static-0 {
+    border-top-color: var(--blue);
+  }
+  .hazard-card.dynamic {
+    border-top-color: var(--red);
+  }
+  .hazard-card h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+  }
+  .hazard-card .hazard-desc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+  .hazard-card .waveform {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    background: var(--surface2);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    white-space: pre;
+    line-height: 1.4;
+  }
+  .timing-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    overflow-x: auto;
+  }
+  .timing-diagram pre {
+    margin: 0;
+    white-space: pre;
+    line-height: 1.3;
+  }
+  .timing-label {
+    display: inline-block;
+    min-width: 40px;
+    color: var(--text-dim);
+  }
+  .glitch {
+    color: var(--red);
+    font-weight: 700;
+  }
+  .kmap-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+  .kmap {
+    border-collapse: collapse;
+    margin: 0 auto;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+  }
+  .kmap th, .kmap td {
+    border: 2px solid var(--border2);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    min-width: 50px;
+  }
+  .kmap th {
+    background: var(--surface2);
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .kmap th.var-label {
+    background: transparent;
+    border: none;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .kmap td.val-1 {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .kmap td.val-0 {
+    color: var(--text-faint);
+  }
+  .kmap td.group-green {
+    background: rgba(10, 124, 82, 0.15);
+  }
+  .kmap td.group-blue {
+    background: rgba(26, 95, 176, 0.15);
+  }
+  .kmap td.group-amber {
+    background: rgba(160, 98, 10, 0.2);
+    border: 2px dashed var(--amber) !important;
+  }
+  .solution-box {
+    background: var(--surface2);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .solution-box h5 {
+    color: var(--green);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+  }
+  .solution-box ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.8;
+  }
+  .comparison-row {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .comparison-item {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+  .comparison-item h5 {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .comparison-item .expr {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+  }
+  .comparison-item.hazard-free {
+    border-color: var(--green);
+    background: var(--green-1);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#types">Types of Hazards</a></li>
+      <li><a href="#detection">Detecting Hazards</a></li>
+      <li><a href="#elimination">Eliminating Hazards</a></li>
+      <li><a href="#example">Worked Example</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/boolean/' | relative_url }}">Boolean Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Hazard Analysis</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-amber">Timing</span>
+      <span class="badge badge-blue">Circuit Design</span>
+    </div>
+    <h1 class="page-title">Hazard Analysis</h1>
+    <p class="page-subtitle">
+      Hazards are unwanted transient glitches in combinational circuits caused by unequal propagation delays. Understanding and eliminating hazards is crucial for reliable digital circuit design.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Static-1 Hazard</p>
+        <p class="qf-value">1 → 0 → 1 glitch</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Static-0 Hazard</p>
+        <p class="qf-value">0 → 1 → 0 glitch</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Detection</p>
+        <p class="qf-value">K-Map adjacency</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Elimination</p>
+        <p class="qf-value">Add redundant terms</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Types of Hazards -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h2 class="section-title">Types of Hazards</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="hazard-types">
+      <div class="hazard-card static-1">
+        <h3 style="color: var(--green);">Static-1 Hazard</h3>
+        <p class="hazard-desc">Output should remain 1 but momentarily goes to 0 due to different path delays.</p>
+        <div class="waveform">
+Expected:  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+Actual:    ‾‾‾‾\_/‾‾‾‾‾‾
+              ↑ glitch</div>
+      </div>
+
+      <div class="hazard-card static-0">
+        <h3 style="color: var(--blue);">Static-0 Hazard</h3>
+        <p class="hazard-desc">Output should remain 0 but momentarily goes to 1 due to different path delays.</p>
+        <div class="waveform">
+Expected:  ______________
+Actual:    ____/‾\______
+              ↑ glitch</div>
+      </div>
+
+      <div class="hazard-card dynamic">
+        <h3 style="color: var(--red);">Dynamic Hazard</h3>
+        <p class="hazard-desc">Output should change once (0→1 or 1→0) but changes multiple times.</p>
+        <div class="waveform">
+Expected:  ____/‾‾‾‾‾‾‾‾
+Actual:    ____/‾\_/‾‾‾‾
+              ↑ multiple</div>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Key insight:</strong> Static hazards occur in SOP circuits when switching between adjacent 1s (or 0s in POS) that are covered by different product terms. The variable that changes may momentarily make both terms 0.</p>
+    </div>
+  </section>
+
+  <!-- Detecting Hazards -->
+  <section class="section" id="detection">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </div>
+      <h2 class="section-title">Detecting Hazards</h2>
+      <a href="#detection" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Use the K-Map to detect static-1 hazards in SOP implementations:</p>
+    </div>
+
+    <div class="solution-box">
+      <h5>Detection Method (for SOP)</h5>
+      <ol>
+        <li>Create the K-Map for the function</li>
+        <li>Find adjacent 1s that are covered by <strong>different groups</strong></li>
+        <li>Each such pair indicates a potential static-1 hazard</li>
+        <li>The hazard occurs when switching between these adjacent cells</li>
+      </ol>
+    </div>
+
+    <p style="margin-top: 1rem;">Consider: <strong>F = A'C + BC</strong></p>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">AB\C</th>
+          <th>0</th>
+          <th>1</th>
+        </tr>
+        <tr>
+          <th>00</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-green">1</td>
+        </tr>
+        <tr>
+          <th>01</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-green">1</td>
+        </tr>
+        <tr>
+          <th>11</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-blue">1</td>
+        </tr>
+        <tr>
+          <th>10</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-amber">1</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="callout callout-warning">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Hazard detected!</strong> The cells at AB=01,C=1 and AB=11,C=1 are adjacent (B changes from 0→1), but covered by different groups (A'C vs BC). When B transitions, a glitch may occur.</p>
+    </div>
+  </section>
+
+  <!-- Eliminating Hazards -->
+  <section class="section" id="elimination">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2 class="section-title">Eliminating Hazards</h2>
+      <a href="#elimination" class="section-anchor">#</a>
+    </div>
+
+    <div class="solution-box">
+      <h5>Elimination Method</h5>
+      <ol>
+        <li>Identify all pairs of adjacent 1s in different groups</li>
+        <li>Add a <strong>redundant product term</strong> to cover each hazardous pair</li>
+        <li>The redundant term bridges the transition between groups</li>
+        <li>Result: logically equivalent, but hazard-free</li>
+      </ol>
+    </div>
+
+    <div class="comparison-row">
+      <div class="comparison-item">
+        <h5>Original (has hazard)</h5>
+        <p class="expr">F = A'C + BC</p>
+      </div>
+      <div class="comparison-item hazard-free">
+        <h5>Hazard-free</h5>
+        <p class="expr">F = A'C + BC + A'B</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Why it works:</strong> The redundant term A'B covers both cells (01,1 and 11,1). During the B transition, A'B remains 1 (since A=0 and B transitions through both states), preventing the glitch.</p>
+    </div>
+  </section>
+
+  <!-- Worked Example -->
+  <section class="section" id="example">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h2 class="section-title">Worked Example</h2>
+      <a href="#example" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Design a hazard-free circuit for: <strong>F(A,B,C,D) = Σm(1,3,5,7,8,9,12,13)</strong></p>
+    </div>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">AB\CD</th>
+          <th>00</th>
+          <th>01</th>
+          <th>11</th>
+          <th>10</th>
+        </tr>
+        <tr>
+          <th>00</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-green">1</td>
+          <td class="val-1 group-green">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>01</th>
+          <td class="val-0">0</td>
+          <td class="val-1 group-green">1</td>
+          <td class="val-1 group-green">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>11</th>
+          <td class="val-1 group-blue">1</td>
+          <td class="val-1 group-blue group-amber">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>10</th>
+          <td class="val-1 group-blue">1</td>
+          <td class="val-1 group-blue group-amber">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+      </table>
+    </div>
+
+    <p><strong>Minimum SOP:</strong> F = A'D + AC'D'</p>
+    
+    <p style="margin-top: 1rem;"><strong>Hazard analysis:</strong></p>
+    <ul style="line-height: 1.8; padding-left: 1.25rem;">
+      <li>Cells (11,01) and (11,00): Adjacent, both covered by AC'D' ✓ No hazard</li>
+      <li>Cells (01,01) and (11,01): Adjacent, A'D and AC'D' — <span style="color: var(--red);">HAZARD!</span></li>
+    </ul>
+
+    <div class="comparison-row">
+      <div class="comparison-item">
+        <h5>Minimum SOP</h5>
+        <p class="expr">F = A'D + AC'D'</p>
+      </div>
+      <div class="comparison-item hazard-free">
+        <h5>Hazard-free SOP</h5>
+        <p class="expr">F = A'D + AC'D' + BC'D</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Trade-off:</strong> Hazard-free circuits require additional gates (redundant terms). In high-speed synchronous designs, hazards are often acceptable since outputs are sampled at clock edges when they're stable.</p>
+    </div>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/kmap.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Karnaugh Maps</span>
+        <span class="related-card-cat">Detection method</span>
+      </a>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">SOP / POS Forms</span>
+        <span class="related-card-cat">Circuit structure</span>
+      </a>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Quine-McCluskey</span>
+        <span class="related-card-cat">Minimization</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Quine-McCluskey
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/arithmetic/full-adder.html' | relative_url }}">
+        Full Adder
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

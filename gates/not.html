@@ -152,18 +152,7 @@ group: gates
     </div>
 
     <div id="diagram-gate" class="diagram-box">
-      <svg viewBox="0 0 180 100" xmlns="http://www.w3.org/2000/svg" class="gate-svg">
-        <!-- NOT gate symbol (triangle + circle) -->
-        <path d="M 30,30 L 30,70 L 90,50 Z" fill="none" stroke="#1a5fb0" stroke-width="2"/>
-        <circle cx="95" cy="50" r="5" fill="none" stroke="#1a5fb0" stroke-width="2"/>
-        <!-- Input line -->
-        <line x1="10" y1="50" x2="30" y2="50" stroke="#1a5fb0" stroke-width="1.5"/>
-        <!-- Output line -->
-        <line x1="100" y1="50" x2="130" y2="50" stroke="#0a7c52" stroke-width="1.5"/>
-        <!-- Labels -->
-        <text x="5" y="53" fill="#4a5568" font-family="monospace" font-size="11">A</text>
-        <text x="135" y="53" fill="#0a7c52" font-family="monospace" font-size="11">Y</text>
-      </svg>
+      <img src="{{ '/diagrams/gates/not.png' | relative_url }}" alt="NOT Gate Logic Symbol" class="gate-svg" style="max-width: 400px; height: auto; position: relative; z-index: 1; background: white; padding: 20px; border-radius: 8px;">
     </div>
 
     <div id="diagram-cmos" class="diagram-box" style="display:none;">

@@ -1,0 +1,1172 @@
+---
+layout: null
+title: Karnaugh Maps
+nav: gates
+sidebar: kmap
+group: boolean
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Karnaugh Maps (K-Map) — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .kmap-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .kmap-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+  .kmap {
+    border-collapse: collapse;
+    margin: 0 auto;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+  }
+  .kmap th, .kmap td {
+    border: 2px solid var(--border2);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    min-width: 50px;
+  }
+  .kmap th {
+    background: var(--surface2);
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .kmap th.var-label {
+    background: transparent;
+    border: none;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .kmap td {
+    background: var(--surface);
+    font-weight: 500;
+  }
+  .kmap td.val-1 {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .kmap td.val-0 {
+    color: var(--text-faint);
+  }
+  .kmap td.grouped {
+    background: rgba(10, 124, 82, 0.15);
+  }
+  .kmap td.grouped-blue {
+    background: rgba(26, 95, 176, 0.15);
+  }
+  .kmap td.grouped-purple {
+    background: rgba(94, 53, 177, 0.15);
+  }
+  .kmap td.grouped-amber {
+    background: rgba(160, 98, 10, 0.15);
+  }
+  .kmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+  .kmap-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .kmap-legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .group-rules {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .group-rule {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+  }
+  .group-rule .rule-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .group-rule .rule-text {
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .step-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .step-box h4 {
+    color: var(--green);
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+  }
+  .step-box ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    line-height: 1.8;
+  }
+  .result-expr {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    background: var(--surface2);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    margin-top: 1rem;
+    display: inline-block;
+  }
+  /* K-Map Solver Styles */
+  .solver-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .solver-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .solver-controls label {
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .solver-controls select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .solver-btn {
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .solver-btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .solver-btn-primary:hover {
+    background: var(--green-dark);
+  }
+  .solver-btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .solver-btn-secondary:hover {
+    background: var(--border);
+  }
+  .solver-kmap {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+  .solver-kmap table {
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 1rem;
+  }
+  .solver-kmap th, .solver-kmap td {
+    border: 2px solid var(--border2);
+    padding: 0;
+    text-align: center;
+    min-width: 55px;
+    height: 55px;
+  }
+  .solver-kmap th {
+    background: var(--surface2);
+    font-weight: 600;
+    color: var(--text-dim);
+    padding: 0.5rem 0.75rem;
+    height: auto;
+  }
+  .solver-kmap th.var-label {
+    background: transparent;
+    border: none;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .solver-kmap td {
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .solver-kmap td:hover {
+    background: var(--surface2);
+  }
+  .solver-kmap td .cell-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    user-select: none;
+  }
+  .solver-kmap td .cell-value.val-0 { color: var(--text-faint); }
+  .solver-kmap td .cell-value.val-1 { color: var(--green); }
+  .solver-kmap td .cell-value.val-x { color: var(--amber); }
+  .solver-kmap td.group-0 { background: rgba(10, 124, 82, 0.2); }
+  .solver-kmap td.group-1 { background: rgba(26, 95, 176, 0.2); }
+  .solver-kmap td.group-2 { background: rgba(156, 39, 176, 0.2); }
+  .solver-kmap td.group-3 { background: rgba(255, 152, 0, 0.2); }
+  .solver-kmap td.group-4 { background: rgba(244, 67, 54, 0.2); }
+  .solver-kmap td.group-5 { background: rgba(0, 188, 212, 0.2); }
+  .solver-kmap td.group-6 { background: rgba(139, 195, 74, 0.2); }
+  .solver-kmap td.group-7 { background: rgba(121, 85, 72, 0.2); }
+  .solver-result {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--green-1);
+    border: 2px solid var(--green);
+    border-radius: var(--radius);
+  }
+  .solver-result-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  .solver-result-expr {
+    font-family: var(--mono);
+    font-size: 1.25rem;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .solver-groups {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .solver-group-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    font-family: var(--mono);
+  }
+  .solver-group-tag .group-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .solver-hint {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#solver">K-Map Solver</a></li>
+      <li><a href="#rules">Grouping Rules</a></li>
+      <li><a href="#2var">2-Variable K-Map</a></li>
+      <li><a href="#3var">3-Variable K-Map</a></li>
+      <li><a href="#4var">4-Variable K-Map</a></li>
+      <li><a href="#dont-care">Don't Care Conditions</a></li>
+      <li><a href="#pos">K-Map for POS</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/boolean/' | relative_url }}">Boolean Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Karnaugh Maps</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Minimization</span>
+      <span class="badge badge-blue">Visual Method</span>
+    </div>
+    <h1 class="page-title">Karnaugh Maps (K-Map)</h1>
+    <p class="page-subtitle">
+      Karnaugh maps provide a visual method for simplifying Boolean expressions. By grouping adjacent 1s in the map, you can quickly derive minimal SOP (Sum of Products) or POS (Product of Sums) expressions.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Invented by</p>
+        <p class="qf-value">Maurice Karnaugh (1953)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Variables supported</p>
+        <p class="qf-value">Practical up to 5-6</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Key concept</p>
+        <p class="qf-value">Gray code adjacency</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Result</p>
+        <p class="qf-value">Minimal two-level logic</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive K-Map Solver -->
+  <section class="section" id="solver">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+      </div>
+      <h2 class="section-title">Interactive K-Map Solver</h2>
+      <a href="#solver" class="section-anchor">#</a>
+    </div>
+
+    <div class="solver-container">
+      <div class="solver-controls">
+        <label for="var-select">Variables:</label>
+        <select id="var-select">
+          <option value="2">2 Variables (A, B)</option>
+          <option value="3">3 Variables (A, B, C)</option>
+          <option value="4" selected>4 Variables (A, B, C, D)</option>
+        </select>
+        <button class="solver-btn solver-btn-primary" id="solve-btn">Solve</button>
+        <button class="solver-btn solver-btn-secondary" id="clear-btn">Clear</button>
+        <button class="solver-btn solver-btn-secondary" id="random-btn">Random</button>
+      </div>
+
+      <p class="solver-hint">Click cells to toggle: 0 → 1 → X (don't care) → 0</p>
+
+      <div class="solver-kmap" id="kmap-grid">
+        <!-- Generated by JavaScript -->
+      </div>
+
+      <div class="solver-result" id="solver-result" style="display: none;">
+        <div class="solver-result-label">Minimized SOP Expression:</div>
+        <div class="solver-result-expr" id="result-expr">F = </div>
+        <div class="solver-groups" id="result-groups"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grouping Rules -->
+  <section class="section" id="rules">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Grouping Rules</h2>
+      <a href="#rules" class="section-anchor">#</a>
+    </div>
+
+    <div class="group-rules">
+      <div class="group-rule">
+        <div class="rule-icon">📦</div>
+        <div class="rule-text">Groups must be <strong>powers of 2</strong><br>(1, 2, 4, 8, 16...)</div>
+      </div>
+      <div class="group-rule">
+        <div class="rule-icon">🔲</div>
+        <div class="rule-text">Groups must be <strong>rectangular</strong><br>(squares or rectangles)</div>
+      </div>
+      <div class="group-rule">
+        <div class="rule-icon">🔗</div>
+        <div class="rule-text">Groups can <strong>wrap around</strong><br>edges (top↔bottom, left↔right)</div>
+      </div>
+      <div class="group-rule">
+        <div class="rule-icon">📈</div>
+        <div class="rule-text">Make groups as <strong>large as possible</strong></div>
+      </div>
+      <div class="group-rule">
+        <div class="rule-icon">🔄</div>
+        <div class="rule-text">Groups can <strong>overlap</strong></div>
+      </div>
+      <div class="group-rule">
+        <div class="rule-icon">✅</div>
+        <div class="rule-text">Every 1 must be in <strong>at least one group</strong></div>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Gray code ordering:</strong> Adjacent cells differ by only one variable — this is why grouping works! The order 00, 01, 11, 10 ensures single-bit changes.</p>
+    </div>
+  </section>
+
+  <!-- 2-Variable K-Map -->
+  <section class="section" id="2var">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">2-Variable K-Map</h2>
+      <a href="#2var" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The simplest K-Map with 2² = 4 cells. Example: F(A,B) = Σm(1,2,3)</p>
+    </div>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">A\B</th>
+          <th>0</th>
+          <th>1</th>
+        </tr>
+        <tr>
+          <th>0</th>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td class="val-1 grouped-blue">1</td>
+          <td class="val-1 grouped grouped-blue">1</td>
+        </tr>
+      </table>
+      <div class="kmap-legend">
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(10, 124, 82, 0.15);"></div>
+          <span>Group 1: B (vertical)</span>
+        </div>
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(26, 95, 176, 0.15);"></div>
+          <span>Group 2: A (horizontal)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-expr">F = A + B</div>
+  </section>
+
+  <!-- 3-Variable K-Map -->
+  <section class="section" id="3var">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+      </div>
+      <h2 class="section-title">3-Variable K-Map</h2>
+      <a href="#3var" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>A 2×4 map with 2³ = 8 cells. Note the Gray code ordering: 00, 01, 11, 10. Example: F(A,B,C) = Σm(0,2,4,5,6)</p>
+    </div>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">A\BC</th>
+          <th>00</th>
+          <th>01</th>
+          <th>11</th>
+          <th>10</th>
+        </tr>
+        <tr>
+          <th>0</th>
+          <td class="val-1 grouped">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td class="val-1 grouped-blue">1</td>
+          <td class="val-1 grouped-blue">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+      </table>
+      <div class="kmap-legend">
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(10, 124, 82, 0.15);"></div>
+          <span>Group 1: C' (wraps left↔right)</span>
+        </div>
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(26, 95, 176, 0.15);"></div>
+          <span>Group 2: A·B'</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-expr">F = C' + A·B'</div>
+  </section>
+
+  <!-- 4-Variable K-Map -->
+  <section class="section" id="4var">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+      </div>
+      <h2 class="section-title">4-Variable K-Map</h2>
+      <a href="#4var" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>A 4×4 map with 2⁴ = 16 cells. Both axes use Gray code. Example: F(A,B,C,D) = Σm(0,1,2,5,8,9,10)</p>
+    </div>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">AB\CD</th>
+          <th>00</th>
+          <th>01</th>
+          <th>11</th>
+          <th>10</th>
+        </tr>
+        <tr>
+          <th>00</th>
+          <td class="val-1 grouped">1</td>
+          <td class="val-1 grouped-blue">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+        <tr>
+          <th>01</th>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped-blue">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>11</th>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>10</th>
+          <td class="val-1 grouped">1</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+      </table>
+      <div class="kmap-legend">
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(10, 124, 82, 0.15);"></div>
+          <span>Group 1: B'·D' (4 corners!)</span>
+        </div>
+        <div class="kmap-legend-item">
+          <div class="kmap-legend-color" style="background: rgba(26, 95, 176, 0.15);"></div>
+          <span>Group 2: A'·C'·D</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-expr">F = B'·D' + A'·C'·D</div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Corner trick:</strong> All 4 corners are adjacent! They form a valid group because the K-Map wraps both horizontally AND vertically (like a torus).</p>
+    </div>
+  </section>
+
+  <!-- Don't Care Conditions -->
+  <section class="section" id="dont-care">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      </div>
+      <h2 class="section-title">Don't Care Conditions (X)</h2>
+      <a href="#dont-care" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p><strong>Don't care</strong> conditions (marked X or d) represent input combinations that either never occur or whose output doesn't matter. You can treat X as 0 or 1 — whichever gives simpler groupings.</p>
+    </div>
+
+    <div class="kmap-wrapper">
+      <table class="kmap">
+        <tr>
+          <th class="var-label">AB\CD</th>
+          <th>00</th>
+          <th>01</th>
+          <th>11</th>
+          <th>10</th>
+        </tr>
+        <tr>
+          <th>00</th>
+          <td class="val-1 grouped">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+        <tr>
+          <th>01</th>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td style="color: var(--amber);">X</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <th>11</th>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td style="color: var(--amber);" class="grouped">X</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+        <tr>
+          <th>10</th>
+          <td class="val-1 grouped">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1 grouped">1</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="step-box">
+      <h4>Strategy with Don't Cares</h4>
+      <ol>
+        <li>Include X in a group if it makes the group larger</li>
+        <li>Ignore X if it doesn't help simplification</li>
+        <li>Never group only X values (must include at least one required 1)</li>
+      </ol>
+    </div>
+
+    <div class="result-expr">F = D' (using X at position 1111 to extend group)</div>
+  </section>
+
+  <!-- K-Map for POS -->
+  <section class="section" id="pos">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </div>
+      <h2 class="section-title">K-Map for POS (Product of Sums)</h2>
+      <a href="#pos" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>To get <strong>POS</strong> form instead of SOP:</p>
+    </div>
+
+    <div class="step-box">
+      <h4>POS from K-Map</h4>
+      <ol>
+        <li>Group the <strong>0s</strong> instead of 1s</li>
+        <li>Write the term that makes each group 0</li>
+        <li>Complement each term (so it produces 1 when we want it)</li>
+        <li>AND all maxterms together</li>
+      </ol>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>When to use POS:</strong> If there are fewer 0s than 1s in the truth table, POS will be simpler. Also, POS maps directly to NOR-NOR implementations.</p>
+    </div>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/algebra.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Boolean Algebra</span>
+        <span class="related-card-cat">Foundation</span>
+      </a>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">SOP / POS Forms</span>
+        <span class="related-card-cat">Canonical forms</span>
+      </a>
+      <a href="{{ '/boolean/qmc.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Quine-McCluskey</span>
+        <span class="related-card-cat">Algorithmic method</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/boolean/algebra.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Boolean Algebra
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/boolean/sop-pos.html' | relative_url }}">
+        SOP / POS
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+<script>
+(function() {
+  // K-Map Solver Implementation
+  const varSelect = document.getElementById('var-select');
+  const solveBtn = document.getElementById('solve-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const randomBtn = document.getElementById('random-btn');
+  const kmapGrid = document.getElementById('kmap-grid');
+  const solverResult = document.getElementById('solver-result');
+  const resultExpr = document.getElementById('result-expr');
+  const resultGroups = document.getElementById('result-groups');
+
+  // Gray code order for K-Map
+  const gray2 = ['00', '01', '11', '10'];
+  const gray1 = ['0', '1'];
+  
+  // Variable names
+  const varNames = ['A', 'B', 'C', 'D'];
+  
+  // Cell values: 0, 1, or 'x' (don't care)
+  let cells = [];
+  let numVars = 4;
+
+  // Group colors
+  const groupColors = [
+    'rgba(10, 124, 82, 0.3)',
+    'rgba(26, 95, 176, 0.3)',
+    'rgba(156, 39, 176, 0.3)',
+    'rgba(255, 152, 0, 0.3)',
+    'rgba(244, 67, 54, 0.3)',
+    'rgba(0, 188, 212, 0.3)',
+    'rgba(139, 195, 74, 0.3)',
+    'rgba(121, 85, 72, 0.3)'
+  ];
+
+  function init() {
+    numVars = parseInt(varSelect.value);
+    const totalCells = Math.pow(2, numVars);
+    cells = new Array(totalCells).fill(0);
+    renderKMap();
+    solverResult.style.display = 'none';
+  }
+
+  function renderKMap() {
+    let html = '<table>';
+    
+    if (numVars === 2) {
+      // 2x2 K-Map: A\B
+      html += '<tr><th class="var-label">A\\B</th>';
+      for (let b = 0; b < 2; b++) html += `<th>${b}</th>`;
+      html += '</tr>';
+      for (let a = 0; a < 2; a++) {
+        html += `<tr><th>${a}</th>`;
+        for (let b = 0; b < 2; b++) {
+          const idx = a * 2 + b;
+          html += renderCell(idx);
+        }
+        html += '</tr>';
+      }
+    } else if (numVars === 3) {
+      // 2x4 K-Map: A\BC
+      html += '<tr><th class="var-label">A\\BC</th>';
+      for (const bc of gray2) html += `<th>${bc}</th>`;
+      html += '</tr>';
+      for (let a = 0; a < 2; a++) {
+        html += `<tr><th>${a}</th>`;
+        for (let bcIdx = 0; bcIdx < 4; bcIdx++) {
+          const bc = gray2[bcIdx];
+          const b = parseInt(bc[0]);
+          const c = parseInt(bc[1]);
+          const idx = a * 4 + b * 2 + c;
+          html += renderCell(idx);
+        }
+        html += '</tr>';
+      }
+    } else {
+      // 4x4 K-Map: AB\CD
+      html += '<tr><th class="var-label">AB\\CD</th>';
+      for (const cd of gray2) html += `<th>${cd}</th>`;
+      html += '</tr>';
+      for (let abIdx = 0; abIdx < 4; abIdx++) {
+        const ab = gray2[abIdx];
+        html += `<tr><th>${ab}</th>`;
+        for (let cdIdx = 0; cdIdx < 4; cdIdx++) {
+          const cd = gray2[cdIdx];
+          const a = parseInt(ab[0]);
+          const b = parseInt(ab[1]);
+          const c = parseInt(cd[0]);
+          const d = parseInt(cd[1]);
+          const idx = a * 8 + b * 4 + c * 2 + d;
+          html += renderCell(idx);
+        }
+        html += '</tr>';
+      }
+    }
+    
+    html += '</table>';
+    kmapGrid.innerHTML = html;
+    
+    // Add click handlers
+    kmapGrid.querySelectorAll('td').forEach(td => {
+      td.addEventListener('click', () => toggleCell(td));
+    });
+  }
+
+  function renderCell(idx) {
+    const val = cells[idx];
+    const display = val === 'x' ? 'X' : val;
+    const cls = val === 1 ? 'val-1' : (val === 'x' ? 'val-x' : 'val-0');
+    return `<td data-idx="${idx}"><span class="cell-value ${cls}">${display}</span></td>`;
+  }
+
+  function toggleCell(td) {
+    const idx = parseInt(td.dataset.idx);
+    if (cells[idx] === 0) cells[idx] = 1;
+    else if (cells[idx] === 1) cells[idx] = 'x';
+    else cells[idx] = 0;
+    
+    const span = td.querySelector('.cell-value');
+    span.textContent = cells[idx] === 'x' ? 'X' : cells[idx];
+    span.className = 'cell-value ' + (cells[idx] === 1 ? 'val-1' : (cells[idx] === 'x' ? 'val-x' : 'val-0'));
+    
+    // Clear groups when editing
+    kmapGrid.querySelectorAll('td').forEach(t => {
+      t.style.background = '';
+    });
+    solverResult.style.display = 'none';
+  }
+
+  function solve() {
+    const ones = [];
+    const dontCares = [];
+    
+    for (let i = 0; i < cells.length; i++) {
+      if (cells[i] === 1) ones.push(i);
+      else if (cells[i] === 'x') dontCares.push(i);
+    }
+    
+    if (ones.length === 0) {
+      resultExpr.textContent = 'F = 0';
+      resultGroups.innerHTML = '';
+      solverResult.style.display = 'block';
+      return;
+    }
+    
+    // Check if all cells are 1 or X
+    const allOnes = ones.length + dontCares.length === cells.length && ones.length > 0;
+    if (allOnes) {
+      resultExpr.textContent = 'F = 1';
+      resultGroups.innerHTML = '';
+      // Highlight all cells
+      kmapGrid.querySelectorAll('td').forEach(td => {
+        td.style.background = groupColors[0];
+      });
+      solverResult.style.display = 'block';
+      return;
+    }
+    
+    // Find prime implicants using Petrick's method simplified
+    const primeImplicants = findPrimeImplicants(ones, dontCares);
+    const essentialPIs = findEssentialPrimeImplicants(primeImplicants, ones);
+    
+    // Highlight groups
+    highlightGroups(essentialPIs);
+    
+    // Generate expression
+    const expr = generateExpression(essentialPIs);
+    resultExpr.textContent = 'F = ' + (expr || '0');
+    
+    // Show group tags
+    let groupsHtml = '';
+    essentialPIs.forEach((pi, i) => {
+      const term = piToTerm(pi);
+      groupsHtml += `<span class="solver-group-tag" style="background: ${groupColors[i % groupColors.length]}">
+        <span class="group-color" style="background: ${groupColors[i % groupColors.length].replace('0.3', '0.8')}"></span>
+        ${term}
+      </span>`;
+    });
+    resultGroups.innerHTML = groupsHtml;
+    
+    solverResult.style.display = 'block';
+  }
+
+  function findPrimeImplicants(ones, dontCares) {
+    const combined = [...ones, ...dontCares];
+    if (combined.length === 0) return [];
+    
+    // Generate all possible rectangular groups (powers of 2)
+    const allGroups = [];
+    const sizes = [];
+    for (let s = cells.length; s >= 1; s = s / 2) sizes.push(s);
+    
+    for (const size of sizes) {
+      const groups = generateGroupsOfSize(size, combined);
+      allGroups.push(...groups);
+    }
+    
+    // Filter to keep only groups that cover at least one required 1
+    const validGroups = allGroups.filter(g => 
+      g.cells.some(c => ones.includes(c))
+    );
+    
+    // Find prime implicants (groups not fully covered by a larger group)
+    const primeImplicants = [];
+    for (const group of validGroups) {
+      const isSubset = validGroups.some(other => 
+        other.cells.length > group.cells.length &&
+        group.cells.every(c => other.cells.includes(c))
+      );
+      if (!isSubset) {
+        // Check if this PI is not a duplicate
+        const isDupe = primeImplicants.some(pi => 
+          pi.cells.length === group.cells.length &&
+          pi.cells.every(c => group.cells.includes(c))
+        );
+        if (!isDupe) primeImplicants.push(group);
+      }
+    }
+    
+    return primeImplicants;
+  }
+
+  function generateGroupsOfSize(size, validCells) {
+    const groups = [];
+    const rows = numVars <= 3 ? 2 : 4;
+    const cols = numVars === 2 ? 2 : 4;
+    
+    // Possible rectangular dimensions for this size
+    const dims = [];
+    for (let h = 1; h <= rows; h *= 2) {
+      for (let w = 1; w <= cols; w *= 2) {
+        if (h * w === size) dims.push([h, w]);
+      }
+    }
+    
+    for (const [h, w] of dims) {
+      for (let startRow = 0; startRow < rows; startRow++) {
+        for (let startCol = 0; startCol < cols; startCol++) {
+          const groupCells = [];
+          let valid = true;
+          
+          for (let dr = 0; dr < h && valid; dr++) {
+            for (let dc = 0; dc < w && valid; dc++) {
+              const r = (startRow + dr) % rows;
+              const c = (startCol + dc) % cols;
+              const idx = getIndex(r, c);
+              if (!validCells.includes(idx)) {
+                valid = false;
+              } else {
+                groupCells.push(idx);
+              }
+            }
+          }
+          
+          if (valid && groupCells.length === size) {
+            groups.push({ cells: groupCells.sort((a,b) => a-b), rows: h, cols: w });
+          }
+        }
+      }
+    }
+    
+    return groups;
+  }
+
+  function getIndex(row, col) {
+    if (numVars === 2) {
+      return row * 2 + col;
+    } else if (numVars === 3) {
+      const a = row;
+      const bc = gray2[col];
+      const b = parseInt(bc[0]);
+      const c = parseInt(bc[1]);
+      return a * 4 + b * 2 + c;
+    } else {
+      const ab = gray2[row];
+      const cd = gray2[col];
+      const a = parseInt(ab[0]);
+      const b = parseInt(ab[1]);
+      const c = parseInt(cd[0]);
+      const d = parseInt(cd[1]);
+      return a * 8 + b * 4 + c * 2 + d;
+    }
+  }
+
+  function getRowCol(idx) {
+    if (numVars === 2) {
+      return [Math.floor(idx / 2), idx % 2];
+    } else if (numVars === 3) {
+      const a = Math.floor(idx / 4);
+      const b = Math.floor((idx % 4) / 2);
+      const c = idx % 2;
+      const bc = '' + b + c;
+      return [a, gray2.indexOf(bc)];
+    } else {
+      const a = Math.floor(idx / 8);
+      const b = Math.floor((idx % 8) / 4);
+      const c = Math.floor((idx % 4) / 2);
+      const d = idx % 2;
+      const ab = '' + a + b;
+      const cd = '' + c + d;
+      return [gray2.indexOf(ab), gray2.indexOf(cd)];
+    }
+  }
+
+  function findEssentialPrimeImplicants(primeImplicants, ones) {
+    if (primeImplicants.length === 0) return [];
+    
+    const covered = new Set();
+    const essential = [];
+    
+    // Find essential PIs (only PI covering a particular 1)
+    for (const one of ones) {
+      const covering = primeImplicants.filter(pi => pi.cells.includes(one));
+      if (covering.length === 1 && !essential.includes(covering[0])) {
+        essential.push(covering[0]);
+        covering[0].cells.forEach(c => covered.add(c));
+      }
+    }
+    
+    // Cover remaining 1s with smallest number of largest PIs (greedy)
+    const uncovered = ones.filter(o => !covered.has(o));
+    const remaining = primeImplicants.filter(pi => !essential.includes(pi));
+    
+    // Sort by size (largest first) then by how many uncovered cells they cover
+    remaining.sort((a, b) => {
+      const aCovers = a.cells.filter(c => uncovered.includes(c)).length;
+      const bCovers = b.cells.filter(c => uncovered.includes(c)).length;
+      if (bCovers !== aCovers) return bCovers - aCovers;
+      return b.cells.length - a.cells.length;
+    });
+    
+    for (const pi of remaining) {
+      const coversNew = pi.cells.some(c => uncovered.includes(c) && !covered.has(c));
+      if (coversNew) {
+        essential.push(pi);
+        pi.cells.forEach(c => covered.add(c));
+      }
+      if (ones.every(o => covered.has(o))) break;
+    }
+    
+    return essential;
+  }
+
+  function highlightGroups(groups) {
+    // Clear all
+    kmapGrid.querySelectorAll('td').forEach(td => {
+      td.style.background = '';
+    });
+    
+    // Apply group colors
+    groups.forEach((group, gIdx) => {
+      const color = groupColors[gIdx % groupColors.length];
+      group.cells.forEach(cellIdx => {
+        const td = kmapGrid.querySelector(`td[data-idx="${cellIdx}"]`);
+        if (td) {
+          const existing = td.style.background;
+          if (existing) {
+            // Blend colors for overlapping groups
+            td.style.background = `linear-gradient(135deg, ${existing.split(',').slice(0,3).join(',')}, 0.4), ${color})`;
+          } else {
+            td.style.background = color;
+          }
+        }
+      });
+    });
+  }
+
+  function piToTerm(pi) {
+    // Determine which variables are constant across all cells in the group
+    const bits = pi.cells.map(c => c.toString(2).padStart(numVars, '0'));
+    let term = '';
+    
+    for (let v = 0; v < numVars; v++) {
+      const bitVals = bits.map(b => b[v]);
+      if (bitVals.every(bv => bv === '0')) {
+        term += varNames[v] + "'";
+      } else if (bitVals.every(bv => bv === '1')) {
+        term += varNames[v];
+      }
+      // If mixed, variable is eliminated
+    }
+    
+    return term || '1';
+  }
+
+  function generateExpression(groups) {
+    const terms = groups.map(g => piToTerm(g));
+    return terms.join(' + ');
+  }
+
+  function clear() {
+    cells = new Array(cells.length).fill(0);
+    renderKMap();
+    solverResult.style.display = 'none';
+  }
+
+  function random() {
+    for (let i = 0; i < cells.length; i++) {
+      const r = Math.random();
+      if (r < 0.4) cells[i] = 0;
+      else if (r < 0.85) cells[i] = 1;
+      else cells[i] = 'x';
+    }
+    renderKMap();
+    solverResult.style.display = 'none';
+  }
+
+  // Event listeners
+  varSelect.addEventListener('change', init);
+  solveBtn.addEventListener('click', solve);
+  clearBtn.addEventListener('click', clear);
+  randomBtn.addEventListener('click', random);
+
+  // Initialize
+  init();
+})();
+</script>
+</body>
+</html>

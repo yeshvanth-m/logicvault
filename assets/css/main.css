@@ -23,7 +23,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 15px; scroll-behavior: smooth; }
+html { font-size: 16px; scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -440,7 +440,7 @@ pre.code-body {
   padding: 1.1rem 1.25rem;
   overflow-x: auto;
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   line-height: 1.75;
   color: var(--text);
   margin: 0;

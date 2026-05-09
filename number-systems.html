@@ -1,0 +1,594 @@
+---
+layout: null
+title: Number Systems
+nav: basics
+sidebar: number-systems
+group: basics
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Number Systems — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .base-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .base-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .base-card h4 {
+    color: var(--green);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .base-card .base-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0.5rem 0;
+  }
+  .base-card .base-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .converter-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .converter-input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+  }
+  .converter-input-group label {
+    font-weight: 600;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .converter-input-group input {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: var(--mono);
+    width: 200px;
+  }
+  .converter-input-group select {
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+  }
+  .converter-btn {
+    padding: 0.6rem 1.25rem;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .converter-btn:hover {
+    background: var(--green-dark);
+  }
+  .converter-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .converter-result {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+  .converter-result-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 0.25rem;
+  }
+  .converter-result-value {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--green);
+    word-break: break-all;
+  }
+  .conversion-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .conversion-table th, .conversion-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+  .conversion-table th {
+    background: var(--surface2);
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .conversion-table td {
+    background: var(--surface);
+  }
+  .conversion-table tr:hover td {
+    background: var(--green-1);
+  }
+  .method-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .method-box h4 {
+    color: var(--green);
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+  }
+  .method-box .step {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .method-box .step:last-child {
+    border-bottom: none;
+  }
+  .method-box .step-comment {
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    margin-left: 1rem;
+  }
+  .powers-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  .power-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    text-align: center;
+  }
+  .power-cell .exp {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+  .power-cell .val {
+    color: var(--green);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#converter">Number Converter</a></li>
+      <li><a href="#bases">Common Bases</a></li>
+      <li><a href="#binary">Binary (Base 2)</a></li>
+      <li><a href="#hex">Hexadecimal (Base 16)</a></li>
+      <li><a href="#conversions">Conversion Methods</a></li>
+      <li><a href="#reference">Quick Reference</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Number Systems</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Fundamentals</span>
+      <span class="badge badge-blue">Conversions</span>
+    </div>
+    <h1 class="page-title">Number Systems</h1>
+    <p class="page-subtitle">
+      Digital systems use different number bases. Understanding binary, octal, decimal, and hexadecimal representations is essential for working with digital logic and computer systems.
+    </p>
+  </div>
+
+  <!-- Interactive Converter -->
+  <section class="section" id="converter">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <h2 class="section-title">Number Converter</h2>
+      <a href="#converter" class="section-anchor">#</a>
+    </div>
+
+    <div class="converter-box">
+      <div class="converter-input-group">
+        <div>
+          <label for="num-input">Enter Number</label>
+          <input type="text" id="num-input" placeholder="e.g., 255 or 1010" />
+        </div>
+        <div>
+          <label for="base-select">Input Base</label>
+          <select id="base-select">
+            <option value="2">Binary (2)</option>
+            <option value="8">Octal (8)</option>
+            <option value="10" selected>Decimal (10)</option>
+            <option value="16">Hexadecimal (16)</option>
+          </select>
+        </div>
+        <button class="converter-btn" id="convert-btn">Convert</button>
+      </div>
+
+      <div class="converter-results" id="converter-results">
+        <div class="converter-result">
+          <div class="converter-result-label">Binary (Base 2)</div>
+          <div class="converter-result-value" id="result-bin">—</div>
+        </div>
+        <div class="converter-result">
+          <div class="converter-result-label">Octal (Base 8)</div>
+          <div class="converter-result-value" id="result-oct">—</div>
+        </div>
+        <div class="converter-result">
+          <div class="converter-result-label">Decimal (Base 10)</div>
+          <div class="converter-result-value" id="result-dec">—</div>
+        </div>
+        <div class="converter-result">
+          <div class="converter-result-label">Hexadecimal (Base 16)</div>
+          <div class="converter-result-value" id="result-hex">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Common Bases -->
+  <section class="section" id="bases">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Common Number Bases</h2>
+      <a href="#bases" class="section-anchor">#</a>
+    </div>
+
+    <div class="base-grid">
+      <div class="base-card">
+        <h4>Binary</h4>
+        <div class="base-num">Base 2</div>
+        <div class="base-desc">Digits: 0, 1<br>Used by all digital circuits</div>
+      </div>
+      <div class="base-card">
+        <h4>Octal</h4>
+        <div class="base-num">Base 8</div>
+        <div class="base-desc">Digits: 0–7<br>Compact binary (3 bits/digit)</div>
+      </div>
+      <div class="base-card">
+        <h4>Decimal</h4>
+        <div class="base-num">Base 10</div>
+        <div class="base-desc">Digits: 0–9<br>Human-readable standard</div>
+      </div>
+      <div class="base-card">
+        <h4>Hexadecimal</h4>
+        <div class="base-num">Base 16</div>
+        <div class="base-desc">Digits: 0–9, A–F<br>Compact binary (4 bits/digit)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Binary -->
+  <section class="section" id="binary">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+      </div>
+      <h2 class="section-title">Binary (Base 2)</h2>
+      <a href="#binary" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Binary is the native language of digital circuits. Each digit (bit) represents a power of 2.</p>
+    </div>
+
+    <h4 style="margin-top: 1.5rem; color: var(--text);">Powers of 2</h4>
+    <div class="powers-table">
+      <div class="power-cell"><div class="exp">2⁷</div><div class="val">128</div></div>
+      <div class="power-cell"><div class="exp">2⁶</div><div class="val">64</div></div>
+      <div class="power-cell"><div class="exp">2⁵</div><div class="val">32</div></div>
+      <div class="power-cell"><div class="exp">2⁴</div><div class="val">16</div></div>
+      <div class="power-cell"><div class="exp">2³</div><div class="val">8</div></div>
+      <div class="power-cell"><div class="exp">2²</div><div class="val">4</div></div>
+      <div class="power-cell"><div class="exp">2¹</div><div class="val">2</div></div>
+      <div class="power-cell"><div class="exp">2⁰</div><div class="val">1</div></div>
+    </div>
+
+    <div class="method-box">
+      <h4>Example: 10110101₂ to Decimal</h4>
+      <div class="step">1×128 + 0×64 + 1×32 + 1×16 + 0×8 + 1×4 + 0×2 + 1×1</div>
+      <div class="step">= 128 + 32 + 16 + 4 + 1</div>
+      <div class="step">= <strong>181₁₀</strong></div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Bit positions:</strong> Bits are numbered from right (LSB = bit 0) to left (MSB). An 8-bit value uses bits 0–7.</p>
+    </div>
+  </section>
+
+  <!-- Hexadecimal -->
+  <section class="section" id="hex">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
+      </div>
+      <h2 class="section-title">Hexadecimal (Base 16)</h2>
+      <a href="#hex" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Hexadecimal provides a compact way to represent binary. Each hex digit represents exactly 4 bits (a nibble).</p>
+    </div>
+
+    <table class="conversion-table" style="max-width: 500px;">
+      <thead>
+        <tr><th>Hex</th><th>Decimal</th><th>Binary</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>0</td><td>0000</td></tr>
+        <tr><td>1</td><td>1</td><td>0001</td></tr>
+        <tr><td>2</td><td>2</td><td>0010</td></tr>
+        <tr><td>3</td><td>3</td><td>0011</td></tr>
+        <tr><td>4</td><td>4</td><td>0100</td></tr>
+        <tr><td>5</td><td>5</td><td>0101</td></tr>
+        <tr><td>6</td><td>6</td><td>0110</td></tr>
+        <tr><td>7</td><td>7</td><td>0111</td></tr>
+        <tr><td>8</td><td>8</td><td>1000</td></tr>
+        <tr><td>9</td><td>9</td><td>1001</td></tr>
+        <tr><td>A</td><td>10</td><td>1010</td></tr>
+        <tr><td>B</td><td>11</td><td>1011</td></tr>
+        <tr><td>C</td><td>12</td><td>1100</td></tr>
+        <tr><td>D</td><td>13</td><td>1101</td></tr>
+        <tr><td>E</td><td>14</td><td>1110</td></tr>
+        <tr><td>F</td><td>15</td><td>1111</td></tr>
+      </tbody>
+    </table>
+
+    <div class="method-box">
+      <h4>Example: 0xB5 to Binary</h4>
+      <div class="step">B = 1011 <span class="step-comment">(11 in decimal)</span></div>
+      <div class="step">5 = 0101 <span class="step-comment">(5 in decimal)</span></div>
+      <div class="step">0xB5 = <strong>10110101₂</strong></div>
+    </div>
+  </section>
+
+  <!-- Conversion Methods -->
+  <section class="section" id="conversions">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <h2 class="section-title">Conversion Methods</h2>
+      <a href="#conversions" class="section-anchor">#</a>
+    </div>
+
+    <div class="method-box">
+      <h4>Decimal → Binary (Repeated Division)</h4>
+      <div class="step">181 ÷ 2 = 90 remainder <strong>1</strong> <span class="step-comment">(LSB)</span></div>
+      <div class="step">90 ÷ 2 = 45 remainder <strong>0</strong></div>
+      <div class="step">45 ÷ 2 = 22 remainder <strong>1</strong></div>
+      <div class="step">22 ÷ 2 = 11 remainder <strong>0</strong></div>
+      <div class="step">11 ÷ 2 = 5 remainder <strong>1</strong></div>
+      <div class="step">5 ÷ 2 = 2 remainder <strong>1</strong></div>
+      <div class="step">2 ÷ 2 = 1 remainder <strong>0</strong></div>
+      <div class="step">1 ÷ 2 = 0 remainder <strong>1</strong> <span class="step-comment">(MSB)</span></div>
+      <div class="step">Read up: 181₁₀ = <strong>10110101₂</strong></div>
+    </div>
+
+    <div class="method-box">
+      <h4>Binary → Hex (Group by 4)</h4>
+      <div class="step">10110101₂</div>
+      <div class="step">= 1011 | 0101 <span class="step-comment">(group from right)</span></div>
+      <div class="step">= B | 5</div>
+      <div class="step">= <strong>0xB5</strong></div>
+    </div>
+
+    <div class="method-box">
+      <h4>Binary → Octal (Group by 3)</h4>
+      <div class="step">10110101₂</div>
+      <div class="step">= 10 | 110 | 101 <span class="step-comment">(group from right, pad left)</span></div>
+      <div class="step">= 010 | 110 | 101</div>
+      <div class="step">= 2 | 6 | 5</div>
+      <div class="step">= <strong>265₈</strong></div>
+    </div>
+  </section>
+
+  <!-- Quick Reference -->
+  <section class="section" id="reference">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Quick Reference (0–15)</h2>
+      <a href="#reference" class="section-anchor">#</a>
+    </div>
+
+    <table class="conversion-table">
+      <thead>
+        <tr><th>Decimal</th><th>Binary</th><th>Octal</th><th>Hex</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>0000</td><td>0</td><td>0</td></tr>
+        <tr><td>1</td><td>0001</td><td>1</td><td>1</td></tr>
+        <tr><td>2</td><td>0010</td><td>2</td><td>2</td></tr>
+        <tr><td>3</td><td>0011</td><td>3</td><td>3</td></tr>
+        <tr><td>4</td><td>0100</td><td>4</td><td>4</td></tr>
+        <tr><td>5</td><td>0101</td><td>5</td><td>5</td></tr>
+        <tr><td>6</td><td>0110</td><td>6</td><td>6</td></tr>
+        <tr><td>7</td><td>0111</td><td>7</td><td>7</td></tr>
+        <tr><td>8</td><td>1000</td><td>10</td><td>8</td></tr>
+        <tr><td>9</td><td>1001</td><td>11</td><td>9</td></tr>
+        <tr><td>10</td><td>1010</td><td>12</td><td>A</td></tr>
+        <tr><td>11</td><td>1011</td><td>13</td><td>B</td></tr>
+        <tr><td>12</td><td>1100</td><td>14</td><td>C</td></tr>
+        <tr><td>13</td><td>1101</td><td>15</td><td>D</td></tr>
+        <tr><td>14</td><td>1110</td><td>16</td><td>E</td></tr>
+        <tr><td>15</td><td>1111</td><td>17</td><td>F</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="{{ '/boolean/algebra.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Boolean Algebra</span>
+        <span class="related-card-cat">Logic foundation</span>
+      </a>
+      <a href="{{ '/gates/' | relative_url }}" class="related-card">
+        <span class="related-card-name">Logic Gates</span>
+        <span class="related-card-cat">Binary operations</span>
+      </a>
+      <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Full Adder</span>
+        <span class="related-card-cat">Binary arithmetic</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/gates/' | relative_url }}">
+        Logic Gates
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+<script>
+(function() {
+  const numInput = document.getElementById('num-input');
+  const baseSelect = document.getElementById('base-select');
+  const convertBtn = document.getElementById('convert-btn');
+  const resultBin = document.getElementById('result-bin');
+  const resultOct = document.getElementById('result-oct');
+  const resultDec = document.getElementById('result-dec');
+  const resultHex = document.getElementById('result-hex');
+
+  function convert() {
+    const input = numInput.value.trim().toUpperCase();
+    const base = parseInt(baseSelect.value);
+    
+    if (!input) {
+      resultBin.textContent = '—';
+      resultOct.textContent = '—';
+      resultDec.textContent = '—';
+      resultHex.textContent = '—';
+      return;
+    }
+
+    // Validate input for the given base
+    let validChars;
+    switch (base) {
+      case 2: validChars = /^[01]+$/; break;
+      case 8: validChars = /^[0-7]+$/; break;
+      case 10: validChars = /^[0-9]+$/; break;
+      case 16: validChars = /^[0-9A-F]+$/; break;
+    }
+
+    if (!validChars.test(input)) {
+      resultBin.textContent = 'Invalid input';
+      resultOct.textContent = 'Invalid input';
+      resultDec.textContent = 'Invalid input';
+      resultHex.textContent = 'Invalid input';
+      return;
+    }
+
+    // Parse to decimal first
+    const decimal = parseInt(input, base);
+    
+    if (isNaN(decimal) || decimal < 0) {
+      resultBin.textContent = 'Invalid input';
+      resultOct.textContent = 'Invalid input';
+      resultDec.textContent = 'Invalid input';
+      resultHex.textContent = 'Invalid input';
+      return;
+    }
+
+    // Convert to all bases
+    resultBin.textContent = decimal.toString(2);
+    resultOct.textContent = decimal.toString(8);
+    resultDec.textContent = decimal.toString(10);
+    resultHex.textContent = decimal.toString(16).toUpperCase();
+  }
+
+  convertBtn.addEventListener('click', convert);
+  numInput.addEventListener('keypress', e => { if (e.key === 'Enter') convert(); });
+  
+  // Also convert on input change for live preview
+  numInput.addEventListener('input', convert);
+  baseSelect.addEventListener('change', convert);
+})();
+</script>
+</body>
+</html>
