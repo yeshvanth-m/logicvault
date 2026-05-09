@@ -1,7 +1,7 @@
 title: LogicVault
 description: A comprehensive vault of digital logic documentation and experiments
 baseurl: "/logicvault"
-url: "https://YOUR_GITHUB_USERNAME.github.io"  # Replace with your actual username
+url: "https://yeshvanth-m.github.io"
 
 # Build settings
 markdown: kramdown
