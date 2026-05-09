@@ -1,0 +1,77 @@
+title: LogicVault
+description: A comprehensive vault of digital logic documentation and experiments
+baseurl: "/logicvault"
+url: "https://YOUR_GITHUB_USERNAME.github.io"  # Replace with your actual username
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:path/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
+
+# Navigation structure
+nav:
+  - title: "Getting Started"
+    items:
+      - title: "Introduction"
+        url: "/docs/intro"
+      - title: "Prerequisites"
+        url: "/docs/prerequisites"
+      - title: "Glossary"
+        url: "/docs/glossary"
+        
+  - title: "Combinational Logic"
+    items:
+      - title: "Basic Gates"
+        subitems:
+          - title: "AND Gate"
+            url: "/docs/gates/and"
+          - title: "OR Gate"
+            url: "/docs/gates/or"
+          - title: "NOT Gate"
+            url: "/docs/gates/not"
+      - title: "Multiplexers"
+        subitems:
+          - title: "2-to-1 MUX"
+            url: "/docs/mux/2to1"
+      - title: "Arithmetic"
+        subitems:
+          - title: "Half Adder"
+            url: "/docs/arithmetic/half-adder"
+          - title: "Full Adder"
+            url: "/docs/arithmetic/full-adder"
+          - title: "Ripple Carry Adder"
+            url: "/docs/arithmetic/ripple-carry"
+            
+  - title: "Sequential Logic"
+    items:
+      - title: "Latches"
+        subitems:
+          - title: "SR Latch"
+            url: "/docs/latches/sr"
+      - title: "Flip-Flops"
+        subitems:
+          - title: "D Flip-Flop"
+            url: "/docs/flipflops/d"
+
+# Exclude from build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .git

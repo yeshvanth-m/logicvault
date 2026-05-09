@@ -1,0 +1,293 @@
+---
+layout: null
+title: XOR Gate
+nav: gates
+sidebar: xor
+group: gates
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>XOR Gate — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quick-facts">Quick Facts</a></li>
+      <li><a href="#truth-table">Truth Table</a></li>
+      <li><a href="#boolean">Boolean Expression</a></li>
+      <li><a href="#circuit">Circuit Diagram</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#related">Related Circuits</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="./">Logic Gates</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">XOR Gate</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Combinational</span>
+      <span class="badge badge-red">Arithmetic</span>
+    </div>
+    <h1 class="page-title">XOR Gate (Exclusive OR)</h1>
+    <p class="page-subtitle">
+      The XOR gate outputs 1 when inputs differ. Essential for arithmetic operations, parity, and error detection circuits.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Inputs</p>
+        <p class="qf-value">2+ (typically 2)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Outputs</p>
+        <p class="qf-value">1 (Y)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Transistor count</p>
+        <p class="qf-value">6-14 (depends on impl)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Logic depth</p>
+        <p class="qf-value">2-3 levels</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Circuit type</p>
+        <p class="qf-value">Combinational</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Symbol</p>
+        <p class="qf-value">A ⊕ B</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Truth Table -->
+  <section class="section" id="truth-table">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Truth Table</h2>
+      <a href="#truth-table" class="section-anchor">#</a>
+    </div>
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>A</th><th>B</th>
+            <th class="out-col divider">Y</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0 out-col">0</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1 out-col">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0 out-col">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Boolean Expression -->
+  <section class="section" id="boolean">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+      </div>
+      <h2 class="section-title">Boolean Expression</h2>
+      <a href="#boolean" class="section-anchor">#</a>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Output</p>
+      <p class="bool-expr">
+        <span class="out">Y</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span>
+      </p>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Key insight:</strong> XOR is the sum bit in adders (A ⊕ B ⊕ Cin) and is associative, making it ideal for parity trees.</p>
+    </div>
+  </section>
+
+  <!-- Circuit Diagram -->
+  <section class="section" id="circuit">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/><path d="M6 8H3M21 16h-3"/></svg>
+      </div>
+      <h2 class="section-title">Circuit Diagram</h2>
+      <a href="#circuit" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-tabs">
+      <button class="dtab active" onclick="switchDiagram(this,'gate')">Logic Symbol</button>
+      <button class="dtab" onclick="switchDiagram(this,'cmos')">Boolean Form</button>
+    </div>
+
+    <div id="diagram-gate" class="diagram-box">
+      <svg viewBox="0 0 180 100" xmlns="http://www.w3.org/2000/svg" class="gate-svg">
+        <!-- XOR gate symbol (OR with extra curve) -->
+        <path d="M 25,20 Q 35,20 45,50 Q 35,80 25,80" fill="none" stroke="#999" stroke-width="1.5"/>
+        <path d="M 30,20 Q 40,20 50,50 Q 40,80 30,80 Q 50,80 70,80 A 30,30 0 0,0 70,20 Q 50,20 30,20 Z" fill="none" stroke="#1a5fb0" stroke-width="2"/>
+        <!-- Input lines -->
+        <line x1="10" y1="35" x2="35" y2="35" stroke="#1a5fb0" stroke-width="1.5"/>
+        <line x1="10" y1="65" x2="35" y2="65" stroke="#1a5fb0" stroke-width="1.5"/>
+        <!-- Output line -->
+        <line x1="100" y1="50" x2="130" y2="50" stroke="#0a7c52" stroke-width="1.5"/>
+        <!-- Labels -->
+        <text x="5" y="38" fill="#4a5568" font-family="monospace" font-size="11">A</text>
+        <text x="5" y="68" fill="#4a5568" font-family="monospace" font-size="11">B</text>
+        <text x="135" y="53" fill="#0a7c52" font-family="monospace" font-size="11">Y</text>
+      </svg>
+    </div>
+
+    <div id="diagram-cmos" class="diagram-box" style="display:none;">
+      <svg viewBox="0 0 280 120" xmlns="http://www.w3.org/2000/svg">
+        <rect width="280" height="120" fill="#f8f9fb"/>
+        <text x="140" y="30" fill="#1a5fb0" font-family="monospace" font-size="12" text-anchor="middle" font-weight="bold">XOR = A'B + AB'</text>
+        <text x="140" y="50" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">Requires 6-14 transistors</text>
+        <text x="140" y="70" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">Used in: Full Adders, Parity Checkers</text>
+        <text x="140" y="90" fill="#666" font-family="monospace" font-size="11" text-anchor="middle">Alternative: Transmission Gate implementation</text>
+      </svg>
+    </div>
+
+    <div class="prose">
+      <p><strong>CMOS Implementation:</strong> XOR can be implemented using transmission gates (6T) or standard CMOS logic (12-14T). The transmission gate approach is more efficient.</p>
+    </div>
+  </section>
+
+  <!-- RTL (Verilog / VHDL) -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">xor_gate.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="kw">module</span> xor_gate (
+    <span class="kw">input</span>  <span class="sig">a</span>,
+    <span class="kw">input</span>  <span class="sig">b</span>,
+    <span class="kw">output</span> <span class="sig">y</span>
+);
+    <span class="kw">assign</span> <span class="sig">y</span> = <span class="sig">a</span> ^ <span class="sig">b</span>;
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">xor_gate.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.ALL;
+
+<span class="kw">entity</span> <span class="sig">xor_gate</span> <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span> : <span class="kw">in</span>  STD_LOGIC;
+        <span class="port">b</span> : <span class="kw">in</span>  STD_LOGIC;
+        <span class="port">y</span> : <span class="kw">out</span> STD_LOGIC
+    );
+<span class="kw">end</span> <span class="kw">entity</span>;
+
+<span class="kw">architecture</span> <span class="sig">dataflow</span> <span class="kw">of</span> <span class="sig">xor_gate</span> <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">y</span> &lt;= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>;
+<span class="kw">end</span> <span class="kw">architecture</span>;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Related Circuits -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Circuits</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      <a href="xnor.html" class="related-card">
+        <span class="related-card-name">XNOR Gate</span>
+        <span class="related-card-cat">Complement</span>
+      </a>
+      <a href="../_docs/arithmetic/full-adder.md" class="related-card">
+        <span class="related-card-name">Full Adder</span>
+        <span class="related-card-cat">Uses XOR</span>
+      </a>
+      <a href="../edc/parity-gen.html" class="related-card">
+        <span class="related-card-name">Parity Generator</span>
+        <span class="related-card-cat">XOR tree</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/gates/nor.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        NOR Gate
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/gates/xnor.html' | relative_url }}">
+        XNOR Gate
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div><!-- .layout -->
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

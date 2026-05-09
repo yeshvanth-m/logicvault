@@ -1,0 +1,17 @@
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand">LogicVault</span>
+    <span class="version">v1.0</span>
+  </div>
+  <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <nav class="topnav">
+    <a href="{{ '/' | relative_url }}" {% if page.nav == 'home' %}class="active"{% endif %}>Home</a>
+    <a href="{{ '/gates/and.html' | relative_url }}" {% if page.nav == 'gates' %}class="active"{% endif %}>Gates</a>
+    <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" {% if page.nav == 'circuits' %}class="active"{% endif %}>Circuits</a>
+    <a href="#about">About</a>
+  </nav>
+</header>

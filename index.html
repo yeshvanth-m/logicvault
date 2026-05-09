@@ -1,0 +1,488 @@
+---
+layout: null
+title: LogicVault - Digital Logic Design Reference
+nav: home
+sidebar: home
+group: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogicVault - Digital Logic Design Reference</title>
+  <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+  <style>
+    body {
+      background: #fafbfc;
+    }
+    
+    .main {
+      background: #fafbfc;
+    }
+    
+    /* Enhanced Topbar */
+    .topbar {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-bottom: 1px solid #e1e5eb;
+    }
+    
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .topbar-brand .brand {
+      font-size: 1.35rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #0a7c52 0%, #0e9e6a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    
+    .topbar-brand .version {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: white;
+      background: #0a7c52;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    
+    .topnav {
+      display: flex;
+      gap: 0.25rem;
+      margin-left: 2rem;
+    }
+    
+    .topnav a {
+      padding: 0.5rem 1rem;
+      color: #4a5568;
+      text-decoration: none;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+    
+    .topnav a:hover {
+      background: rgba(10, 124, 82, 0.08);
+      color: #0a7c52;
+    }
+    
+    .topnav a.active {
+      background: rgba(10, 124, 82, 0.12);
+      color: #0a7c52;
+      font-weight: 600;
+    }
+    
+    .sidebar-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #4a5568;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    
+    .sidebar-toggle:hover {
+      background: rgba(10, 124, 82, 0.08);
+      color: #0a7c52;
+    }
+    
+    @media (max-width: 968px) {
+      .topnav {
+        display: none;
+      }
+      
+      .sidebar-toggle {
+        display: block;
+      }
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, #0a7c52 0%, #0e9e6a 100%);
+      color: white;
+      padding: 3rem 2rem;
+      margin: -2rem -2rem 2rem -2rem;
+      border-radius: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    .page-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: white;
+    }
+    
+    .page-header .lead {
+      font-size: 1.15rem;
+      opacity: 0.95;
+      color: white;
+      max-width: 700px;
+    }
+    
+    .category-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin: 2rem 0;
+    }
+    
+    .category-card {
+      background: white;
+      border: 1px solid #e1e5eb;
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .category-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      border-color: #0a7c52;
+    }
+    
+    .category-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: #1a1f2e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .category-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      font-size: 1.25rem;
+    }
+    
+    .icon-green { background: rgba(10, 124, 82, 0.1); }
+    .icon-blue { background: rgba(26, 95, 176, 0.1); }
+    .icon-purple { background: rgba(94, 53, 177, 0.1); }
+    
+    .category-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0 0;
+    }
+    
+    .category-card ul li {
+      padding: 0.4rem 0;
+      color: #4a5568;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .category-card ul li:before {
+      content: "→";
+      color: #0a7c52;
+      font-weight: bold;
+    }
+    
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .quick-link-card {
+      display: block;
+      padding: 1.25rem;
+      background: white;
+      border: 1px solid #e1e5eb;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .quick-link-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #0a7c52;
+    }
+    
+    .quick-link-card strong {
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+      color: #1a1f2e;
+    }
+    
+    .quick-link-card small {
+      color: #4a5568;
+      font-size: 0.9rem;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    
+    .feature-item {
+      background: white;
+      padding: 1.25rem;
+      border: 1px solid #e1e5eb;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .feature-item strong {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+      color: #1a1f2e;
+    }
+    
+    .feature-item p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #4a5568;
+      line-height: 1.5;
+    }
+    
+    .cta-section {
+      background: white;
+      border: 2px solid #0a7c52;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      margin: 2rem 0;
+      box-shadow: 0 4px 12px rgba(10, 124, 82, 0.1);
+    }
+    
+    .cta-section h2 {
+      color: #0a7c52;
+      margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+    
+    .btn-primary-custom {
+      display: inline-block;
+      padding: 0.875rem 1.75rem;
+      background: #0a7c52;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(10, 124, 82, 0.2);
+    }
+    
+    .btn-primary-custom:hover {
+      background: #0e9e6a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(10, 124, 82, 0.3);
+    }
+    
+    .btn-secondary-custom {
+      display: inline-block;
+      padding: 0.875rem 1.75rem;
+      background: white;
+      color: #0a7c52;
+      text-decoration: none;
+      border-radius: 6px;
+      border: 2px solid #0a7c52;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-secondary-custom:hover {
+      background: #0a7c52;
+      color: white;
+    }
+    
+    .content-section {
+      background: white;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #e1e5eb;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .content-section h2 {
+      color: #0a7c52;
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e1e5eb;
+    }
+    
+    .content-section h3 {
+      color: #1a5fb0;
+      font-size: 1.35rem;
+      margin: 1.5rem 0 0.75rem 0;
+    }
+  </style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="main" id="main-content">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>Welcome to LogicVault</h1>
+    <p class="lead">Your comprehensive reference for digital logic design, circuits, and computer architecture</p>
+  </div>
+
+  <!-- Overview Section -->
+  <section class="content-section" id="overview">
+    <h2>Overview</h2>
+    <p>LogicVault is a comprehensive digital logic design reference providing detailed documentation for gates, circuits, and system-level components. Each entry includes truth tables, circuit diagrams, RTL code examples, timing analysis, and practical applications.</p>
+    
+    <div class="quick-links">
+      <a href="{{ '/gates/and.html' | relative_url }}" class="quick-link-card">
+        <strong>⚡ Basic Gates</strong>
+        <small>AND, OR, NOT, XOR...</small>
+      </a>
+      <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" class="quick-link-card">
+        <strong>🔢 Arithmetic Circuits</strong>
+        <small>Adders, Multipliers...</small>
+      </a>
+      <a href="#sequential" class="quick-link-card">
+        <strong>🔄 Sequential Logic</strong>
+        <small>Flip-flops, Counters, FSMs...</small>
+      </a>
+    </div>
+  </section>
+
+  <!-- Content Categories -->
+  <section class="content-section" id="categories">
+    <h2>Content Categories</h2>
+    
+    <div class="category-cards">
+      <div class="category-card">
+        <h3><span class="category-icon icon-green">⚡</span> Combinational Logic</h3>
+        <p style="margin-bottom: 0.75rem; color: #4a5568;">Master the fundamentals with basic gates and complex combinational circuits.</p>
+        <ul>
+          <li>Basic Logic Gates</li>
+          <li>Arithmetic Circuits</li>
+          <li>Data Routing</li>
+          <li>Encoders/Decoders</li>
+          <li>Error Detection</li>
+        </ul>
+      </div>
+      
+      <div class="category-card">
+        <h3><span class="category-icon icon-blue">🔄</span> Sequential Logic</h3>
+        <p style="margin-bottom: 0.75rem; color: #4a5568;">Dive into state-based systems with flip-flops, counters, and state machines.</p>
+        <ul>
+          <li>Latches & Flip-Flops</li>
+          <li>Registers & Counters</li>
+          <li>State Machines</li>
+        </ul>
+      </div>
+      
+      <div class="category-card">
+        <h3><span class="category-icon icon-purple">🏗️</span> System-Level</h3>
+        <p style="margin-bottom: 0.75rem; color: #4a5568;">Explore advanced architectures including ALUs and communication protocols.</p>
+        <ul>
+          <li>ALU Components</li>
+          <li>Memory Systems</li>
+          <li>Communication Protocols</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="content-section" id="features">
+    <h2>What's Included</h2>
+    <div class="feature-grid">
+      <div class="feature-item">
+        <strong>📊 Truth Tables</strong>
+        <p>Complete input-output mappings for every logic gate and circuit</p>
+      </div>
+      <div class="feature-item">
+        <strong>🔌 Circuit Diagrams</strong>
+        <p>Visual representations showing connections and signal flow</p>
+      </div>
+      <div class="feature-item">
+        <strong>💻 RTL Code</strong>
+        <p>Hardware description language examples in Verilog and VHDL</p>
+      </div>
+      <div class="feature-item">
+        <strong>⏱️ Timing Analysis</strong>
+        <p>Propagation delays and critical path information</p>
+      </div>
+      <div class="feature-item">
+        <strong>🎯 Interview Prep</strong>
+        <p>Common questions and practical design scenarios</p>
+      </div>
+      <div class="feature-item">
+        <strong>🔗 Related Circuits</strong>
+        <p>Cross-references to connected concepts and variations</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Get Started -->
+  <section class="cta-section">
+    <h2>Ready to Start Learning?</h2>
+    <p style="color: #4a5568; font-size: 1.05rem;">Explore our comprehensive collection of digital logic circuits and references</p>
+    <div class="btn-group">
+      <a href="{{ '/gates/and.html' | relative_url }}" class="btn-primary-custom">Start with Basic Gates →</a>
+      <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" class="btn-secondary-custom">View Full Adder Example →</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <p style="text-align: center; color: var(--text-dim);">&copy; 2026 LogicVault. A comprehensive digital logic design reference.</p>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/components.js' | relative_url }}"></script><script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  function toggleGroup(btn) {
+    const items = btn.nextElementSibling;
+    const isOpen = items.classList.contains('open');
+    items.classList.toggle('open');
+    btn.classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>

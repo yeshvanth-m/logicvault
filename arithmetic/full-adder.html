@@ -1,12 +1,16 @@
+---
+layout: null
+title: Full Adder
+nav: circuits
+sidebar: full-adder
+group: arithmetic
+---
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Full Adder — LogicVault</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg:        #f5f6f8;
@@ -47,58 +51,58 @@
   .topbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     height: var(--top-h);
-    background: var(--bg);
+    background: white;
     border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: flex; align-items: center;
     padding: 0 1.25rem;
     gap: 1rem;
   }
-  .topbar-logo {
-    font-family: var(--display);
-    font-size: 1.05rem;
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .topbar-brand .brand {
+    font-size: 1.35rem;
     font-weight: 800;
-    color: var(--green);
+    background: linear-gradient(135deg, #0a7c52 0%, #0e9e6a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     letter-spacing: -0.5px;
-    text-decoration: none;
-    white-space: nowrap;
   }
-  .topbar-logo span { color: var(--text-dim); }
-  .topbar-tag {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--text-dim);
-    border: 1px solid var(--border2);
+  .topbar-brand .version {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+    background: #0a7c52;
     padding: 2px 8px;
-    border-radius: 20px;
-    margin-left: 4px;
+    border-radius: 4px;
   }
-  .topbar-search {
+  .topnav {
+    display: flex;
+    gap: 0.25rem;
     margin-left: auto;
-    display: flex; align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0 10px;
-    gap: 8px;
-    width: 220px;
-    height: 34px;
   }
-  .topbar-search svg { color: var(--text-dim); flex-shrink: 0; }
-  .topbar-search input {
-    background: none; border: none; outline: none;
-    color: var(--text); font-family: var(--mono);
-    font-size: 0.78rem; width: 100%;
+  .topnav a {
+    padding: 0.5rem 1rem;
+    color: #4a5568;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
   }
-  .topbar-search input::placeholder { color: var(--text-faint); }
-  .topbar-github {
-    display: flex; align-items: center; gap: 6px;
-    font-family: var(--mono); font-size: 0.75rem;
-    color: var(--text-dim); text-decoration: none;
-    border: 1px solid var(--border);
-    padding: 5px 12px; border-radius: var(--radius);
-    transition: border-color .2s, color .2s;
+  .topnav a:hover {
+    background: rgba(10, 124, 82, 0.08);
+    color: #0a7c52;
   }
-  .topbar-github:hover { border-color: var(--border2); color: var(--text); }
+  .topnav a.active {
+    background: rgba(10, 124, 82, 0.12);
+    color: #0a7c52;
+    font-weight: 600;
+  }
   .sidebar-toggle {
     display: none;
     background: none; border: none; cursor: pointer;
@@ -588,6 +592,10 @@
 
   /* ── Responsive ─────────────────────────────────────── */
   @media (max-width: 1200px) { .toc { display: none; } }
+  @media (max-width: 968px) {
+    .topnav { display: none; }
+    .sidebar-toggle { display: block; }
+  }
   @media (max-width: 900px) {
     .main { max-width: 100%; }
   }
@@ -596,305 +604,17 @@
     .sidebar { transform: translateX(-100%); width: 260px; transition: transform .25s; z-index: 90; }
     .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0; padding: 1.5rem 1.1rem 4rem; }
-    .sidebar-toggle { display: block; }
     .page-title { font-size: 1.65rem; }
-    .topbar-search { display: none; }
   }
 </style>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
 </head>
 <body>
 
-<!-- ══ TOPBAR ══════════════════════════════════════════════ -->
-<header class="topbar">
-  <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
-    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-    </svg>
-  </button>
-  <a href="index.html" class="topbar-logo">LogicVault <span class="topbar-tag">v1.0</span></a>
+{% include topbar.html %}
 
-  <div class="topbar-search">
-    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-    </svg>
-    <input type="text" placeholder="Search circuits…" id="search-input"/>
-  </div>
-
-  <a href="https://github.com/YOUR_USERNAME/logicvault" class="topbar-github">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
-    </svg>
-    GitHub
-  </a>
-</header>
-
-<!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
 <div class="layout">
-<nav class="sidebar" id="sidebar">
-
-  <div class="nav-section">
-    <span class="nav-section-label">Getting Started</span>
-    <a href="index.html" class="nav-item">Introduction</a>
-    <a href="how-to-use.html" class="nav-item">How to Use</a>
-    <a href="notation.html" class="nav-item">Notation Guide</a>
-  </div>
-
-  <!-- COMBINATIONAL -->
-  <div class="nav-section">
-    <span class="nav-section-label">Combinational Logic</span>
-
-    <button class="nav-group-toggle open" onclick="toggleGroup(this)">
-      <span>Basic Logic Gates</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items open">
-      <a href="gates/and.html"  class="nav-item">AND</a>
-      <a href="gates/or.html"   class="nav-item">OR</a>
-      <a href="gates/not.html"  class="nav-item">NOT</a>
-      <a href="gates/nand.html" class="nav-item">NAND</a>
-      <a href="gates/nor.html"  class="nav-item">NOR</a>
-      <a href="gates/xor.html"  class="nav-item">XOR</a>
-      <a href="gates/xnor.html" class="nav-item">XNOR</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Boolean Logic</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="boolean/algebra.html" class="nav-item">Boolean Algebra</a>
-      <a href="boolean/kmap.html" class="nav-item">K-Map</a>
-      <a href="boolean/qmc.html" class="nav-item">Quine–McCluskey</a>
-      <a href="boolean/sop-pos.html" class="nav-item">SOP / POS Forms</a>
-      <a href="boolean/hazards.html" class="nav-item">Hazard Analysis</a>
-    </div>
-
-    <button class="nav-group-toggle open" onclick="toggleGroup(this)">
-      <span>Arithmetic Circuits</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items open">
-      <a href="arithmetic/half-adder.html" class="nav-item">Half Adder</a>
-      <a href="arithmetic/full-adder.html" class="nav-item active">Full Adder</a>
-      <a href="arithmetic/ripple-carry.html" class="nav-item">Ripple Carry Adder</a>
-      <a href="arithmetic/cla.html" class="nav-item">Carry Lookahead Adder</a>
-      <a href="arithmetic/carry-select.html" class="nav-item">Carry Select Adder</a>
-      <a href="arithmetic/kogge-stone.html" class="nav-item">Kogge-Stone</a>
-      <a href="arithmetic/brent-kung.html" class="nav-item">Brent-Kung</a>
-      <a href="arithmetic/half-sub.html" class="nav-item">Half Subtractor</a>
-      <a href="arithmetic/full-sub.html" class="nav-item">Full Subtractor</a>
-      <a href="arithmetic/array-mult.html" class="nav-item">Array Multiplier</a>
-      <a href="arithmetic/booth.html" class="nav-item">Booth Multiplier</a>
-      <a href="arithmetic/wallace.html" class="nav-item">Wallace Tree</a>
-      <a href="arithmetic/comparator.html" class="nav-item">Comparators</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Data Routing</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="routing/mux-2.html" class="nav-item">2:1 MUX</a>
-      <a href="routing/mux-4.html" class="nav-item">4:1 MUX</a>
-      <a href="routing/mux-8.html" class="nav-item">8:1 MUX</a>
-      <a href="routing/demux.html" class="nav-item">DEMUX</a>
-      <a href="routing/tri-state.html" class="nav-item">Tri-state Buffer</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Encoders / Decoders</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="codec/binary-encoder.html" class="nav-item">Binary Encoder</a>
-      <a href="codec/priority-encoder.html" class="nav-item">Priority Encoder</a>
-      <a href="codec/binary-decoder.html" class="nav-item">Binary Decoder</a>
-      <a href="codec/bcd-decoder.html" class="nav-item">BCD Decoder</a>
-      <a href="codec/gray.html" class="nav-item">Binary ↔ Gray</a>
-      <a href="codec/seven-seg.html" class="nav-item">7-Segment Decoder</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Error Detection</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="edc/parity-gen.html" class="nav-item">Parity Generator</a>
-      <a href="edc/parity-chk.html" class="nav-item">Parity Checker</a>
-      <a href="edc/hamming.html" class="nav-item">Hamming Code</a>
-      <a href="edc/crc.html" class="nav-item">CRC Logic</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>FPGA / Prog. Logic</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="fpga/lut.html" class="nav-item">LUT Mapping</a>
-      <a href="fpga/pla.html" class="nav-item">PLA</a>
-      <a href="fpga/pal.html" class="nav-item">PAL</a>
-      <a href="fpga/barrel-shifter.html" class="nav-item">Barrel Shifter</a>
-      <a href="fpga/popcount.html" class="nav-item">Population Count</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>CMOS Design</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="cmos/pull-networks.html" class="nav-item">Pull-up/down Networks</a>
-      <a href="cmos/logical-effort.html" class="nav-item">Logical Effort</a>
-      <a href="cmos/transmission-gate.html" class="nav-item">Transmission Gate</a>
-      <a href="cmos/domino.html" class="nav-item">Domino Logic</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Timing Concepts</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="timing/propagation-delay.html" class="nav-item">Propagation Delay</a>
-      <a href="timing/critical-path.html" class="nav-item">Critical Path</a>
-      <a href="timing/fan-in-out.html" class="nav-item">Fan-in / Fan-out</a>
-      <a href="timing/hazards.html" class="nav-item">Static / Dynamic Hazards</a>
-    </div>
-  </div>
-
-  <!-- SEQUENTIAL -->
-  <div class="nav-section">
-    <span class="nav-section-label">Sequential Logic</span>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Latches</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="seq/sr-latch.html" class="nav-item">SR Latch</a>
-      <a href="seq/d-latch.html" class="nav-item">D Latch</a>
-      <a href="seq/jk-latch.html" class="nav-item">JK Latch</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Flip-Flops</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="seq/d-ff.html" class="nav-item">D Flip-Flop</a>
-      <a href="seq/jk-ff.html" class="nav-item">JK Flip-Flop</a>
-      <a href="seq/t-ff.html" class="nav-item">T Flip-Flop</a>
-      <a href="seq/master-slave.html" class="nav-item">Master-Slave FF</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Registers</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="seq/siso.html" class="nav-item">SISO Shift Register</a>
-      <a href="seq/sipo.html" class="nav-item">SIPO Shift Register</a>
-      <a href="seq/piso.html" class="nav-item">PISO Shift Register</a>
-      <a href="seq/pipo.html" class="nav-item">PIPO Shift Register</a>
-      <a href="seq/universal-sr.html" class="nav-item">Universal Shift Reg</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Counters</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="seq/ripple-counter.html" class="nav-item">Ripple Counter</a>
-      <a href="seq/sync-counter.html" class="nav-item">Synchronous Counter</a>
-      <a href="seq/ring-counter.html" class="nav-item">Ring Counter</a>
-      <a href="seq/johnson.html" class="nav-item">Johnson Counter</a>
-      <a href="seq/mod-n.html" class="nav-item">Mod-N Counter</a>
-      <a href="seq/gray-counter.html" class="nav-item">Gray Code Counter</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>FSM</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="fsm/moore.html" class="nav-item">Moore FSM</a>
-      <a href="fsm/mealy.html" class="nav-item">Mealy FSM</a>
-      <a href="fsm/seq-detector.html" class="nav-item">Sequence Detector</a>
-      <a href="fsm/traffic-ctrl.html" class="nav-item">Traffic Controller</a>
-      <a href="fsm/uart-ctrl.html" class="nav-item">UART Controller FSM</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Synchronization & CDC</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="sync/two-flop.html" class="nav-item">Two-Flop Synchronizer</a>
-      <a href="sync/async-fifo.html" class="nav-item">Async FIFO</a>
-      <a href="sync/gray-ptr.html" class="nav-item">Gray-Code Pointers</a>
-      <a href="sync/reset-sync.html" class="nav-item">Reset Synchronizer</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Memory Circuits</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="mem/sync-fifo.html" class="nav-item">Synchronous FIFO</a>
-      <a href="mem/async-fifo.html" class="nav-item">Asynchronous FIFO</a>
-      <a href="mem/lifo.html" class="nav-item">LIFO / Stack</a>
-      <a href="mem/circ-buf.html" class="nav-item">Circular Buffer</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Pipelining</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="pipeline/basics.html" class="nav-item">Pipeline Basics</a>
-      <a href="pipeline/data-hazard.html" class="nav-item">Data Hazards</a>
-      <a href="pipeline/stall-logic.html" class="nav-item">Stall Logic</a>
-      <a href="pipeline/forwarding.html" class="nav-item">Forwarding Logic</a>
-      <a href="pipeline/retiming.html" class="nav-item">Retiming</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Timing — Sequential</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="seq-timing/setup-hold.html" class="nav-item">Setup / Hold Time</a>
-      <a href="seq-timing/metastability.html" class="nav-item">Metastability</a>
-      <a href="seq-timing/clock-skew.html" class="nav-item">Clock Skew & Jitter</a>
-      <a href="seq-timing/scan-chain.html" class="nav-item">Scan Chains (DFT)</a>
-      <a href="seq-timing/lfsr.html" class="nav-item">LFSR</a>
-    </div>
-
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>Protocol Controllers</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="proto/uart.html" class="nav-item">UART TX/RX</a>
-      <a href="proto/spi.html" class="nav-item">SPI Controller</a>
-      <a href="proto/i2c.html" class="nav-item">I2C Controller</a>
-      <a href="proto/axi.html" class="nav-item">AXI Handshake</a>
-    </div>
-  </div>
-
-  <!-- SYSTEM -->
-  <div class="nav-section">
-    <span class="nav-section-label">System-Level</span>
-    <button class="nav-group-toggle" onclick="toggleGroup(this)">
-      <span>ALU Design</span>
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-    <div class="nav-items">
-      <a href="system/alu.html" class="nav-item">ALU</a>
-      <a href="system/priority-arbiter.html" class="nav-item">Priority Arbiter</a>
-      <a href="system/round-robin.html" class="nav-item">Round Robin Selector</a>
-    </div>
-  </div>
-
-</nav>
+{% include sidebar.html %}
 
 <!-- ══ MAIN ════════════════════════════════════════════════ -->
 <main class="main" id="main-content">
@@ -917,9 +637,9 @@
 
   <!-- Breadcrumb -->
   <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="index.html">Home</a>
+    <a href="{{ '/' | relative_url }}">Home</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="arithmetic/">Arithmetic Circuits</a>
+    <a href="{{ '/arithmetic/' | relative_url }}">Arithmetic Circuits</a>
     <span class="breadcrumb-sep">/</span>
     <span class="breadcrumb-current">Full Adder</span>
   </nav>
@@ -1357,14 +1077,14 @@
   <!-- Footer -->
   <footer class="page-footer">
     <div>
-      <a href="half-adder.html">
+      <a href="{{ '/arithmetic/half-adder.html' | relative_url }}">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         Half Adder
       </a>
     </div>
     <span class="page-footer-edit">Edit this page on GitHub</span>
     <div>
-      <a href="ripple-carry.html">
+      <a href="{{ '/arithmetic/ripple-carry.html' | relative_url }}">
         Ripple Carry Adder
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </a>

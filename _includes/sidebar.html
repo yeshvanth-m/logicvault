@@ -1,0 +1,137 @@
+<nav class="sidebar" id="sidebar">
+
+  <div class="nav-section">
+    <span class="nav-section-label">Getting Started</span>
+    <a href="{{ '/' | relative_url }}" class="nav-item{% if page.sidebar == 'home' %} active{% endif %}">Introduction</a>
+    <a href="{{ '/how-to-use.html' | relative_url }}" class="nav-item{% if page.sidebar == 'howto' %} active{% endif %}">How to Use</a>
+    <a href="{{ '/notation.html' | relative_url }}" class="nav-item{% if page.sidebar == 'notation' %} active{% endif %}">Notation Guide</a>
+  </div>
+
+  <!-- COMBINATIONAL -->
+  <div class="nav-section">
+    <span class="nav-section-label">Combinational Logic</span>
+
+    <button class="nav-group-toggle{% if page.group == 'gates' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Basic Logic Gates</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'gates' %} open{% endif %}">
+      <a href="{{ '/gates/and.html' | relative_url }}" class="nav-item{% if page.sidebar == 'and' %} active{% endif %}">AND</a>
+      <a href="{{ '/gates/or.html' | relative_url }}" class="nav-item{% if page.sidebar == 'or' %} active{% endif %}">OR</a>
+      <a href="{{ '/gates/not.html' | relative_url }}" class="nav-item{% if page.sidebar == 'not' %} active{% endif %}">NOT</a>
+      <a href="{{ '/gates/buf.html' | relative_url }}" class="nav-item{% if page.sidebar == 'buf' %} active{% endif %}">BUF</a>
+      <a href="{{ '/gates/nand.html' | relative_url }}" class="nav-item{% if page.sidebar == 'nand' %} active{% endif %}">NAND</a>
+      <a href="{{ '/gates/nor.html' | relative_url }}" class="nav-item{% if page.sidebar == 'nor' %} active{% endif %}">NOR</a>
+      <a href="{{ '/gates/xor.html' | relative_url }}" class="nav-item{% if page.sidebar == 'xor' %} active{% endif %}">XOR</a>
+      <a href="{{ '/gates/xnor.html' | relative_url }}" class="nav-item{% if page.sidebar == 'xnor' %} active{% endif %}">XNOR</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'boolean' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Boolean Logic</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'boolean' %} open{% endif %}">
+      <a href="{{ '/docs/boolean/algebra/' | relative_url }}" class="nav-item{% if page.sidebar == 'bool-algebra' %} active{% endif %}">Boolean Algebra</a>
+      <a href="{{ '/docs/boolean/kmap/' | relative_url }}" class="nav-item{% if page.sidebar == 'kmap' %} active{% endif %}">K-Map</a>
+      <a href="{{ '/docs/boolean/qmc/' | relative_url }}" class="nav-item{% if page.sidebar == 'qmc' %} active{% endif %}">Quine–McCluskey</a>
+      <a href="{{ '/docs/boolean/sop-pos/' | relative_url }}" class="nav-item{% if page.sidebar == 'sop-pos' %} active{% endif %}">SOP / POS Forms</a>
+      <a href="{{ '/docs/boolean/hazards/' | relative_url }}" class="nav-item{% if page.sidebar == 'hazards' %} active{% endif %}">Hazard Analysis</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'arithmetic' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Arithmetic Circuits</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'arithmetic' %} open{% endif %}">
+      <a href="{{ '/docs/arithmetic/half-adder/' | relative_url }}" class="nav-item{% if page.sidebar == 'half-adder' %} active{% endif %}">Half Adder</a>
+      <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'full-adder' %} active{% endif %}">Full Adder</a>
+      <a href="{{ '/docs/arithmetic/ripple-carry/' | relative_url }}" class="nav-item{% if page.sidebar == 'ripple' %} active{% endif %}">Ripple Carry Adder</a>
+      <a href="{{ '/docs/arithmetic/cla/' | relative_url }}" class="nav-item{% if page.sidebar == 'cla' %} active{% endif %}">Carry Lookahead Adder</a>
+      <a href="{{ '/docs/arithmetic/carry-select/' | relative_url }}" class="nav-item{% if page.sidebar == 'carry-select' %} active{% endif %}">Carry Select Adder</a>
+      <a href="{{ '/docs/arithmetic/kogge-stone/' | relative_url }}" class="nav-item{% if page.sidebar == 'kogge' %} active{% endif %}">Kogge-Stone</a>
+      <a href="{{ '/docs/arithmetic/brent-kung/' | relative_url }}" class="nav-item{% if page.sidebar == 'brent' %} active{% endif %}">Brent-Kung</a>
+      <a href="{{ '/docs/arithmetic/half-sub/' | relative_url }}" class="nav-item{% if page.sidebar == 'half-sub' %} active{% endif %}">Half Subtractor</a>
+      <a href="{{ '/docs/arithmetic/full-sub/' | relative_url }}" class="nav-item{% if page.sidebar == 'full-sub' %} active{% endif %}">Full Subtractor</a>
+      <a href="{{ '/docs/arithmetic/array-mult/' | relative_url }}" class="nav-item{% if page.sidebar == 'array-mult' %} active{% endif %}">Array Multiplier</a>
+      <a href="{{ '/docs/arithmetic/booth/' | relative_url }}" class="nav-item{% if page.sidebar == 'booth' %} active{% endif %}">Booth Multiplier</a>
+      <a href="{{ '/docs/arithmetic/wallace/' | relative_url }}" class="nav-item{% if page.sidebar == 'wallace' %} active{% endif %}">Wallace Tree</a>
+      <a href="{{ '/docs/arithmetic/comparator/' | relative_url }}" class="nav-item{% if page.sidebar == 'comparator' %} active{% endif %}">Comparators</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'routing' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Data Routing</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'routing' %} open{% endif %}">
+      <a href="{{ '/docs/routing/mux-2/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-2' %} active{% endif %}">2:1 MUX</a>
+      <a href="{{ '/docs/routing/mux-4/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-4' %} active{% endif %}">4:1 MUX</a>
+      <a href="{{ '/docs/routing/mux-8/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-8' %} active{% endif %}">8:1 MUX</a>
+      <a href="{{ '/docs/routing/demux/' | relative_url }}" class="nav-item{% if page.sidebar == 'demux' %} active{% endif %}">DEMUX</a>
+      <a href="{{ '/docs/routing/tri-state/' | relative_url }}" class="nav-item{% if page.sidebar == 'tri-state' %} active{% endif %}">Tri-state Buffer</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'codec' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Encoders / Decoders</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'codec' %} open{% endif %}">
+      <a href="{{ '/docs/codec/binary-encoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-enc' %} active{% endif %}">Binary Encoder</a>
+      <a href="{{ '/docs/codec/priority-encoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'priority-enc' %} active{% endif %}">Priority Encoder</a>
+      <a href="{{ '/docs/codec/binary-decoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-dec' %} active{% endif %}">Binary Decoder</a>
+      <a href="{{ '/docs/codec/bcd-decoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'bcd-dec' %} active{% endif %}">BCD Decoder</a>
+      <a href="{{ '/docs/codec/gray/' | relative_url }}" class="nav-item{% if page.sidebar == 'gray' %} active{% endif %}">Binary ↔ Gray</a>
+      <a href="{{ '/docs/codec/seven-seg/' | relative_url }}" class="nav-item{% if page.sidebar == 'seven-seg' %} active{% endif %}">7-Segment Decoder</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'edc' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Error Detection</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'edc' %} open{% endif %}">
+      <a href="{{ '/edc/parity-gen.html' | relative_url }}" class="nav-item{% if page.sidebar == 'parity-gen' %} active{% endif %}">Parity Generator</a>
+      <a href="{{ '/edc/parity-check.html' | relative_url }}" class="nav-item{% if page.sidebar == 'parity-check' %} active{% endif %}">Parity Checker</a>
+      <a href="{{ '/docs/edc/hamming/' | relative_url }}" class="nav-item{% if page.sidebar == 'hamming' %} active{% endif %}">Hamming Code</a>
+      <a href="{{ '/docs/edc/crc/' | relative_url }}" class="nav-item{% if page.sidebar == 'crc' %} active{% endif %}">CRC</a>
+    </div>
+  </div>
+
+  <!-- SEQUENTIAL -->
+  <div class="nav-section">
+    <span class="nav-section-label">Sequential Logic</span>
+
+    <button class="nav-group-toggle{% if page.group == 'latches' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Latches & Flip-Flops</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'latches' %} open{% endif %}">
+      <a href="{{ '/docs/sequential/sr-latch/' | relative_url }}" class="nav-item{% if page.sidebar == 'sr-latch' %} active{% endif %}">SR Latch</a>
+      <a href="{{ '/docs/sequential/d-latch/' | relative_url }}" class="nav-item{% if page.sidebar == 'd-latch' %} active{% endif %}">D Latch</a>
+      <a href="{{ '/docs/sequential/d-ff/' | relative_url }}" class="nav-item{% if page.sidebar == 'd-ff' %} active{% endif %}">D Flip-Flop</a>
+      <a href="{{ '/docs/sequential/jk-ff/' | relative_url }}" class="nav-item{% if page.sidebar == 'jk-ff' %} active{% endif %}">JK Flip-Flop</a>
+      <a href="{{ '/docs/sequential/t-ff/' | relative_url }}" class="nav-item{% if page.sidebar == 't-ff' %} active{% endif %}">T Flip-Flop</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'registers' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Registers & Counters</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'registers' %} open{% endif %}">
+      <a href="{{ '/docs/sequential/shift-reg/' | relative_url }}" class="nav-item{% if page.sidebar == 'shift-reg' %} active{% endif %}">Shift Register</a>
+      <a href="{{ '/docs/sequential/counter-async/' | relative_url }}" class="nav-item{% if page.sidebar == 'counter-async' %} active{% endif %}">Async Counter</a>
+      <a href="{{ '/docs/sequential/counter-sync/' | relative_url }}" class="nav-item{% if page.sidebar == 'counter-sync' %} active{% endif %}">Sync Counter</a>
+      <a href="{{ '/docs/sequential/ring-counter/' | relative_url }}" class="nav-item{% if page.sidebar == 'ring-counter' %} active{% endif %}">Ring Counter</a>
+      <a href="{{ '/docs/sequential/lfsr/' | relative_url }}" class="nav-item{% if page.sidebar == 'lfsr' %} active{% endif %}">LFSR</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'fsm' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>State Machines</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'fsm' %} open{% endif %}">
+      <a href="{{ '/docs/sequential/fsm-mealy/' | relative_url }}" class="nav-item{% if page.sidebar == 'fsm-mealy' %} active{% endif %}">Mealy Machine</a>
+      <a href="{{ '/docs/sequential/fsm-moore/' | relative_url }}" class="nav-item{% if page.sidebar == 'fsm-moore' %} active{% endif %}">Moore Machine</a>
+      <a href="{{ '/docs/sequential/sequence-detector/' | relative_url }}" class="nav-item{% if page.sidebar == 'seq-det' %} active{% endif %}">Sequence Detector</a>
+    </div>
+  </div>
+
+</nav>

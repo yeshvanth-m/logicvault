@@ -1,0 +1,89 @@
+---
+layout: default
+---
+
+<!-- On-page TOC -->
+<aside class="toc" aria-label="On this page">
+  <p class="toc-label">On this page</p>
+  <ul class="toc-items" id="toc">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#quick-facts">Quick Facts</a></li>
+    <li><a href="#truth-table">Truth Table</a></li>
+    <li><a href="#boolean">Boolean Expression</a></li>
+    <li><a href="#circuit">Circuit Diagram</a></li>
+    <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+    <li><a href="#related">Related Circuits</a></li>
+  </ul>
+</aside>
+
+<!-- Breadcrumb -->
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ '/' | relative_url }}">Home</a>
+  <span class="breadcrumb-sep">/</span>
+  <a href="{{ '/gates/' | relative_url }}">Logic Gates</a>
+  <span class="breadcrumb-sep">/</span>
+  <span class="breadcrumb-current">{{ page.gate_name }}</span>
+</nav>
+
+<!-- Page Header -->
+<div class="page-header" id="overview">
+  <div class="page-header-meta">
+    <span class="badge badge-green">Combinational</span>
+    <span class="badge badge-blue">Fundamental</span>
+  </div>
+  <h1 class="page-title">{{ page.gate_name }}</h1>
+  <p class="page-subtitle">{{ page.description }}</p>
+</div>
+
+<!-- Quick Facts -->
+<section id="quick-facts">
+  <div class="qf-grid">
+    <div class="qf-card">
+      <p class="qf-label">Inputs</p>
+      <p class="qf-value">{{ page.inputs | default: "2+ (typically 2)" }}</p>
+    </div>
+    <div class="qf-card">
+      <p class="qf-label">Outputs</p>
+      <p class="qf-value">1 (Y)</p>
+    </div>
+    <div class="qf-card">
+      <p class="qf-label">Transistor count</p>
+      <p class="qf-value">{{ page.transistors | default: "6 (2-input CMOS)" }}</p>
+    </div>
+    <div class="qf-card">
+      <p class="qf-label">Logic depth</p>
+      <p class="qf-value">1 level</p>
+    </div>
+    <div class="qf-card">
+      <p class="qf-label">Circuit type</p>
+      <p class="qf-value">Combinational</p>
+    </div>
+    <div class="qf-card">
+      <p class="qf-label">Symbol</p>
+      <p class="qf-value">{{ page.symbol }}</p>
+    </div>
+  </div>
+</section>
+
+{{ content }}
+
+<!-- Footer Navigation -->
+<footer class="page-footer">
+  <div>
+    {% if page.prev_gate %}
+    <a href="{{ page.prev_gate.url | relative_url }}">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      {{ page.prev_gate.name }}
+    </a>
+    {% endif %}
+  </div>
+  <span class="page-footer-edit">Edit this page on GitHub</span>
+  <div>
+    {% if page.next_gate %}
+    <a href="{{ page.next_gate.url | relative_url }}">
+      {{ page.next_gate.name }}
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% endif %}
+  </div>
+</footer>
