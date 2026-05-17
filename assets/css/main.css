@@ -270,7 +270,7 @@ body {
 }
 
 /* ── Section ────────────────────────────────────────── */
-.section { margin-bottom: 2.5rem; }
+.section, .content-section { margin-bottom: 2.5rem; }
 .section-header {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 1rem;
