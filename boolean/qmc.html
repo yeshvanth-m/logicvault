@@ -359,9 +359,11 @@ group: boolean
       <li><a href="#overview">Overview</a></li>
       <li><a href="#solver">QMC Solver</a></li>
       <li><a href="#algorithm">The Algorithm</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
       <li><a href="#example">Worked Example</a></li>
       <li><a href="#pi-chart">Prime Implicant Chart</a></li>
       <li><a href="#comparison">K-Map vs QMC</a></li>
+      <li><a href="#practice">Practice Questions</a></li>
     </ul>
   </aside>
 
@@ -477,6 +479,113 @@ group: boolean
     <div class="callout callout-tip">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
       <p><strong>Why it works:</strong> XY + XY' = X (absorption). QMC systematically finds all such combinations, then selects the minimum set.</p>
+    </div>
+  </section>
+
+  <!-- How QMC Works Internally -->
+  <section class="section" id="how-it-works">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4m-7.07-15.07l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+      </div>
+      <h2 class="section-title">How QMC Works Internally</h2>
+      <a href="#how-it-works" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>QMC is built on the <strong>Consensus Theorem</strong> (same as K-Map's adjacency principle), applied systematically:</p>
+      <div class="final-result" style="font-size: 1rem; margin: 1rem 0;">XY + XY' = X</div>
+      <p style="margin-top: 1rem;">When two minterms differ by <strong>exactly one bit</strong>, they can be combined — the differing variable is eliminated and replaced with a dash (-).</p>
+    </div>
+
+    <div class="algorithm-box" style="margin: 1.5rem 0;">
+      <h5>Core Principles</h5>
+      <ol>
+        <li><strong>Grouping by 1-count:</strong> Terms differing by one bit will be in adjacent groups (differ by exactly one 1)</li>
+        <li><strong>Dash (-) = "don't care":</strong> The eliminated variable can be 0 or 1</li>
+        <li><strong>Prime Implicant:</strong> A term that cannot be combined with any other term</li>
+        <li><strong>Essential PI:</strong> A PI that uniquely covers at least one minterm</li>
+      </ol>
+    </div>
+
+    <!-- Simple Worked Example -->
+    <h3 style="color: var(--green); margin: 2rem 0 1rem;">Simple Example: Step-by-Step</h3>
+    <div class="prose">
+      <p>Let's simplify: <strong>F(A,B) = Σm(1, 3)</strong> — the simplest case to see the principle.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0;">
+      <!-- Step 1: Minterms -->
+      <div class="step-section" style="margin: 0;">
+        <h4><span class="step-number">1</span> List Minterms in Binary</h4>
+        <table class="qmc-table" style="font-size: 0.9rem;">
+          <tr><th>Minterm</th><th>A</th><th>B</th><th>1-count</th></tr>
+          <tr><td>m1</td><td>0</td><td>1</td><td>1</td></tr>
+          <tr><td>m3</td><td>1</td><td>1</td><td>2</td></tr>
+        </table>
+        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--surface2); border-radius: var(--radius);">
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">Minterm expressions:</p>
+          <p style="font-family: var(--mono); font-size: 0.9rem; line-height: 1.6;">
+            m₁ = A'B<br>
+            m₃ = AB
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2: Compare -->
+      <div class="step-section" style="margin: 0;">
+        <h4><span class="step-number">2</span> Compare Adjacent Groups</h4>
+        <p style="margin-bottom: 1rem; font-size: 0.9rem;">m1 (Group 1) vs m3 (Group 2):</p>
+        <table class="qmc-table" style="font-size: 0.9rem;">
+          <tr><th>Term</th><th>A</th><th>B</th></tr>
+          <tr><td>m1</td><td style="background: rgba(255,152,0,0.2);">0</td><td>1</td></tr>
+          <tr><td>m3</td><td style="background: rgba(255,152,0,0.2);">1</td><td>1</td></tr>
+          <tr style="background: var(--green-1);"><td><strong>Result</strong></td><td class="dash">-</td><td>1</td></tr>
+        </table>
+        <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-dim);">Only bit A differs → A is eliminated!</p>
+      </div>
+    </div>
+
+    <!-- Step 3: Analysis -->
+    <div class="step-section">
+      <h4><span class="step-number">3</span> Why Does This Work?</h4>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div>
+          <p style="font-weight: 600; color: var(--green); margin-bottom: 0.75rem;">Algebraic Proof:</p>
+          <div style="font-family: var(--mono); line-height: 2; background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+            F = A'B + AB<br>
+            F = B(A' + A)<br>
+            F = B · 1<br>
+            F = B
+          </div>
+        </div>
+        <div>
+          <p style="font-weight: 600; color: var(--green); margin-bottom: 0.75rem;">QMC Interpretation:</p>
+          <div style="background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+            <p style="margin-bottom: 0.75rem;">Combined term: <span style="font-family: var(--mono); font-weight: 600;"><span class="dash">-</span>1</span></p>
+            <p style="font-size: 0.9rem;">
+              <strong>A = -</strong> (dash) means A can be 0 or 1<br>
+              <strong>B = 1</strong> means B must be 1
+            </p>
+            <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-dim);">
+              The dash represents variable elimination!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div style="background: var(--green-1); border: 2px solid var(--green); border-radius: var(--radius); padding: 1.25rem; margin-top: 1.5rem;">
+      <p style="font-weight: 600; color: var(--green); margin-bottom: 0.5rem;">Result</p>
+      <p>The term <span style="font-family: var(--mono);">-1</span> is a <strong>Prime Implicant</strong> (cannot be combined further).</p>
+      <div class="final-result" style="margin-top: 0.75rem;">F = B</div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.5rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Key Insight:</strong> Each dash (-) in the final term represents one eliminated variable. A term with n dashes covers 2ⁿ minterms. Here, one dash means the term <span style="font-family: var(--mono);">-1</span> covers 2¹ = 2 minterms (m1 and m3).</p>
     </div>
   </section>
 
@@ -674,6 +783,124 @@ group: boolean
     </table>
   </section>
 
+  <!-- Practice Questions -->
+  <section class="section" id="practice">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h2 class="section-title">Practice Questions</h2>
+      <a href="#practice" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Test your understanding with these Quine-McCluskey problems. Click to reveal the answers.</p>
+    </div>
+
+    <!-- Question 1 -->
+    <div class="step-section" style="margin: 1.5rem 0;">
+      <h4><span class="step-number">1</span> 3-Variable QMC</h4>
+      <p>Use QMC to minimize: <strong>F(A,B,C) = Σm(0, 1, 2, 4)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Step 1 - Group by 1s:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>Group 0: m0 = 000</li>
+            <li>Group 1: m1 = 001, m2 = 010, m4 = 100</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>Step 2 - Combine:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>(0,1) → 00- = A'B'</li>
+            <li>(0,2) → 0-0 = A'C'</li>
+            <li>(0,4) → -00 = B'C'</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>Prime Implicants:</strong> A'B', A'C', B'C' (none can combine further)</p>
+          <p style="margin-top: 0.5rem;"><strong>EPIs:</strong> All three are essential</p>
+          <div class="final-result" style="margin-top: 0.75rem;">F = A'B' + A'C' + B'C'</div>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dim);">Alternative: F = A'B' + B'C' (A'C' is redundant since its minterms are covered)</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="step-section" style="margin: 1.5rem 0;">
+      <h4><span class="step-number">2</span> 3-Variable QMC</h4>
+      <p>Use QMC to minimize: <strong>F(A,B,C) = Σm(3, 4, 5, 7)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Step 1 - Group by 1s:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>Group 1: m4 = 100</li>
+            <li>Group 2: m3 = 011, m5 = 101</li>
+            <li>Group 3: m7 = 111</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>Step 2 - Combine:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>(4,5) → 10- = AB'</li>
+            <li>(3,7) → -11 = BC</li>
+            <li>(5,7) → 1-1 = AC</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>EPIs:</strong> AB' (only covers m4), BC (only covers m3)</p>
+          <p style="margin-top: 0.5rem;">Remaining: m5, m7 covered by either AB' + AC or by AB' + BC</p>
+          <div class="final-result" style="margin-top: 0.75rem;">F = AB' + BC</div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="step-section" style="margin: 1.5rem 0;">
+      <h4><span class="step-number">3</span> 4-Variable QMC</h4>
+      <p>Use QMC to minimize: <strong>F(A,B,C,D) = Σm(0, 1, 2, 3, 8, 9, 10, 11)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Pattern Recognition:</strong> Minterms 0-3 have A=0, B=0; Minterms 8-11 have A=1, B=0</p>
+          <p style="margin-top: 0.75rem;"><strong>Grouping by 1s:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>Group 0: m0 = 0000</li>
+            <li>Group 1: m1, m2, m8</li>
+            <li>Group 2: m3, m9, m10</li>
+            <li>Group 3: m11</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>After full combination:</strong></p>
+          <p style="font-family: var(--mono);">All 8 minterms combine to: -0-- (B')</p>
+          <div class="final-result" style="margin-top: 0.75rem;">F = B'</div>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dim);">4 dashes = 2⁴ = 16 possible, but we only have 8 minterms where B=0, confirming F = B'</p>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="step-section" style="margin: 1.5rem 0;">
+      <h4><span class="step-number">4</span> 4-Variable QMC with Don't Cares</h4>
+      <p>Use QMC to minimize: <strong>F(A,B,C,D) = Σm(2, 6, 8, 9, 10) + d(0, 1, 3, 11)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Include don't cares in combination:</strong></p>
+          <p style="margin-top: 0.5rem;">All terms: 0, 1, 2, 3, 6, 8, 9, 10, 11</p>
+          <p style="margin-top: 0.75rem;"><strong>Key combinations:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-family: var(--mono);">
+            <li>(0,1,2,3) → 00-- = A'B' (using d0, d1, d3)</li>
+            <li>(8,9,10,11) → 10-- = AB' (using d11)</li>
+            <li>(2,6) → 0-10 = A'CD' (only required minterms)</li>
+          </ul>
+          <p style="margin-top: 0.75rem;"><strong>Analysis:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>A'B' covers m2 (required) + don't cares</li>
+            <li>AB' covers m8, m9, m10 (required) + d11</li>
+            <li>m6 needs A'CD' or can use A'B' + extra</li>
+          </ul>
+          <p style="margin-top: 0.5rem;">Better: (0,2,8,10) → -0-0 = B'D' and (2,6) → 0-10</p>
+          <div class="final-result" style="margin-top: 0.75rem;">F = B'D' + A'CD'</div>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-dim);">Or equivalently: F = AB' + A'B' = B' (but this doesn't cover m6 alone)</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
   <!-- Related Topics -->
   <section class="section" id="related">
     <div class="section-header">
@@ -688,13 +915,13 @@ group: boolean
         <span class="related-card-name">Karnaugh Maps</span>
         <span class="related-card-cat">Visual alternative</span>
       </a>
+      <a href="{{ '/boolean/espresso.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Espresso Algorithm</span>
+        <span class="related-card-cat">Heuristic method</span>
+      </a>
       <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
         <span class="related-card-name">SOP / POS Forms</span>
         <span class="related-card-cat">Canonical forms</span>
-      </a>
-      <a href="{{ '/boolean/hazards.html' | relative_url }}" class="related-card">
-        <span class="related-card-name">Hazard Analysis</span>
-        <span class="related-card-cat">Timing issues</span>
       </a>
     </div>
   </section>
@@ -709,8 +936,8 @@ group: boolean
     </div>
     <span class="page-footer-edit">Edit this page on GitHub</span>
     <div>
-      <a href="{{ '/boolean/hazards.html' | relative_url }}">
-        Hazard Analysis
+      <a href="{{ '/boolean/espresso.html' | relative_url }}">
+        Espresso
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
     </div>

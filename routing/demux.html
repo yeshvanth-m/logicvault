@@ -1,0 +1,410 @@
+---
+layout: routing
+title: "Demultiplexer (DEMUX)"
+sidebar: demux
+group: routing
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Data Routing }
+  - { color: purple, text: 1-to-N }
+subtitle: "Routes a single input signal to one of many output lines based on select inputs. The inverse operation of a multiplexer. Used for data distribution, memory address decoding, and signal demultiplexing."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Tables" }
+  - { id: "boolean", title: "Boolean Expressions" }
+  - { id: "decoder", title: "DEMUX vs Decoder" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Input", value: "D (1 data input)" }
+  - { label: "Select Lines", value: "S[n-1:0]" }
+  - { label: "Outputs", value: "Y₀ through Y₂ₙ₋₁" }
+  - { label: "Operation", value: "Y[S] = D, others = 0" }
+  - { label: "Relationship", value: "Decoder with enable" }
+  - { label: "1:4 DEMUX", value: "2 select, 4 outputs" }
+  - { label: "Use Case", value: "Address decoding, serial→parallel" }
+related:
+  - { url: "/routing/mux2.html", name: "2:1 MUX", desc: "Inverse operation — N-to-1" }
+  - { url: "/routing/mux4.html", name: "4:1 MUX", desc: "Four-input selector" }
+  - { url: "/routing/tristate.html", name: "Tri-state Buffer", desc: "Bus driving" }
+  - { url: "/gates/and.html", name: "AND Gate", desc: "Core enable logic" }
+prev: { url: "/routing/mux8.html", title: "8:1 Multiplexer" }
+next: { url: "/routing/tristate.html", title: "Tri-state Buffer" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Demultiplexer (DEMUX)</strong> performs the inverse function of a multiplexer: it takes 
+    a single data input D and routes it to one of 2ⁿ output lines based on n select lines. 
+    The selected output receives the input data while all other outputs are held at logic 0.
+  </p>
+  <p>
+    Demultiplexers are essential for data distribution systems, memory address decoding (selecting 
+    one chip among many), serial-to-parallel conversion, and signal demultiplexing in communication 
+    systems. A DEMUX is functionally equivalent to a decoder with an enable input.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Tables
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>1:2 DEMUX</h5>
+      <table class="truth-table" style="margin-top: 0.5rem;">
+        <thead>
+          <tr><th>S</th><th>D</th><th class="out-col">Y₁</th><th class="out-col">Y₀</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="concept-card">
+      <h5>1:4 DEMUX (Simplified)</h5>
+      <table class="truth-table" style="margin-top: 0.5rem;">
+        <thead>
+          <tr><th>S₁</th><th>S₀</th><th class="out-col">Active Out</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">Y₀ = D</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">Y₁ = D</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">Y₂ = D</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">Y₃ = D</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin-top: 1rem;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th colspan="3">1:4 DEMUX Full Truth Table</th>
+          <th colspan="4">Outputs</th>
+        </tr>
+        <tr>
+          <th>S₁</th>
+          <th>S₀</th>
+          <th>D</th>
+          <th class="out-col">Y₃</th>
+          <th class="out-col">Y₂</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Boolean Expressions
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">1:4 DEMUX Equations</div>
+    <div class="bool-expr">
+      <span class="out">Y₀</span> = <span class="var">S̄₁</span><span class="op">·</span><span class="var">S̄₀</span><span class="op">·</span><span class="var">D</span><br>
+      <span class="out">Y₁</span> = <span class="var">S̄₁</span><span class="op">·</span><span class="var">S₀</span><span class="op">·</span><span class="var">D</span><br>
+      <span class="out">Y₂</span> = <span class="var">S₁</span><span class="op">·</span><span class="var">S̄₀</span><span class="op">·</span><span class="var">D</span><br>
+      <span class="out">Y₃</span> = <span class="var">S₁</span><span class="op">·</span><span class="var">S₀</span><span class="op">·</span><span class="var">D</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>General Formula</h5>
+      <div class="formula">Yᵢ = mᵢ(S) · D<br>where mᵢ = minterm i of select lines</div>
+    </div>
+    <div class="concept-card">
+      <h5>1:2 DEMUX</h5>
+      <div class="formula">Y₀ = S̄ · D<br>Y₁ = S · D</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="decoder">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    DEMUX vs Decoder
+  </h3>
+
+  <p>
+    A demultiplexer is functionally identical to a decoder with an enable input. The enable 
+    acts as the data input, and the decoder outputs become the demux outputs.
+  </p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>Decoder</th>
+          <th>Demultiplexer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Primary Input</td>
+          <td>n-bit address only</td>
+          <td>Data D + n-bit select</td>
+        </tr>
+        <tr>
+          <td>Output When Selected</td>
+          <td>Always 1</td>
+          <td>Follows input D</td>
+        </tr>
+        <tr>
+          <td>Enable Input</td>
+          <td>Optional (E)</td>
+          <td>Is the data (D)</td>
+        </tr>
+        <tr>
+          <td>Use Case</td>
+          <td>Address decoding</td>
+          <td>Data distribution</td>
+        </tr>
+        <tr>
+          <td>Conversion</td>
+          <td colspan="2" class="highlight">Decoder + Enable = DEMUX</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card">
+    <h5>Using 74LS138 (3:8 Decoder) as 1:8 DEMUX</h5>
+    <p>
+      Connect G1=1, G2A=0, G2B=data. The data input acts as active-low enable. 
+      When data=0, selected output goes low (active). Invert outputs for positive logic DEMUX.
+    </p>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 1:4 DEMUX Structure</p>
+      <p>2:4 decoder generates select signals</p>
+      <p>Each decoder output ANDed with data D</p>
+      <p>Symbol: Inverted trapezoid (opposite of MUX)</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">demux.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 1:4 DEMUX - Behavioral</span>
+<span class="kw">module</span> demux_1to4 (
+    <span class="kw">input</span>        <span class="port">d</span>,
+    <span class="kw">input</span>  [<span class="num">1</span>:<span class="num">0</span>] <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span>[<span class="num">0</span>] = (<span class="port">sel</span> == <span class="num">2'b00</span>) ? <span class="port">d</span> : <span class="num">1'b0</span>;
+<span class="kw">assign</span> <span class="port">y</span>[<span class="num">1</span>] = (<span class="port">sel</span> == <span class="num">2'b01</span>) ? <span class="port">d</span> : <span class="num">1'b0</span>;
+<span class="kw">assign</span> <span class="port">y</span>[<span class="num">2</span>] = (<span class="port">sel</span> == <span class="num">2'b10</span>) ? <span class="port">d</span> : <span class="num">1'b0</span>;
+<span class="kw">assign</span> <span class="port">y</span>[<span class="num">3</span>] = (<span class="port">sel</span> == <span class="num">2'b11</span>) ? <span class="port">d</span> : <span class="num">1'b0</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 1:4 DEMUX - Using shift</span>
+<span class="kw">module</span> demux_1to4_shift (
+    <span class="kw">input</span>        <span class="port">d</span>,
+    <span class="kw">input</span>  [<span class="num">1</span>:<span class="num">0</span>] <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="cmt">// Shift data to selected position</span>
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">d</span> << <span class="port">sel</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Parameterized 1:N DEMUX</span>
+<span class="kw">module</span> demux #(
+    <span class="kw">parameter</span> <span class="port">SEL_WIDTH</span> = <span class="num">3</span>,
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">1</span> << <span class="port">SEL_WIDTH</span>
+)(
+    <span class="kw">input</span>  [<span class="port">SEL_WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">sel</span>,
+    <span class="kw">input</span>                   <span class="port">d</span>,
+    <span class="kw">output</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>]          <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">d</span> << <span class="port">sel</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 1:8 DEMUX with multi-bit data</span>
+<span class="kw">module</span> demux_1to8_wide #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">d</span>,
+    <span class="kw">input</span>  [<span class="num">2</span>:<span class="num">0</span>]        <span class="port">sel</span>,
+    <span class="kw">output</span> <span class="kw">reg</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span> [<span class="num">0</span>:<span class="num">7</span>]
+);
+
+<span class="kw">integer</span> i;
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < <span class="num">8</span>; i = i + <span class="num">1</span>)
+        <span class="port">y</span>[i] = (i == <span class="port">sel</span>) ? <span class="port">d</span> : <span class="num">0</span>;
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">demux.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> demux_1to4 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">d</span>   : <span class="kw">in</span>  std_logic;
+        <span class="port">sel</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">y</span>   : <span class="kw">out</span> std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> demux_1to4;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> demux_1to4 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">d</span>, <span class="port">sel</span>)
+    <span class="kw">begin</span>
+        <span class="port">y</span> <= (<span class="kw">others</span> => <span class="str">'0'</span>);
+        <span class="port">y</span>(to_integer(unsigned(<span class="port">sel</span>))) <= <span class="port">d</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Using shift operation</span>
+<span class="kw">architecture</span> shift_based <span class="kw">of</span> demux_1to4 <span class="kw">is</span>
+    <span class="kw">signal</span> temp : std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    temp <= (<span class="num">0</span> => <span class="port">d</span>, <span class="kw">others</span> => <span class="str">'0'</span>);
+    <span class="port">y</span> <= std_logic_vector(
+        shift_left(unsigned(temp), 
+        to_integer(unsigned(<span class="port">sel</span>)))
+    );
+<span class="kw">end</span> shift_based;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Memory Address Decoding</h5>
+      <p>Select one memory chip based on upper address bits. DEMUX activates chip select.</p>
+      <div class="formula">4 memory banks → 1:4 DEMUX</div>
+    </div>
+    <div class="concept-card">
+      <h5>Serial to Parallel</h5>
+      <p>Convert serial data stream to parallel outputs using counter-controlled DEMUX.</p>
+      <div class="formula">UART RX → shift register → DEMUX</div>
+    </div>
+    <div class="concept-card">
+      <h5>Data Distribution</h5>
+      <p>Send single data stream to one of multiple destinations.</p>
+      <div class="formula">CPU → multiple peripherals</div>
+    </div>
+    <div class="concept-card">
+      <h5>Seven Segment Display</h5>
+      <p>Time-multiplex digits using DEMUX to select which display receives data.</p>
+      <div class="formula">4-digit display → 1:4 DEMUX</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>MUX + DEMUX Data Transmission</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+      A MUX and DEMUX pair can transmit multiple signals over a single wire:
+    </p>
+    <div class="analysis-item">
+      <span class="label">Transmitter</span>
+      <span class="value">N:1 MUX selects input</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Channel</span>
+      <span class="value">Single wire + sync signal</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Receiver</span>
+      <span class="value">1:N DEMUX routes to output</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Requirement</span>
+      <span class="value">Synchronized select signals</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>DEMUX is the inverse of MUX: routes 1 input to 1 of N outputs. Others are 0 (or high-Z).</li>
+    <li>Yᵢ = mᵢ(S) · D — selected output gets data, others are 0. Uses AND gates.</li>
+    <li>DEMUX ≡ Decoder with enable. Use decoder IC with enable as data input.</li>
+    <li>1:2ⁿ DEMUX needs n select lines. 1:4 = 2 select, 1:8 = 3 select.</li>
+    <li>Common use: memory address decoding — upper address bits select memory bank.</li>
+    <li>74LS154 is 4:16 decoder/demux; 74LS138 is 3:8 decoder/demux.</li>
+  </ul>
+</section>

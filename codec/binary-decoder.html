@@ -1,0 +1,579 @@
+---
+layout: codec
+title: "Binary Decoder"
+sidebar: binary-dec
+group: codec
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Decoder }
+  - { color: purple, text: N-to-2ⁿ }
+subtitle: "Converts N-bit binary input to 2ⁿ output lines. Exactly one output is active for each input combination. The inverse of a binary encoder — fundamental building block for address decoding and memory selection."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "implementations", title: "Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "cascading", title: "Cascading" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "N bits (binary) + enable" }
+  - { label: "Outputs", value: "2ⁿ lines (one-hot)" }
+  - { label: "2-to-4 Decoder", value: "2 bits → 4 outputs" }
+  - { label: "3-to-8 Decoder", value: "3 bits → 8 outputs" }
+  - { label: "Active Output", value: "Yᵢ = 1 when input = i" }
+  - { label: "Gate Type", value: "AND gates + inverters" }
+  - { label: "Common ICs", value: "74LS138, 74LS139" }
+related:
+  - { url: "/codec/binary-encoder.html", name: "Binary Encoder", desc: "Inverse operation" }
+  - { url: "/codec/bcd-decoder.html", name: "BCD Decoder", desc: "Decimal decoding" }
+  - { url: "/routing/demux.html", name: "DEMUX", desc: "Decoder with data" }
+  - { url: "/codec/seven-seg.html", name: "7-Segment", desc: "Display decoder" }
+prev: { url: "/codec/priority-encoder.html", title: "Priority Encoder" }
+next: { url: "/codec/bcd-decoder.html", title: "BCD Decoder" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Binary Decoder</strong> (or N-to-2ⁿ decoder) converts an N-bit binary input into 
+    2ⁿ output lines, where exactly one output is active (HIGH) at any time. The decoder essentially 
+    generates all minterms of the input variables — each output corresponds to one minterm.
+  </p>
+  <p>
+    Decoders are fundamental to digital systems: they enable memory chip selection, instruction 
+    decoding in CPUs, address decoding in memory-mapped I/O, and serve as universal logic 
+    function generators when combined with OR gates.
+  </p>
+  <div class="analysis-box">
+    <h4>Decoder vs DEMUX</h4>
+    <div class="analysis-item">
+      <span class="label">Decoder</span>
+      <span class="value">Enable signal controls all outputs (0 or 1)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">DEMUX</span>
+      <span class="value">Data input routed to selected output line</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Relationship</span>
+      <span class="value">Decoder with enable ≈ 1-to-N DEMUX</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">2-to-4 Decoder (with Enable)</h4>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>EN</th>
+          <th>A₁</th>
+          <th>A₀</th>
+          <th class="out-col">Y₃</th>
+          <th class="out-col">Y₂</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td>X</td>
+          <td>X</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">3-to-8 Decoder (74LS138)</h4>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>E₁</th>
+          <th>E̅₂</th>
+          <th>E̅₃</th>
+          <th>A₂</th>
+          <th>A₁</th>
+          <th>A₀</th>
+          <th class="out-col">Outputs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>All HIGH</td>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>All HIGH</td>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td>X</td>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>All HIGH</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>Y̅₀ = 0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>Y̅₁ = 0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>Y̅₇ = 0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analysis-box">
+    <h4>74LS138 Enable Logic</h4>
+    <div class="analysis-item">
+      <span class="label">Three enables</span>
+      <span class="value">E₁ (active-high), E̅₂ and E̅₃ (active-low)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Enabled when</span>
+      <span class="value">E₁=1 AND E̅₂=0 AND E̅₃=0</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Outputs</span>
+      <span class="value">Active-low (selected output goes LOW)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">2-to-4 Decoder</h4>
+  <div class="bool-box">
+    <div class="bool-label">Output Equations (Active-High)</div>
+    <div class="bool-expr">
+      <span class="out">Y₀</span> = <span class="var">EN</span> <span class="op">·</span> <span class="var">A̅₁</span> <span class="op">·</span> <span class="var">A̅₀</span> = <span class="var">EN</span> <span class="op">·</span> m₀<br>
+      <span class="out">Y₁</span> = <span class="var">EN</span> <span class="op">·</span> <span class="var">A̅₁</span> <span class="op">·</span> <span class="var">A₀</span> = <span class="var">EN</span> <span class="op">·</span> m₁<br>
+      <span class="out">Y₂</span> = <span class="var">EN</span> <span class="op">·</span> <span class="var">A₁</span> <span class="op">·</span> <span class="var">A̅₀</span> = <span class="var">EN</span> <span class="op">·</span> m₂<br>
+      <span class="out">Y₃</span> = <span class="var">EN</span> <span class="op">·</span> <span class="var">A₁</span> <span class="op">·</span> <span class="var">A₀</span> = <span class="var">EN</span> <span class="op">·</span> m₃
+    </div>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">General Pattern</h4>
+  <div class="bool-box">
+    <div class="bool-label">N-to-2ⁿ Decoder</div>
+    <div class="bool-expr">
+      <span class="out">Yᵢ</span> = <span class="var">EN</span> <span class="op">·</span> mᵢ(<span class="var">A_{N-1}</span>, ..., <span class="var">A₀</span>)<br><br>
+      where mᵢ = minterm i of input variables
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Minterm Generator</h5>
+      <p>Each output is a unique minterm. Decoder = complete minterm generator.</p>
+      <div class="formula">Yᵢ = mᵢ(A, B, C...)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Function Generator</h5>
+      <p>Any function = OR of minterms. Decoder + OR gate = any function.</p>
+      <div class="formula">F = Σm(1,3,5) = Y₁+Y₃+Y₅</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+    Implementations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>AND Gate Array</h5>
+      <p>2ⁿ N-input AND gates. Each gate implements one minterm.</p>
+      <div class="formula">+ N inverters</div>
+    </div>
+    <div class="concept-card">
+      <h5>NAND Implementation</h5>
+      <p>For active-low outputs (74LS138). NAND = inverted AND.</p>
+      <div class="formula">Y̅ᵢ = (inputs)' NAND</div>
+    </div>
+    <div class="concept-card">
+      <h5>Tree Structure</h5>
+      <p>Build larger from smaller: 4-to-16 from two 3-to-8s.</p>
+      <div class="formula">Hierarchical decoding</div>
+    </div>
+    <div class="concept-card">
+      <h5>Gate Count</h5>
+      <p>N inverters + 2ⁿ N-input AND gates.</p>
+      <div class="formula">3-to-8: 3 NOT + 8 AND3</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Using Decoder as Function Generator</h4>
+    <div class="derivation-table">
+      <pre>
+Example: Implement F(A,B,C) = Σm(1, 2, 4, 7) using 3-to-8 decoder
+
+  A ────┬────┐
+  B ────┼────┤ 3-to-8   Y₀ ────────────────────
+  C ────┼────┤ Decoder  Y₁ ────┐
+        │    │          Y₂ ────┼───┬─── OR ──── F
+  EN=1 ─┴────┘          Y₃ ────│   │
+                        Y₄ ────┼───┤
+                        Y₅ ────│   │
+                        Y₆ ────┘   │
+                        Y₇ ────────┘
+
+F = Y₁ + Y₂ + Y₄ + Y₇ = Σm(1,2,4,7)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 3-to-8 Binary Decoder</p>
+      <p>A₂A₁A₀ inputs → 8 AND gates → Y₇...Y₀ outputs</p>
+      <p>Each AND gate: 3 inputs (direct or inverted)</p>
+      <p>74LS138: Active-low outputs with 3 enables</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">decoder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 2-to-4 Decoder with Enable</span>
+<span class="kw">module</span> decoder_2to4 (
+    <span class="kw">input</span>      [<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>            <span class="port">en</span>,
+    <span class="kw">output reg</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">if</span> (<span class="port">en</span>)
+        <span class="port">y</span> = <span class="num">4'b0001</span> << <span class="port">a</span>;  <span class="cmt">// Shift 1 to selected position</span>
+    <span class="kw">else</span>
+        <span class="port">y</span> = <span class="num">4'b0000</span>;        <span class="cmt">// Disabled</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 3-to-8 Decoder (74LS138 style)</span>
+<span class="kw">module</span> decoder_3to8 (
+    <span class="kw">input</span>      [<span class="num">2</span>:<span class="num">0</span>] <span class="port">a</span>,       <span class="cmt">// Address inputs</span>
+    <span class="kw">input</span>            <span class="port">e1</span>,      <span class="cmt">// Active-high enable</span>
+    <span class="kw">input</span>            <span class="port">e2_n</span>,    <span class="cmt">// Active-low enable</span>
+    <span class="kw">input</span>            <span class="port">e3_n</span>,    <span class="cmt">// Active-low enable</span>
+    <span class="kw">output</span>     [<span class="num">7</span>:<span class="num">0</span>] <span class="port">y_n</span>      <span class="cmt">// Active-low outputs</span>
+);
+
+<span class="kw">wire</span> <span class="port">en</span> = <span class="port">e1</span> & ~<span class="port">e2_n</span> & ~<span class="port">e3_n</span>;
+
+<span class="kw">assign</span> <span class="port">y_n</span> = <span class="port">en</span> ? ~(<span class="num">8'b00000001</span> << <span class="port">a</span>) : <span class="num">8'b11111111</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Parametrized N-to-2^N Decoder</span>
+<span class="kw">module</span> decoder #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">3</span>  <span class="cmt">// Input bits</span>
+)(
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>]         <span class="port">a</span>,
+    <span class="kw">input</span>                   <span class="port">en</span>,
+    <span class="kw">output</span> [(<span class="num">1</span><<<span class="port">N</span>)-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">genvar</span> <span class="port">i</span>;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (<span class="port">i</span> = <span class="num">0</span>; <span class="port">i</span> < (<span class="num">1</span><<<span class="port">N</span>); <span class="port">i</span> = <span class="port">i</span> + <span class="num">1</span>) <span class="kw">begin</span> : dec_out
+        <span class="kw">assign</span> <span class="port">y</span>[<span class="port">i</span>] = <span class="port">en</span> & (<span class="port">a</span> == <span class="port">i</span>);
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Using decoder for function generation</span>
+<span class="kw">module</span> function_from_decoder (
+    <span class="kw">input</span>  <span class="port">a</span>, <span class="port">b</span>, <span class="port">c</span>,
+    <span class="kw">output</span> <span class="port">f</span>
+);
+
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">m</span>;  <span class="cmt">// Minterms</span>
+
+decoder #(<span class="num">3</span>) dec (
+    .<span class="port">a</span>({<span class="port">a</span>, <span class="port">b</span>, <span class="port">c</span>}),
+    .<span class="port">en</span>(<span class="num">1'b1</span>),
+    .<span class="port">y</span>(<span class="port">m</span>)
+);
+
+<span class="cmt">// F = Σm(1, 2, 4, 7)</span>
+<span class="kw">assign</span> <span class="port">f</span> = <span class="port">m</span>[<span class="num">1</span>] | <span class="port">m</span>[<span class="num">2</span>] | <span class="port">m</span>[<span class="num">4</span>] | <span class="port">m</span>[<span class="num">7</span>];
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">decoder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="cmt">-- 3-to-8 Decoder with Enable</span>
+<span class="kw">entity</span> decoder_3to8 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>  : <span class="kw">in</span>  std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">en</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">y</span>  : <span class="kw">out</span> std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> decoder_3to8;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> decoder_3to8 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">a</span>, <span class="port">en</span>)
+    <span class="kw">begin</span>
+        <span class="port">y</span> <= (<span class="kw">others</span> => <span class="str">'0'</span>);
+        <span class="kw">if</span> <span class="port">en</span> = <span class="str">'1'</span> <span class="kw">then</span>
+            <span class="port">y</span>(to_integer(unsigned(<span class="port">a</span>))) <= <span class="str">'1'</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Alternative: Concurrent assignment</span>
+<span class="kw">architecture</span> dataflow <span class="kw">of</span> decoder_3to8 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">y</span>(<span class="num">0</span>) <= <span class="port">en</span> <span class="kw">and not</span> <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">1</span>) <= <span class="port">en</span> <span class="kw">and not</span> <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">2</span>) <= <span class="port">en</span> <span class="kw">and not</span> <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">3</span>) <= <span class="port">en</span> <span class="kw">and not</span> <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">4</span>) <= <span class="port">en</span> <span class="kw">and</span>     <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">5</span>) <= <span class="port">en</span> <span class="kw">and</span>     <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">6</span>) <= <span class="port">en</span> <span class="kw">and</span>     <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and not</span> <span class="port">a</span>(<span class="num">0</span>);
+    <span class="port">y</span>(<span class="num">7</span>) <= <span class="port">en</span> <span class="kw">and</span>     <span class="port">a</span>(<span class="num">2</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">1</span>) <span class="kw">and</span>     <span class="port">a</span>(<span class="num">0</span>);
+<span class="kw">end</span> dataflow;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="cascading">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Cascading Decoders
+  </h3>
+
+  <p>
+    Larger decoders can be built from smaller ones using enable inputs for hierarchical decoding.
+  </p>
+
+  <div class="derivation-box">
+    <h4>4-to-16 from Two 3-to-8 Decoders</h4>
+    <div class="derivation-table">
+      <pre>
+A₃ ──────────┬──────────────────────────────┐
+             │                              │
+             │  ┌─────────────────┐         │
+             └──┤ EN  3-to-8 Dec  ├─ Y₁₅-Y₈ (High group)
+A₂A₁A₀ ─────────┤ A₂A₁A₀          │         │
+                └─────────────────┘         │
+                                            │
+                ┌─────────────────┐         │
+        NOT ◁───┤ EN  3-to-8 Dec  ├─ Y₇-Y₀  (Low group)
+A₂A₁A₀ ─────────┤ A₂A₁A₀          │
+                └─────────────────┘
+
+When A₃=0: Low decoder enabled  → Y₀-Y₇
+When A₃=1: High decoder enabled → Y₈-Y₁₅</pre>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>5-to-32 from One 2-to-4 + Four 3-to-8</h4>
+    <div class="derivation-table">
+      <pre>
+A₄A₃ ────┬────[2-to-4 Dec]───┬── EN₀ → [3-to-8] → Y₀-Y₇
+         │                   ├── EN₁ → [3-to-8] → Y₈-Y₁₅
+A₂A₁A₀ ──┼───────────────────┼── EN₂ → [3-to-8] → Y₁₆-Y₂₃
+         │                   └── EN₃ → [3-to-8] → Y₂₄-Y₃₁
+         │
+         └── Address lines to all four 3-to-8 decoders
+
+2-to-4 decoder acts as "row select"
+Four 3-to-8 decoders share address lines</pre>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Gate Savings</h4>
+    <div class="analysis-item">
+      <span class="label">Direct 4-to-16</span>
+      <span class="value">4 inverters + 16 × 4-input ANDs</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Cascaded 3-to-8</span>
+      <span class="value">2 × (3 inv + 8 × 3-AND) + 1 NOT</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Benefit</span>
+      <span class="value">Fewer gate inputs, modular design</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Memory Address Decoding</h5>
+      <p>Select memory chip based on address bits. Common in microprocessor systems.</p>
+      <div class="formula">A15-A13 → chip select</div>
+    </div>
+    <div class="concept-card">
+      <h5>Instruction Decoding</h5>
+      <p>Opcode field → control signals. First stage of CPU execution.</p>
+      <div class="formula">Opcode → micro-ops</div>
+    </div>
+    <div class="concept-card">
+      <h5>Seven-Segment Display</h5>
+      <p>BCD to segment decoder is specialized decoder.</p>
+      <div class="formula">4 bits → 7 segments</div>
+    </div>
+    <div class="concept-card">
+      <h5>ROM Implementation</h5>
+      <p>Decoder + OR array = Read-Only Memory structure.</p>
+      <div class="formula">Address → data word</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>N-to-2ⁿ decoder: N inputs → 2ⁿ one-hot outputs. Exactly one output active per input.</li>
+    <li>Decoder = complete minterm generator. Each output is one minterm of input variables.</li>
+    <li>Any Boolean function: Decoder + OR gate. F = OR of minterms where F=1.</li>
+    <li>74LS138: 3-to-8 decoder with 3 enables (E₁, E̅₂, E̅₃), active-low outputs.</li>
+    <li>DEMUX vs Decoder: DEMUX routes data input; decoder generates all minterms with enable.</li>
+    <li>Address decoding: High-order bits select chip; low-order bits select within chip.</li>
+  </ul>
+</section>

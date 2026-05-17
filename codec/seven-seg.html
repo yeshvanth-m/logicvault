@@ -1,0 +1,548 @@
+---
+layout: codec
+title: "7-Segment Decoder"
+sidebar: seven-seg
+group: codec
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Decoder }
+  - { color: red, text: Display Driver }
+subtitle: "Converts 4-bit BCD or binary input to 7 segment control signals for numeric display. Each segment (a-g) is controlled by a Boolean function of the input digits. Fundamental to digital clocks, meters, and calculators."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "segment-layout", title: "Segment Layout" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "display-types", title: "Display Types" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Input", value: "4-bit BCD (0-9) or hex (0-F)" }
+  - { label: "Outputs", value: "7 segments (a-g) + optional DP" }
+  - { label: "Segment Names", value: "a (top), b-f (sides), g (middle)" }
+  - { label: "Active-Low", value: "Common anode displays" }
+  - { label: "Active-High", value: "Common cathode displays" }
+  - { label: "Common ICs", value: "7447, 7448, CD4511" }
+  - { label: "Characters", value: "0-9, A-F, some letters" }
+related:
+  - { url: "/codec/bcd-decoder.html", name: "BCD Decoder", desc: "4-to-10 decoding" }
+  - { url: "/codec/binary-decoder.html", name: "Binary Decoder", desc: "General decoder" }
+  - { url: "/codec/binary-encoder.html", name: "Binary Encoder", desc: "Inverse operation" }
+  - { url: "/routing/mux4.html", name: "4:1 MUX", desc: "Digit multiplexing" }
+prev: { url: "/codec/gray.html", title: "Binary ↔ Gray" }
+next: { url: "/codec/binary-encoder.html", title: "Binary Encoder" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>7-Segment Decoder</strong> converts a 4-bit binary or BCD input into seven output 
+    signals that control the individual segments of a 7-segment LED or LCD display. Each segment 
+    (labeled a through g) is lit or unlit based on the digit being displayed.
+  </p>
+  <p>
+    This decoder is ubiquitous in digital systems: calculators, digital clocks, multimeters, 
+    scoreboards, and any device that needs to display numeric information. The 7447 and 7448 
+    are classic TTL decoders, while CD4511 is the CMOS equivalent.
+  </p>
+</section>
+
+<section class="content-section" id="segment-layout">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Segment Layout
+  </h3>
+
+  <div class="diagram-box" style="min-height: 180px;">
+    <div class="diagram-placeholder">
+      <pre style="font-family: var(--mono); font-size: 1rem; line-height: 1.4;">
+     aaaa
+    f    b
+    f    b
+     gggg
+    e    c
+    e    c
+     dddd   (dp)
+
+Segment positions:
+a = top, b = upper-right, c = lower-right
+d = bottom, e = lower-left, f = upper-left
+g = middle, dp = decimal point
+      </pre>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Common Cathode</h5>
+      <p>All cathodes connected. Segments lit by HIGH signal. Most intuitive.</p>
+      <div class="formula">7448, CD4511</div>
+    </div>
+    <div class="concept-card">
+      <h5>Common Anode</h5>
+      <p>All anodes connected. Segments lit by LOW signal. Active-low outputs.</p>
+      <div class="formula">7447</div>
+    </div>
+    <div class="concept-card">
+      <h5>Typical Current</h5>
+      <p>10-20 mA per segment. Use current-limiting resistors.</p>
+      <div class="formula">R ≈ (Vcc - Vf) / If</div>
+    </div>
+    <div class="concept-card">
+      <h5>Multiplexing</h5>
+      <p>Multiple digits share segments. Rapidly scan through digits.</p>
+      <div class="formula">Reduces pin count</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Digit</th>
+          <th>D₃</th>
+          <th>D₂</th>
+          <th>D₁</th>
+          <th>D₀</th>
+          <th class="out-col">a</th>
+          <th class="out-col">b</th>
+          <th class="out-col">c</th>
+          <th class="out-col">d</th>
+          <th class="out-col">e</th>
+          <th class="out-col">f</th>
+          <th class="out-col">g</th>
+          <th>Display</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td style="font-family: monospace;">0</td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td style="font-family: monospace;">1</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">2</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">3</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">4</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">5</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">6</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td style="font-family: monospace;">7</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">8</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td style="font-family: monospace;">9</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Hexadecimal Extension (A-F)</h4>
+    <div class="analysis-item">
+      <span class="label">A (1010)</span>
+      <span class="value">a,b,c,e,f,g = 1110111</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">b (1011)</span>
+      <span class="value">c,d,e,f,g = 0011111</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">C (1100)</span>
+      <span class="value">a,d,e,f = 1001110</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">d (1101)</span>
+      <span class="value">b,c,d,e,g = 0111101</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">E (1110)</span>
+      <span class="value">a,d,e,f,g = 1001111</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">F (1111)</span>
+      <span class="value">a,e,f,g = 1000111</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Segment Equations (Active-High, BCD only)</div>
+    <div class="bool-expr">
+      <span class="out">a</span> = <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D̅₁</span>·<span class="var">D₀</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D̅₁</span>·<span class="var">D̅₀</span> = Σm(1,4) inverted<br>
+      <span class="out">b</span> = <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D̅₁</span>·<span class="var">D₀</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D₁</span>·<span class="var">D̅₀</span> = Σm(5,6) inverted<br>
+      <span class="out">c</span> = <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D₁</span>·<span class="var">D̅₀</span> = Σm(2) inverted<br>
+      <span class="out">d</span> = <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D̅₁</span>·<span class="var">D₀</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D̅₁</span>·<span class="var">D̅₀</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D₁</span>·<span class="var">D₀</span> = Σm(1,4,7) inverted<br>
+      <span class="out">e</span> = <span class="var">D̅₃</span>·<span class="var">D₀</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D̅₁</span> = Σm(1,3,4,5,7,9) inverted<br>
+      <span class="out">f</span> = <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D₀</span> + <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D₁</span> + <span class="var">D̅₃</span>·<span class="var">D₁</span>·<span class="var">D₀</span> = Σm(1,2,3,7) inverted<br>
+      <span class="out">g</span> = <span class="var">D̅₃</span>·<span class="var">D̅₂</span>·<span class="var">D̅₁</span> + <span class="var">D̅₃</span>·<span class="var">D₂</span>·<span class="var">D₁</span>·<span class="var">D₀</span> = Σm(0,1,7) inverted
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>K-Map for Segment 'a'</h4>
+    <div class="derivation-table">
+      <pre>
+                D₁D₀
+           00  01  11  10
+       ┌───┬───┬───┬───┐
+D₃D₂ 00│ 1 │ 0 │ 1 │ 1 │  (0,1,2,3)
+       ├───┼───┼───┼───┤
+     01│ 0 │ 1 │ 1 │ 1 │  (4,5,6,7)
+       ├───┼───┼───┼───┤
+     11│ X │ X │ X │ X │  (invalid BCD)
+       ├───┼───┼───┼───┤
+     10│ 1 │ 1 │ X │ X │  (8,9,invalid)
+       └───┴───┴───┴───┘
+
+a = 1 for 0,2,3,5,6,7,8,9
+a = 0 for 1,4
+Using don't cares: a = D₁ + D₃ + D₂⊕D₀ (simplified)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 7-Segment Decoder (7447 style)</p>
+      <p>D₃D₂D₁D₀ → Decoder logic → a,b,c,d,e,f,g</p>
+      <p>Additional pins: LT (lamp test), BI (blanking input)</p>
+      <p>RBI (ripple blanking in), RBO (ripple blanking out)</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">seven_seg.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 7-Segment Decoder (Common Cathode, Active-High)</span>
+<span class="kw">module</span> seven_seg_decoder (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">digit</span>,
+    <span class="kw">output reg</span> [<span class="num">6</span>:<span class="num">0</span>] <span class="port">seg</span>  <span class="cmt">// seg[6:0] = {g,f,e,d,c,b,a}</span>
+);
+
+<span class="cmt">// Segment encoding: gfedcba</span>
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">digit</span>)
+        <span class="num">4'h0</span>: <span class="port">seg</span> = <span class="num">7'b0111111</span>;  <span class="cmt">// 0</span>
+        <span class="num">4'h1</span>: <span class="port">seg</span> = <span class="num">7'b0000110</span>;  <span class="cmt">// 1</span>
+        <span class="num">4'h2</span>: <span class="port">seg</span> = <span class="num">7'b1011011</span>;  <span class="cmt">// 2</span>
+        <span class="num">4'h3</span>: <span class="port">seg</span> = <span class="num">7'b1001111</span>;  <span class="cmt">// 3</span>
+        <span class="num">4'h4</span>: <span class="port">seg</span> = <span class="num">7'b1100110</span>;  <span class="cmt">// 4</span>
+        <span class="num">4'h5</span>: <span class="port">seg</span> = <span class="num">7'b1101101</span>;  <span class="cmt">// 5</span>
+        <span class="num">4'h6</span>: <span class="port">seg</span> = <span class="num">7'b1111101</span>;  <span class="cmt">// 6</span>
+        <span class="num">4'h7</span>: <span class="port">seg</span> = <span class="num">7'b0000111</span>;  <span class="cmt">// 7</span>
+        <span class="num">4'h8</span>: <span class="port">seg</span> = <span class="num">7'b1111111</span>;  <span class="cmt">// 8</span>
+        <span class="num">4'h9</span>: <span class="port">seg</span> = <span class="num">7'b1101111</span>;  <span class="cmt">// 9</span>
+        <span class="num">4'hA</span>: <span class="port">seg</span> = <span class="num">7'b1110111</span>;  <span class="cmt">// A</span>
+        <span class="num">4'hB</span>: <span class="port">seg</span> = <span class="num">7'b1111100</span>;  <span class="cmt">// b</span>
+        <span class="num">4'hC</span>: <span class="port">seg</span> = <span class="num">7'b0111001</span>;  <span class="cmt">// C</span>
+        <span class="num">4'hD</span>: <span class="port">seg</span> = <span class="num">7'b1011110</span>;  <span class="cmt">// d</span>
+        <span class="num">4'hE</span>: <span class="port">seg</span> = <span class="num">7'b1111001</span>;  <span class="cmt">// E</span>
+        <span class="num">4'hF</span>: <span class="port">seg</span> = <span class="num">7'b1110001</span>;  <span class="cmt">// F</span>
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Common Anode (Active-Low) version</span>
+<span class="kw">module</span> seven_seg_decoder_ca (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">digit</span>,
+    <span class="kw">output</span>     [<span class="num">6</span>:<span class="num">0</span>] <span class="port">seg_n</span>  <span class="cmt">// Active-low outputs</span>
+);
+
+<span class="kw">wire</span> [<span class="num">6</span>:<span class="num">0</span>] <span class="port">seg_cc</span>;
+
+seven_seg_decoder cc_dec (
+    .<span class="port">digit</span>(<span class="port">digit</span>),
+    .<span class="port">seg</span>(<span class="port">seg_cc</span>)
+);
+
+<span class="kw">assign</span> <span class="port">seg_n</span> = ~<span class="port">seg_cc</span>;  <span class="cmt">// Invert for common anode</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Multiplexed 4-digit display</span>
+<span class="kw">module</span> four_digit_display (
+    <span class="kw">input</span>        <span class="port">clk</span>,
+    <span class="kw">input</span>        <span class="port">rst_n</span>,
+    <span class="kw">input</span> [<span class="num">15</span>:<span class="num">0</span>] <span class="port">value</span>,     <span class="cmt">// 4 BCD digits</span>
+    <span class="kw">output</span> [<span class="num">6</span>:<span class="num">0</span>] <span class="port">seg</span>,        <span class="cmt">// Shared segments</span>
+    <span class="kw">output</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">digit_sel</span>   <span class="cmt">// Digit select (active-low)</span>
+);
+
+<span class="kw">reg</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">scan_cnt</span>;
+<span class="kw">reg</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">current_digit</span>;
+<span class="kw">reg</span> [<span class="num">15</span>:<span class="num">0</span>] <span class="port">refresh_cnt</span>;  <span class="cmt">// ~1kHz refresh rate</span>
+
+<span class="cmt">// Refresh counter for digit scanning</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> <span class="port">clk</span> <span class="kw">or negedge</span> <span class="port">rst_n</span>) <span class="kw">begin</span>
+    <span class="kw">if</span> (!<span class="port">rst_n</span>) <span class="kw">begin</span>
+        <span class="port">refresh_cnt</span> <= <span class="num">0</span>;
+        <span class="port">scan_cnt</span> <= <span class="num">0</span>;
+    <span class="kw">end else begin</span>
+        <span class="port">refresh_cnt</span> <= <span class="port">refresh_cnt</span> + <span class="num">1</span>;
+        <span class="kw">if</span> (<span class="port">refresh_cnt</span> == <span class="num">0</span>)
+            <span class="port">scan_cnt</span> <= <span class="port">scan_cnt</span> + <span class="num">1</span>;
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="cmt">// Select current digit</span>
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">scan_cnt</span>)
+        <span class="num">2'd0</span>: <span class="port">current_digit</span> = <span class="port">value</span>[<span class="num">3</span>:<span class="num">0</span>];
+        <span class="num">2'd1</span>: <span class="port">current_digit</span> = <span class="port">value</span>[<span class="num">7</span>:<span class="num">4</span>];
+        <span class="num">2'd2</span>: <span class="port">current_digit</span> = <span class="port">value</span>[<span class="num">11</span>:<span class="num">8</span>];
+        <span class="num">2'd3</span>: <span class="port">current_digit</span> = <span class="port">value</span>[<span class="num">15</span>:<span class="num">12</span>];
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="cmt">// Digit select (active-low)</span>
+<span class="kw">assign</span> <span class="port">digit_sel</span> = ~(<span class="num">4'b0001</span> << <span class="port">scan_cnt</span>);
+
+<span class="cmt">// Segment decoder</span>
+seven_seg_decoder dec (
+    .<span class="port">digit</span>(<span class="port">current_digit</span>),
+    .<span class="port">seg</span>(<span class="port">seg</span>)
+);
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">seven_seg.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> seven_seg_decoder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">digit</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">seg</span>   : <span class="kw">out</span> std_logic_vector(<span class="num">6</span> <span class="kw">downto</span> <span class="num">0</span>)  <span class="cmt">-- gfedcba</span>
+    );
+<span class="kw">end</span> seven_seg_decoder;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> seven_seg_decoder <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">with</span> <span class="port">digit</span> <span class="kw">select</span> <span class="port">seg</span> <=
+        <span class="str">"0111111"</span> <span class="kw">when</span> <span class="str">"0000"</span>,  <span class="cmt">-- 0</span>
+        <span class="str">"0000110"</span> <span class="kw">when</span> <span class="str">"0001"</span>,  <span class="cmt">-- 1</span>
+        <span class="str">"1011011"</span> <span class="kw">when</span> <span class="str">"0010"</span>,  <span class="cmt">-- 2</span>
+        <span class="str">"1001111"</span> <span class="kw">when</span> <span class="str">"0011"</span>,  <span class="cmt">-- 3</span>
+        <span class="str">"1100110"</span> <span class="kw">when</span> <span class="str">"0100"</span>,  <span class="cmt">-- 4</span>
+        <span class="str">"1101101"</span> <span class="kw">when</span> <span class="str">"0101"</span>,  <span class="cmt">-- 5</span>
+        <span class="str">"1111101"</span> <span class="kw">when</span> <span class="str">"0110"</span>,  <span class="cmt">-- 6</span>
+        <span class="str">"0000111"</span> <span class="kw">when</span> <span class="str">"0111"</span>,  <span class="cmt">-- 7</span>
+        <span class="str">"1111111"</span> <span class="kw">when</span> <span class="str">"1000"</span>,  <span class="cmt">-- 8</span>
+        <span class="str">"1101111"</span> <span class="kw">when</span> <span class="str">"1001"</span>,  <span class="cmt">-- 9</span>
+        <span class="str">"1110111"</span> <span class="kw">when</span> <span class="str">"1010"</span>,  <span class="cmt">-- A</span>
+        <span class="str">"1111100"</span> <span class="kw">when</span> <span class="str">"1011"</span>,  <span class="cmt">-- b</span>
+        <span class="str">"0111001"</span> <span class="kw">when</span> <span class="str">"1100"</span>,  <span class="cmt">-- C</span>
+        <span class="str">"1011110"</span> <span class="kw">when</span> <span class="str">"1101"</span>,  <span class="cmt">-- d</span>
+        <span class="str">"1111001"</span> <span class="kw">when</span> <span class="str">"1110"</span>,  <span class="cmt">-- E</span>
+        <span class="str">"1110001"</span> <span class="kw">when</span> <span class="kw">others</span>;  <span class="cmt">-- F</span>
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="display-types">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Display Types & Features
+  </h3>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Common Cathode</th>
+          <th>Common Anode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Common Connection</td>
+          <td>Cathodes to GND</td>
+          <td class="highlight">Anodes to Vcc</td>
+        </tr>
+        <tr>
+          <td>Segment ON</td>
+          <td class="highlight">HIGH (1)</td>
+          <td>LOW (0)</td>
+        </tr>
+        <tr>
+          <td>Segment OFF</td>
+          <td>LOW (0)</td>
+          <td class="highlight">HIGH (1)</td>
+        </tr>
+        <tr>
+          <td>IC Example</td>
+          <td>7448, CD4511</td>
+          <td>7447</td>
+        </tr>
+        <tr>
+          <td>Current</td>
+          <td>Source to segment</td>
+          <td>Sink from segment</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Lamp Test (LT)</h5>
+      <p>When LOW, all segments turn ON. Used to verify display functionality.</p>
+      <div class="formula">Debug/test feature</div>
+    </div>
+    <div class="concept-card">
+      <h5>Blanking Input (BI)</h5>
+      <p>When LOW, all segments turn OFF regardless of input.</p>
+      <div class="formula">Display dimming</div>
+    </div>
+    <div class="concept-card">
+      <h5>Ripple Blanking</h5>
+      <p>RBI/RBO pins suppress leading zeros in multi-digit displays.</p>
+      <div class="formula">"007" displays as "  7"</div>
+    </div>
+    <div class="concept-card">
+      <h5>Decimal Point</h5>
+      <p>Separate control for DP. Not part of standard 7 segments.</p>
+      <div class="formula">8th segment output</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Digital Clocks</h5>
+      <p>Hour:Minute:Second display using multiplexed 7-segment digits.</p>
+      <div class="formula">6-digit HH:MM:SS</div>
+    </div>
+    <div class="concept-card">
+      <h5>Calculators</h5>
+      <p>Numeric display with decimal point support.</p>
+      <div class="formula">8-12 digit display</div>
+    </div>
+    <div class="concept-card">
+      <h5>Multimeters</h5>
+      <p>Voltage, current, resistance readings with auto-ranging.</p>
+      <div class="formula">3½ or 4½ digit</div>
+    </div>
+    <div class="concept-card">
+      <h5>FPGA Development</h5>
+      <p>Debug output on development boards. Quick numeric visualization.</p>
+      <div class="formula">DE10, Basys boards</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>7 segments labeled a-g. 'a' is top, 'g' is middle. Can display 0-9 and hex A-F.</li>
+    <li>Common cathode: segments lit by HIGH. Common anode: segments lit by LOW.</li>
+    <li>Each segment has its own Boolean function. Derive using K-map with don't cares for invalid BCD.</li>
+    <li>Multiplexing: share segment lines, scan digit-select rapidly (~1kHz). Reduces pins.</li>
+    <li>Current limiting: Always use resistors (typically 220Ω-1kΩ) to limit LED current.</li>
+    <li>7447: Common anode TTL decoder. 7448/CD4511: Common cathode decoders.</li>
+  </ul>
+</section>

@@ -306,11 +306,13 @@ group: boolean
       <li><a href="#overview">Overview</a></li>
       <li><a href="#solver">K-Map Solver</a></li>
       <li><a href="#rules">Grouping Rules</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
       <li><a href="#2var">2-Variable K-Map</a></li>
       <li><a href="#3var">3-Variable K-Map</a></li>
       <li><a href="#4var">4-Variable K-Map</a></li>
       <li><a href="#dont-care">Don't Care Conditions</a></li>
       <li><a href="#pos">K-Map for POS</a></li>
+      <li><a href="#practice">Practice Questions</a></li>
     </ul>
   </aside>
 
@@ -434,6 +436,131 @@ group: boolean
     <div class="callout callout-tip">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
       <p><strong>Gray code ordering:</strong> Adjacent cells differ by only one variable — this is why grouping works! The order 00, 01, 11, 10 ensures single-bit changes.</p>
+    </div>
+  </section>
+
+  <!-- How K-Map Works -->
+  <section class="section" id="how-it-works">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4m0 12v4m-7.07-15.07l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+      </div>
+      <h2 class="section-title">How K-Map Works Internally</h2>
+      <a href="#how-it-works" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>K-Map simplification is based on the <strong>Adjacency Principle</strong> from Boolean algebra. When two minterms differ by exactly one variable, they can be combined using:</p>
+      <div class="result-expr">A·B + A·B' = A(B + B') = A·1 = A</div>
+      <p style="margin-top: 1rem;">The variable that changes (B in this case) gets <strong>eliminated</strong>, while the common variable (A) remains. K-Map arranges cells so that physically adjacent cells differ by exactly one variable, making it visual to spot these simplification opportunities.</p>
+    </div>
+
+    <div class="step-box" style="margin: 1.5rem 0;">
+      <h4>Core Principle: Variable Elimination</h4>
+      <ol>
+        <li><strong>Same value in group</strong> → Variable appears in the term</li>
+        <li><strong>Both 0 and 1 in group</strong> → Variable is eliminated</li>
+        <li><strong>Larger groups</strong> → More variables eliminated → Simpler expression</li>
+      </ol>
+    </div>
+
+    <!-- Worked Example -->
+    <h3 style="color: var(--green); margin: 2rem 0 1rem;">Worked Example: Step-by-Step</h3>
+    <div class="prose">
+      <p>Let's simplify: <strong>F(A,B,C) = Σm(1, 3, 5, 7)</strong> — that is, F=1 for minterms 1, 3, 5, 7.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0;">
+      <!-- Step 1: Truth Table -->
+      <div class="kmap-wrapper">
+        <p style="font-weight: 600; color: var(--green); margin-bottom: 1rem;">Step 1: Truth Table</p>
+        <table class="kmap" style="font-size: 0.85rem;">
+          <tr><th>m</th><th>A</th><th>B</th><th>C</th><th>F</th></tr>
+          <tr><td>0</td><td>0</td><td>0</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>1</td><td>0</td><td>0</td><td>1</td><td class="val-1">1</td></tr>
+          <tr><td>2</td><td>0</td><td>1</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>3</td><td>0</td><td>1</td><td>1</td><td class="val-1">1</td></tr>
+          <tr><td>4</td><td>1</td><td>0</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>5</td><td>1</td><td>0</td><td>1</td><td class="val-1">1</td></tr>
+          <tr><td>6</td><td>1</td><td>1</td><td>0</td><td class="val-0">0</td></tr>
+          <tr><td>7</td><td>1</td><td>1</td><td>1</td><td class="val-1">1</td></tr>
+        </table>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.75rem;">Notice: F=1 whenever C=1</p>
+        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--surface2); border-radius: var(--radius);">
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">Minterm expressions:</p>
+          <p style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.6;">
+            m₁ = A'B'C<br>
+            m₃ = A'BC<br>
+            m₅ = AB'C<br>
+            m₇ = ABC
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2: Plot on K-Map -->
+      <div class="kmap-wrapper">
+        <p style="font-weight: 600; color: var(--green); margin-bottom: 1rem;">Step 2: Plot on K-Map</p>
+        <table class="kmap">
+          <tr>
+            <th class="var-label">A\BC</th>
+            <th>00</th>
+            <th>01</th>
+            <th>11</th>
+            <th>10</th>
+          </tr>
+          <tr>
+            <th>0</th>
+            <td class="val-0">0</td>
+            <td class="val-1 grouped">1</td>
+            <td class="val-1 grouped">1</td>
+            <td class="val-0">0</td>
+          </tr>
+          <tr>
+            <th>1</th>
+            <td class="val-0">0</td>
+            <td class="val-1 grouped">1</td>
+            <td class="val-1 grouped">1</td>
+            <td class="val-0">0</td>
+          </tr>
+        </table>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.75rem;">Cell positions: m1→(0,01), m3→(0,11), m5→(1,01), m7→(1,11)</p>
+      </div>
+    </div>
+
+    <!-- Step 3: Analysis -->
+    <div class="kmap-wrapper" style="margin: 1.5rem 0;">
+      <p style="font-weight: 600; color: var(--green); margin-bottom: 1rem;">Step 3: Identify the Group</p>
+      <p style="margin-bottom: 1rem;">All four 1s form a single rectangular group (2×2 = 4 cells, which is 2²).</p>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+        <div style="background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+          <p style="font-size: 0.85rem; color: var(--text-dim);">Variable A:</p>
+          <p style="font-weight: 600;">Both 0 and 1 → <span style="color: var(--red);">ELIMINATED</span></p>
+        </div>
+        <div style="background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+          <p style="font-size: 0.85rem; color: var(--text-dim);">Variable B:</p>
+          <p style="font-weight: 600;">Both 0 and 1 → <span style="color: var(--red);">ELIMINATED</span></p>
+        </div>
+        <div style="background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+          <p style="font-size: 0.85rem; color: var(--text-dim);">Variable C:</p>
+          <p style="font-weight: 600;">Always 1 → <span style="color: var(--green);">KEPT</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="step-box" style="border-left-color: var(--blue);">
+      <h4 style="color: var(--blue);">Step 4: Write the Result</h4>
+      <p>Since only C is constant (always 1) across the entire group:</p>
+      <div class="result-expr" style="margin-top: 0.75rem;">F = C</div>
+      <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-dim);">
+        <strong>Verification:</strong> The original expression A'B'C + A'BC + AB'C + ABC = C(A'B' + A'B + AB' + AB) = C·1 = C ✓
+      </p>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.5rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Key Insight:</strong> A group of 2ⁿ cells eliminates n variables. Here, 4 cells (2²) eliminated 2 variables (A and B), leaving only 1 variable (C) in the final expression!</p>
     </div>
   </section>
 
@@ -705,6 +832,93 @@ group: boolean
     </div>
   </section>
 
+  <!-- Practice Questions -->
+  <section class="section" id="practice">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h2 class="section-title">Practice Questions</h2>
+      <a href="#practice" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Test your understanding with these K-Map problems. Click to reveal the answers.</p>
+    </div>
+
+    <!-- Question 1 -->
+    <div class="step-box" style="margin: 1.5rem 0;">
+      <h4 style="color: var(--green);">Q1: 3-Variable K-Map</h4>
+      <p>Minimize using K-Map: <strong>F(A,B,C) = Σm(0, 2, 4, 6)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Minterms:</strong> m₀ = A'B'C', m₂ = A'BC', m₄ = AB'C', m₆ = ABC'</p>
+          <p style="margin-top: 0.5rem;"><strong>Pattern:</strong> All minterms have C = 0</p>
+          <p style="margin-top: 0.5rem;"><strong>Grouping:</strong> All 4 cells form one group (column where C=0)</p>
+          <div class="result-expr" style="margin-top: 0.75rem;">F = C'</div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="step-box" style="margin: 1.5rem 0;">
+      <h4 style="color: var(--green);">Q2: 3-Variable K-Map</h4>
+      <p>Minimize using K-Map: <strong>F(A,B,C) = Σm(1, 2, 5, 6)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Minterms:</strong> m₁ = A'B'C, m₂ = A'BC', m₅ = AB'C, m₆ = ABC'</p>
+          <p style="margin-top: 0.5rem;"><strong>Grouping:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>Group 1: (m₁, m₅) → B'C</li>
+            <li>Group 2: (m₂, m₆) → BC'</li>
+          </ul>
+          <div class="result-expr" style="margin-top: 0.75rem;">F = B'C + BC' = B ⊕ C</div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="step-box" style="margin: 1.5rem 0;">
+      <h4 style="color: var(--green);">Q3: 4-Variable K-Map</h4>
+      <p>Minimize using K-Map: <strong>F(A,B,C,D) = Σm(0, 2, 8, 10)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Pattern:</strong> These are the 4 corners of the K-Map!</p>
+          <p style="margin-top: 0.5rem;"><strong>Analysis:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>B = 0 in all minterms → B' in result</li>
+            <li>D = 0 in all minterms → D' in result</li>
+            <li>A and C vary → eliminated</li>
+          </ul>
+          <div class="result-expr" style="margin-top: 0.75rem;">F = B'D'</div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="step-box" style="margin: 1.5rem 0;">
+      <h4 style="color: var(--green);">Q4: 4-Variable K-Map with Don't Cares</h4>
+      <p>Minimize: <strong>F(A,B,C,D) = Σm(1, 3, 7, 11, 15) + d(0, 2, 5)</strong></p>
+      <details style="margin-top: 1rem;">
+        <summary style="cursor: pointer; color: var(--blue); font-weight: 600;">Show Answer</summary>
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--surface2); border-radius: var(--radius);">
+          <p><strong>Strategy:</strong> Use don't cares to make larger groups</p>
+          <p style="margin-top: 0.5rem;"><strong>Grouping:</strong></p>
+          <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li>Group (0,1,2,3) using d0,d2 → A'B' (but this doesn't cover all 1s)</li>
+            <li>Better: Group (1,3,5,7) → A'D using d5</li>
+            <li>Group (3,7,11,15) → CD</li>
+          </ul>
+          <p style="margin-top: 0.5rem;"><strong>Note:</strong> m1 and m3 are covered by both groups (overlap is OK)</p>
+          <div class="result-expr" style="margin-top: 0.75rem;">F = A'D + CD = D(A' + C)</div>
+        </div>
+      </details>
+    </div>
+  </section>
+
   <!-- Related Topics -->
   <section class="section" id="related">
     <div class="section-header">
@@ -719,13 +933,13 @@ group: boolean
         <span class="related-card-name">Boolean Algebra</span>
         <span class="related-card-cat">Foundation</span>
       </a>
-      <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="related-card">
-        <span class="related-card-name">SOP / POS Forms</span>
-        <span class="related-card-cat">Canonical forms</span>
-      </a>
       <a href="{{ '/boolean/qmc.html' | relative_url }}" class="related-card">
         <span class="related-card-name">Quine-McCluskey</span>
-        <span class="related-card-cat">Algorithmic method</span>
+        <span class="related-card-cat">Exact method</span>
+      </a>
+      <a href="{{ '/boolean/espresso.html' | relative_url }}" class="related-card">
+        <span class="related-card-name">Espresso Algorithm</span>
+        <span class="related-card-cat">Heuristic method</span>
       </a>
     </div>
   </section>

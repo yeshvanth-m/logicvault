@@ -1,0 +1,365 @@
+---
+layout: routing
+title: "8:1 Multiplexer"
+sidebar: mux-8
+group: routing
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Data Routing }
+  - { color: red, text: Versatile }
+subtitle: "An 8-input data selector using three select lines. Capable of implementing any 4-variable Boolean function. Common in register file read ports, instruction decoding, and memory address selection."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Expression" }
+  - { id: "implementations", title: "Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "cascading", title: "Cascading & Expansion" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Data Inputs", value: "I₀ through I₇ (8 inputs)" }
+  - { label: "Select Lines", value: "S₂, S₁, S₀ (3 bits)" }
+  - { label: "Output", value: "Y" }
+  - { label: "Selection", value: "Y = I[S₂S₁S₀]" }
+  - { label: "Gate Count", value: "8 AND-4 + 1 OR-8" }
+  - { label: "Logic Depth", value: "3-4 gate delays" }
+  - { label: "Tree Build", value: "7× 2:1 MUX" }
+related:
+  - { url: "/routing/mux4.html", name: "4:1 MUX", desc: "Four-input selector" }
+  - { url: "/routing/mux2.html", name: "2:1 MUX", desc: "Basic building block" }
+  - { url: "/routing/demux.html", name: "1:8 DEMUX", desc: "Inverse operation" }
+  - { url: "/boolean/kmap.html", name: "K-Map", desc: "Function simplification" }
+prev: { url: "/routing/mux4.html", title: "4:1 Multiplexer" }
+next: { url: "/routing/demux.html", title: "Demultiplexer" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    An <strong>8:1 Multiplexer</strong> selects one of eight data inputs (I₀ through I₇) and 
+    routes it to a single output Y. Three select lines (S₂, S₁, S₀) form a 3-bit binary address 
+    that determines which of the eight inputs is connected to the output.
+  </p>
+  <p>
+    The 8:1 MUX is powerful enough to implement any Boolean function of up to 4 variables, 
+    making it a universal function generator. It's commonly used in register files (8-register 
+    read port), instruction decoders, and memory address multiplexing.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>S₂</th>
+          <th>S₁</th>
+          <th>S₀</th>
+          <th class="out-col">Y</th>
+          <th>Selected</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">I₀</td><td>Input 0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">I₁</td><td>Input 1</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">I₂</td><td>Input 2</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">I₃</td><td>Input 3</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">I₄</td><td>Input 4</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">I₅</td><td>Input 5</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">I₆</td><td>Input 6</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">I₇</td><td>Input 7</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card" style="margin-top: 1rem;">
+    <h5>Binary Addressing</h5>
+    <p>Select lines form a 3-bit address: S₂S₁S₀ = 000 through 111 selects I₀ through I₇.</p>
+    <div class="formula">Y = I[4×S₂ + 2×S₁ + S₀]</div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Boolean Expression
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">8:1 MUX Equation</div>
+    <div class="bool-expr" style="font-size: 0.85rem;">
+      <span class="out">Y</span> = <span class="var">S̄₂S̄₁S̄₀</span><span class="op">·</span><span class="var">I₀</span> <span class="op">+</span> <span class="var">S̄₂S̄₁S₀</span><span class="op">·</span><span class="var">I₁</span> <span class="op">+</span> <span class="var">S̄₂S₁S̄₀</span><span class="op">·</span><span class="var">I₂</span> <span class="op">+</span> <span class="var">S̄₂S₁S₀</span><span class="op">·</span><span class="var">I₃</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="op">+</span> <span class="var">S₂S̄₁S̄₀</span><span class="op">·</span><span class="var">I₄</span> <span class="op">+</span> <span class="var">S₂S̄₁S₀</span><span class="op">·</span><span class="var">I₅</span> <span class="op">+</span> <span class="var">S₂S₁S̄₀</span><span class="op">·</span><span class="var">I₆</span> <span class="op">+</span> <span class="var">S₂S₁S₀</span><span class="op">·</span><span class="var">I₇</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Minterm Form</h5>
+      <div class="formula">Y = Σ(mᵢ · Iᵢ) for i = 0 to 7</div>
+    </div>
+    <div class="concept-card">
+      <h5>Compact Notation</h5>
+      <div class="formula">Y = I[S] where S ∈ {0..7}</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Implementation Methods
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Direct Gate Implementation</h5>
+      <p>Eight 4-input AND gates feeding an 8-input OR gate.</p>
+      <div class="formula">8 × AND-4 + OR-8 + 3 × NOT<br>Delay: 3 gate levels</div>
+    </div>
+    <div class="concept-card">
+      <h5>Using 2:1 MUXes</h5>
+      <p>Seven 2:1 MUXes in a 3-level tree.</p>
+      <div class="formula">Level 1: 4 MUX (S₀)<br>Level 2: 2 MUX (S₁)<br>Level 3: 1 MUX (S₂)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Using 4:1 MUXes</h5>
+      <p>Two 4:1 MUXes feeding one 2:1 MUX.</p>
+      <div class="formula">2 × 4:1 (S₁,S₀) + 1 × 2:1 (S₂)</div>
+    </div>
+    <div class="concept-card">
+      <h5>3:8 Decoder + AND</h5>
+      <p>Decoder enables one AND gate per input.</p>
+      <div class="formula">1 decoder + 8 AND-2 + OR-8</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Building 8:1 from 2:1 MUXes (Tree Structure)</h4>
+    <div class="derivation-table">
+      <pre>
+Level 1 (4 MUXes using S₀):
+  MUX-A: I₀, I₁ → A    MUX-B: I₂, I₃ → B
+  MUX-C: I₄, I₅ → C    MUX-D: I₆, I₇ → D
+
+Level 2 (2 MUXes using S₁):
+  MUX-E: A, B → E      MUX-F: C, D → F
+
+Level 3 (1 MUX using S₂):
+  MUX-G: E, F → Y
+
+Total: 7 × 2:1 MUX
+Delay: 3 MUX delays (one per level)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 8:1 MUX Structure</p>
+      <p>3:8 decoder generates 8 enable signals</p>
+      <p>Each input ANDed with its enable</p>
+      <p>8-input OR produces final output</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">mux8.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 8:1 MUX - Case statement</span>
+<span class="kw">module</span> mux8 #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span>,
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i4</span>, <span class="port">i5</span>, <span class="port">i6</span>, <span class="port">i7</span>,
+    <span class="kw">input</span>  [<span class="num">2</span>:<span class="num">0</span>]         <span class="port">sel</span>,
+    <span class="kw">output</span> <span class="kw">reg</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">sel</span>)
+        <span class="num">3'd0</span>: <span class="port">y</span> = <span class="port">i0</span>;
+        <span class="num">3'd1</span>: <span class="port">y</span> = <span class="port">i1</span>;
+        <span class="num">3'd2</span>: <span class="port">y</span> = <span class="port">i2</span>;
+        <span class="num">3'd3</span>: <span class="port">y</span> = <span class="port">i3</span>;
+        <span class="num">3'd4</span>: <span class="port">y</span> = <span class="port">i4</span>;
+        <span class="num">3'd5</span>: <span class="port">y</span> = <span class="port">i5</span>;
+        <span class="num">3'd6</span>: <span class="port">y</span> = <span class="port">i6</span>;
+        <span class="num">3'd7</span>: <span class="port">y</span> = <span class="port">i7</span>;
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 8:1 MUX - Tree of 4:1 and 2:1</span>
+<span class="kw">module</span> mux8_tree #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i</span> [<span class="num">0</span>:<span class="num">7</span>],
+    <span class="kw">input</span>  [<span class="num">2</span>:<span class="num">0</span>]         <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] lo, hi;
+
+<span class="cmt">// Two 4:1 MUXes select from each half</span>
+<span class="kw">assign</span> lo = (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd0</span>) ? <span class="port">i</span>[<span class="num">0</span>] :
+            (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd1</span>) ? <span class="port">i</span>[<span class="num">1</span>] :
+            (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd2</span>) ? <span class="port">i</span>[<span class="num">2</span>] : <span class="port">i</span>[<span class="num">3</span>];
+
+<span class="kw">assign</span> hi = (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd0</span>) ? <span class="port">i</span>[<span class="num">4</span>] :
+            (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd1</span>) ? <span class="port">i</span>[<span class="num">5</span>] :
+            (<span class="port">sel</span>[<span class="num">1</span>:<span class="num">0</span>] == <span class="num">2'd2</span>) ? <span class="port">i</span>[<span class="num">6</span>] : <span class="port">i</span>[<span class="num">7</span>];
+
+<span class="cmt">// Final 2:1 MUX selects between halves</span>
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">sel</span>[<span class="num">2</span>] ? hi : lo;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">mux8.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> mux8 <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span> : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">i4</span>, <span class="port">i5</span>, <span class="port">i6</span>, <span class="port">i7</span> : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">sel</span>              : <span class="kw">in</span>  std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">y</span>                : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> mux8;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> mux8 <span class="kw">is</span>
+    <span class="kw">type</span> input_array <span class="kw">is array</span>(<span class="num">0</span> <span class="kw">to</span> <span class="num">7</span>) <span class="kw">of</span> 
+         std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> inputs : input_array;
+<span class="kw">begin</span>
+    inputs <= (<span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span>, <span class="port">i4</span>, <span class="port">i5</span>, <span class="port">i6</span>, <span class="port">i7</span>);
+    <span class="port">y</span> <= inputs(to_integer(unsigned(<span class="port">sel</span>)));
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="cascading">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Cascading & Expansion
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Building 16:1 from 8:1</h5>
+      <p>Two 8:1 MUXes (S₂,S₁,S₀) feeding one 2:1 MUX (S₃).</p>
+      <div class="formula">16:1 = 2 × 8:1 + 1 × 2:1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Building 32:1 from 8:1</h5>
+      <p>Four 8:1 MUXes feeding one 4:1 MUX.</p>
+      <div class="formula">32:1 = 4 × 8:1 + 1 × 4:1</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>MUX Size</th>
+          <th>Select Lines</th>
+          <th>2:1 MUX Count</th>
+          <th>Tree Depth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>2:1</td><td>1</td><td>1</td><td>1</td></tr>
+        <tr><td>4:1</td><td>2</td><td>3</td><td>2</td></tr>
+        <tr><td class="highlight">8:1</td><td class="highlight">3</td><td class="highlight">7</td><td class="highlight">3</td></tr>
+        <tr><td>16:1</td><td>4</td><td>15</td><td>4</td></tr>
+        <tr><td>2ⁿ:1</td><td>n</td><td>2ⁿ - 1</td><td>n</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Implementing 4-Variable Function with 8:1 MUX</h4>
+    <div class="derivation-table">
+      <pre>
+F(A,B,C,D) using 8:1 MUX with S₂=A, S₁=B, S₀=C:
+
+For each minterm of A,B,C (8 combinations):
+  - If F=0 for both D=0 and D=1 → Iᵢ = 0
+  - If F=1 for both D=0 and D=1 → Iᵢ = 1
+  - If F=D (1 only when D=1)    → Iᵢ = D
+  - If F=D̄ (1 only when D=0)    → Iᵢ = D̄
+
+Example: F = Σm(0,2,5,7,10,11,14,15)
+A B C | D=0 D=1 | Input
+------+--------+-------
+0 0 0 |  1   0  | I₀ = D̄
+0 0 1 |  0   0  | I₁ = 0
+0 1 0 |  1   0  | I₂ = D̄
+0 1 1 |  0   1  | I₃ = D
+1 0 0 |  0   0  | I₄ = 0
+1 0 1 |  1   1  | I₅ = 1
+1 1 0 |  1   1  | I₆ = 1
+1 1 1 |  1   1  | I₇ = 1</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>8:1 MUX uses 3 select lines to choose among 8 inputs. Formula: 2ⁿ inputs need n select lines.</li>
+    <li>Can implement any 4-variable function using 3 vars as select, 4th var on inputs (0, 1, D, D̄).</li>
+    <li>Building from 2:1 MUXes requires 2ⁿ-1 = 7 MUXes in a 3-level tree.</li>
+    <li>74LS151 is single 8:1 MUX; 74LS150 is 16:1 MUX.</li>
+    <li>For N:1 MUX, tree delay is log₂(N) MUX delays — scales logarithmically.</li>
+    <li>Commonly used in register file read ports: 8 registers → 8:1 MUX per bit.</li>
+  </ul>
+</section>

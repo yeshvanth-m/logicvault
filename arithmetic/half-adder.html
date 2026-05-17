@@ -1,0 +1,304 @@
+---
+layout: arithmetic
+title: Half Adder
+sidebar: half-adder
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: Fundamental }
+
+subtitle: >
+  The simplest arithmetic circuit that adds two single-bit binary numbers. It produces a Sum bit and a Carry bit, but cannot accept a carry input — hence "half" adder. It's the fundamental building block for constructing full adders and multi-bit adder architectures.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: truth-table, title: Truth Table }
+  - { id: boolean, title: Boolean Expression }
+  - { id: derivation, title: Derivation }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: "RTL (Verilog / VHDL)" }
+  - { id: applications, title: Applications }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A, B" }
+  - { label: Outputs, value: "Sum, Carry" }
+  - { label: Gate count, value: 2 gates }
+  - { label: Logic depth, value: 1 level }
+  - { label: Circuit type, value: Combinational }
+  - { label: Gates used, value: XOR + AND }
+
+related:
+  - { name: Full Adder, url: /arithmetic/full-adder.html, desc: "Adds 3 bits (with carry-in)" }
+  - { name: Ripple Carry Adder, url: /arithmetic/ripple-carry.html, desc: "N-bit cascaded adder" }
+  - { name: Half Subtractor, url: /arithmetic/half-subtractor.html, desc: "2-bit subtraction" }
+  - { name: XOR Gate, url: /gates/xor.html, desc: "Sum logic element" }
+
+prev: { title: Arithmetic Circuits, url: /arithmetic/ }
+next: { title: Full Adder, url: /arithmetic/full-adder.html }
+---
+
+<!-- Truth Table -->
+<section class="section" id="truth-table">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+    </div>
+    <h2 class="section-title">Truth Table</h2>
+    <a href="#truth-table" class="section-anchor">#</a>
+  </div>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>A</th><th>B</th>
+          <th class="out-col">Sum</th>
+          <th class="out-col">Carry</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-tip" style="margin-top: 1rem;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+    <p><strong>Binary arithmetic:</strong> 0+0=0, 0+1=1, 1+0=1, 1+1=10 (which is 0 with carry 1).</p>
+  </div>
+</section>
+
+<!-- Boolean Expression -->
+<section class="section" id="boolean">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+    </div>
+    <h2 class="section-title">Boolean Expression</h2>
+    <a href="#boolean" class="section-anchor">#</a>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Sum Output</p>
+    <p class="bool-expr">
+      <span class="out">Sum</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span> &nbsp;=&nbsp; <span class="var">A</span>'<span class="var">B</span> <span class="op">+</span> <span class="var">A</span><span class="var">B</span>'
+    </p>
+  </div>
+  <div class="bool-box">
+    <p class="bool-label">Carry Output</p>
+    <p class="bool-expr">
+      <span class="out">Carry</span> = <span class="var">A</span> <span class="op">·</span> <span class="var">B</span>
+    </p>
+  </div>
+  <div class="bool-box">
+    <p class="bool-label">Canonical Forms</p>
+    <p class="bool-expr" style="font-size:.78rem;">
+      <span class="out">Sum</span> = Σm(1, 2) &nbsp;|&nbsp;
+      <span class="out">Carry</span> = Σm(3)
+    </p>
+  </div>
+
+  <div class="callout callout-info" style="margin-top: 1rem;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Pattern recognition:</strong> Sum is XOR (output is 1 when inputs differ), Carry is AND (output is 1 only when both inputs are 1).</p>
+  </div>
+</section>
+
+<!-- Derivation -->
+<section class="section" id="derivation">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Derivation from Truth Table</h2>
+    <a href="#derivation" class="section-anchor">#</a>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Deriving Sum Expression</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.8;">
+      <strong>Step 1:</strong> Identify minterms where Sum = 1: rows 2 and 3 (A=0,B=1 and A=1,B=0)<br>
+      <strong>Step 2:</strong> Write SOP: Sum = A'B + AB' (sum of products for each minterm)<br>
+      <strong>Step 3:</strong> Recognize XOR pattern: Sum = A ⊕ B (A'B + AB' is the definition of XOR)
+    </p>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Deriving Carry Expression</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.8;">
+      <strong>Step 1:</strong> Identify minterms where Carry = 1: row 4 only (A=1, B=1)<br>
+      <strong>Step 2:</strong> Write SOP: Carry = AB (only one minterm, directly gives AND)
+    </p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert gate-level schematic here.<br/>XOR gate for Sum, AND gate for Carry.<br/>Both gates share inputs A and B.</p>
+    </div>
+  </div>
+
+  <div class="prose" style="margin-top: 1rem;">
+    <p>The half adder requires only <strong>two logic gates</strong>:</p>
+    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.88rem; color: var(--text-dim);">
+      <li><strong>XOR gate:</strong> Produces the Sum output (A ⊕ B)</li>
+      <li><strong>AND gate:</strong> Produces the Carry output (A · B)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    <button class="ctab" onclick="switchCode(this,'sv')">SystemVerilog</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">half_adder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Half Adder - Dataflow style</span>
+<span class="kw">module</span> half_adder (
+    <span class="kw">input</span>  <span class="port">a</span>,
+    <span class="kw">input</span>  <span class="port">b</span>,
+    <span class="kw">output</span> <span class="port">sum</span>,
+    <span class="kw">output</span> <span class="port">carry</span>
+);
+
+    <span class="kw">assign</span> <span class="port">sum</span>   = <span class="port">a</span> ^ <span class="port">b</span>;    <span class="cmt">// XOR for sum</span>
+    <span class="kw">assign</span> <span class="port">carry</span> = <span class="port">a</span> & <span class="port">b</span>;    <span class="cmt">// AND for carry</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">half_adder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">-- Half Adder - Dataflow architecture</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> half_adder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>     : <span class="kw">in</span>  std_logic;
+        <span class="port">b</span>     : <span class="kw">in</span>  std_logic;
+        <span class="port">sum</span>   : <span class="kw">out</span> std_logic;
+        <span class="port">carry</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> half_adder;
+
+<span class="kw">architecture</span> dataflow <span class="kw">of</span> half_adder <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">sum</span>   <= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>;
+    <span class="port">carry</span> <= <span class="port">a</span> <span class="kw">and</span> <span class="port">b</span>;
+<span class="kw">end</span> dataflow;</pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-sv">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">SystemVerilog</span>
+        <span class="code-filename">half_adder.sv</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Half Adder - SystemVerilog</span>
+<span class="kw">module</span> half_adder (
+    <span class="kw">input</span>  <span class="kw">logic</span> <span class="port">a</span>,
+    <span class="kw">input</span>  <span class="kw">logic</span> <span class="port">b</span>,
+    <span class="kw">output</span> <span class="kw">logic</span> <span class="port">sum</span>,
+    <span class="kw">output</span> <span class="kw">logic</span> <span class="port">carry</span>
+);
+
+    <span class="kw">assign</span> <span class="port">sum</span>   = <span class="port">a</span> ^ <span class="port">b</span>;
+    <span class="kw">assign</span> <span class="port">carry</span> = <span class="port">a</span> & <span class="port">b</span>;
+
+<span class="kw">endmodule</span> : half_adder</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Applications -->
+<section class="section" id="applications">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Applications</h2>
+    <a href="#applications" class="section-anchor">#</a>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Full Adder Construction</h5>
+      <p>Two half adders plus an OR gate combine to create a full adder that handles carry input.</p>
+    </div>
+    <div class="concept-card">
+      <h5>BCD Adders</h5>
+      <p>Used in BCD (Binary-Coded Decimal) arithmetic units for decimal calculations.</p>
+    </div>
+    <div class="concept-card">
+      <h5>Parity Generators</h5>
+      <p>The XOR portion is fundamental to parity calculation in error detection circuits.</p>
+    </div>
+    <div class="concept-card">
+      <h5>Digital Counters</h5>
+      <p>Forms the increment logic in simple binary counters and accumulators.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>Why is it called "half" adder?</strong> — It can only add two bits and cannot accept a carry-in from a previous stage, making it incomplete for multi-bit addition.</li>
+    <li><strong>What's the limitation?</strong> — Cannot be cascaded directly for multi-bit addition since there's no carry input. Need full adders for that.</li>
+    <li><strong>How to build a full adder from half adders?</strong> — Use two half adders: first adds A and B, second adds the result with Cin. OR the two carries for Cout.</li>
+    <li><strong>What's the propagation delay?</strong> — Single gate delay for both outputs since both use 1-level logic (XOR and AND in parallel).</li>
+    <li><strong>Can you implement without XOR?</strong> — Yes: Sum = (A + B) · (A' + B') = (A + B) · (AB)' using OR, AND, NOT gates.</li>
+  </ul>
+</section>

@@ -1,0 +1,653 @@
+---
+layout: edc
+title: "Hamming Code"
+sidebar: hamming
+group: edc
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Error Correction }
+  - { color: purple, text: Linear Code }
+subtitle: "Error-correcting code that can detect and correct single-bit errors (SEC) and detect double-bit errors (DED). Uses parity bits at power-of-2 positions to create a syndrome that identifies the error location."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "theory", title: "Theory" }
+  - { id: "encoding", title: "Encoding Process" }
+  - { id: "decoding", title: "Decoding & Correction" }
+  - { id: "example", title: "Worked Example" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "secded", title: "SECDED Extension" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Capability", value: "SEC: Single Error Correction" }
+  - { label: "SECDED", value: "+ Double Error Detection" }
+  - { label: "Parity Bits", value: "k bits where 2ᵏ ≥ n + k + 1" }
+  - { label: "Hamming(7,4)", value: "4 data bits, 3 parity bits" }
+  - { label: "Hamming(15,11)", value: "11 data bits, 4 parity bits" }
+  - { label: "Syndrome", value: "Points to error position" }
+  - { label: "Min Distance", value: "d=3 (SEC), d=4 (SECDED)" }
+related:
+  - { url: "/edc/parity-gen.html", name: "Parity Generator", desc: "Single parity bit" }
+  - { url: "/edc/parity-check.html", name: "Parity Checker", desc: "Error detection only" }
+  - { url: "/edc/crc.html", name: "CRC", desc: "Polynomial codes" }
+  - { url: "/gates/xor.html", name: "XOR Gate", desc: "Building block" }
+prev: { url: "/edc/parity-check.html", title: "Parity Checker" }
+next: { url: "/edc/crc.html", title: "CRC" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>Hamming Code</strong>, invented by Richard Hamming in 1950, is a linear error-correcting 
+    code that can correct single-bit errors and detect double-bit errors. It works by adding 
+    redundant parity bits at specific positions (powers of 2), creating a "syndrome" that 
+    identifies the exact error location.
+  </p>
+  <p>
+    The code is widely used in computer memory (ECC RAM), telecommunications, and any system 
+    where data integrity is critical. The most common variant, Hamming(7,4), encodes 4 data 
+    bits using 3 parity bits, achieving a total codeword of 7 bits.
+  </p>
+</section>
+
+<section class="content-section" id="theory">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Theory
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Hamming Distance</h5>
+      <p>Number of bit positions where two codewords differ. Minimum distance d=3 for SEC.</p>
+      <div class="formula">d_min = 3 → corrects 1 error</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parity Bit Positions</h5>
+      <p>Parity bits placed at positions that are powers of 2: 1, 2, 4, 8, 16...</p>
+      <div class="formula">Position = 2⁰, 2¹, 2², ...</div>
+    </div>
+    <div class="concept-card">
+      <h5>Coverage Rule</h5>
+      <p>Each parity bit covers positions where its position bit is set in binary.</p>
+      <div class="formula">P₁: all odd positions</div>
+    </div>
+    <div class="concept-card">
+      <h5>Syndrome</h5>
+      <p>XOR of all parity check results. Non-zero syndrome = error location.</p>
+      <div class="formula">S = {S₃, S₂, S₁}</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Redundancy Requirements</h4>
+    <div class="analysis-item">
+      <span class="label">Condition</span>
+      <span class="value">2ᵏ ≥ n + k + 1</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">4 data bits</span>
+      <span class="value">k = 3 parity bits → Hamming(7,4)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">8 data bits</span>
+      <span class="value">k = 4 parity bits → Hamming(12,8)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">11 data bits</span>
+      <span class="value">k = 4 parity bits → Hamming(15,11)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Code Rate</span>
+      <span class="value">R = n/(n+k) = data/total</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="encoding">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Encoding Process
+  </h3>
+
+  <p>Hamming(7,4) encoding structure:</p>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th>7</th>
+          <th>6</th>
+          <th>5</th>
+          <th>4</th>
+          <th>3</th>
+          <th>2</th>
+          <th>1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Binary</td>
+          <td>111</td>
+          <td>110</td>
+          <td>101</td>
+          <td>100</td>
+          <td>011</td>
+          <td>010</td>
+          <td>001</td>
+        </tr>
+        <tr>
+          <td>Content</td>
+          <td class="val-1">D₄</td>
+          <td class="val-1">D₃</td>
+          <td class="val-1">D₂</td>
+          <td class="highlight">P₃</td>
+          <td class="val-1">D₁</td>
+          <td class="highlight">P₂</td>
+          <td class="highlight">P₁</td>
+        </tr>
+        <tr>
+          <td>P₁ covers</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+          <td class="val-1">✓</td>
+        </tr>
+        <tr>
+          <td>P₂ covers</td>
+          <td class="val-1">✓</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+          <td class="val-0">-</td>
+          <td class="val-1">✓</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+        </tr>
+        <tr>
+          <td>P₃ covers</td>
+          <td class="val-1">✓</td>
+          <td class="val-1">✓</td>
+          <td class="val-1">✓</td>
+          <td class="val-1">✓</td>
+          <td class="val-0">-</td>
+          <td class="val-0">-</td>
+          <td class="val-0">-</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Parity Bit Equations (Even Parity)</div>
+    <div class="bool-expr">
+      <span class="out">P₁</span> = <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₄</span> (positions 1,3,5,7)<br>
+      <span class="out">P₂</span> = <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₄</span> (positions 2,3,6,7)<br>
+      <span class="out">P₃</span> = <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₄</span> (positions 4,5,6,7)
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="decoding">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Decoding & Correction
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Syndrome Calculation</div>
+    <div class="bool-expr">
+      <span class="out">S₁</span> = <span class="var">P₁</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₄</span><br>
+      <span class="out">S₂</span> = <span class="var">P₂</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₄</span><br>
+      <span class="out">S₃</span> = <span class="var">P₃</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₄</span>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Syndrome Interpretation</h4>
+    <div class="analysis-item">
+      <span class="label">S = 000</span>
+      <span class="value">No error</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 001</span>
+      <span class="value">Error at position 1 (P₁)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 010</span>
+      <span class="value">Error at position 2 (P₂)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 011</span>
+      <span class="value">Error at position 3 (D₁)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 100</span>
+      <span class="value">Error at position 4 (P₃)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 101</span>
+      <span class="value">Error at position 5 (D₂)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 110</span>
+      <span class="value">Error at position 6 (D₃)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">S = 111</span>
+      <span class="value">Error at position 7 (D₄)</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Correction Process</h5>
+      <p>Convert syndrome to decimal → flip bit at that position.</p>
+      <div class="formula">corrected[S] = received[S] ⊕ 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Zero Syndrome</h5>
+      <p>S = 0 means no error detected. Data passes through unchanged.</p>
+      <div class="formula">No flip needed</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="example">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Worked Example
+  </h3>
+
+  <div class="error-example">
+    <h4>Encoding: Data = 1011</h4>
+    <div class="data-row">
+      <span>Data bits:</span>
+      <span class="bit">D₄=1</span>
+      <span class="bit">D₃=0</span>
+      <span class="bit">D₂=1</span>
+      <span class="bit">D₁=1</span>
+    </div>
+    <div class="data-row">
+      <span>P₁ = D₁⊕D₂⊕D₄ = 1⊕1⊕1 =</span>
+      <span class="bit parity">1</span>
+    </div>
+    <div class="data-row">
+      <span>P₂ = D₁⊕D₃⊕D₄ = 1⊕0⊕1 =</span>
+      <span class="bit parity">0</span>
+    </div>
+    <div class="data-row">
+      <span>P₃ = D₂⊕D₃⊕D₄ = 1⊕0⊕1 =</span>
+      <span class="bit parity">0</span>
+    </div>
+    <div class="data-row">
+      <span>Codeword:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">1</span>
+      <span>= 1010101</span>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Decoding with Error at Position 5</h4>
+    <div class="data-row">
+      <span>Sent:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">1</span>
+    </div>
+    <div class="data-row">
+      <span>Received:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit error">0</span>
+      <span class="bit parity">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">1</span>
+      <span>← position 5 flipped</span>
+    </div>
+    <div class="data-row">
+      <span>S₁ = P₁⊕D₁⊕D₂⊕D₄ = 1⊕1⊕0⊕1 =</span>
+      <span class="bit error">1</span>
+    </div>
+    <div class="data-row">
+      <span>S₂ = P₂⊕D₁⊕D₃⊕D₄ = 0⊕1⊕0⊕1 =</span>
+      <span class="bit parity">0</span>
+    </div>
+    <div class="data-row">
+      <span>S₃ = P₃⊕D₂⊕D₃⊕D₄ = 0⊕0⊕0⊕1 =</span>
+      <span class="bit error">1</span>
+    </div>
+    <div class="data-row">
+      <span>Syndrome = S₃S₂S₁ = 101 =</span>
+      <span class="bit error">5</span>
+      <span>→ Error at position 5!</span>
+    </div>
+    <div class="data-row">
+      <span>Corrected:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit corrected">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">1</span>
+      <span>✓ Original restored</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">hamming_74.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Hamming(7,4) Encoder</span>
+<span class="kw">module</span> hamming_encoder (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">data</span>,     <span class="cmt">// D4,D3,D2,D1</span>
+    <span class="kw">output</span>     [<span class="num">6</span>:<span class="num">0</span>] <span class="port">codeword</span>  <span class="cmt">// D4,D3,D2,P3,D1,P2,P1</span>
+);
+
+<span class="kw">wire</span> <span class="port">d4</span> = <span class="port">data</span>[<span class="num">3</span>];
+<span class="kw">wire</span> <span class="port">d3</span> = <span class="port">data</span>[<span class="num">2</span>];
+<span class="kw">wire</span> <span class="port">d2</span> = <span class="port">data</span>[<span class="num">1</span>];
+<span class="kw">wire</span> <span class="port">d1</span> = <span class="port">data</span>[<span class="num">0</span>];
+
+<span class="cmt">// Calculate parity bits</span>
+<span class="kw">wire</span> <span class="port">p1</span> = <span class="port">d1</span> ^ <span class="port">d2</span> ^ <span class="port">d4</span>;  <span class="cmt">// covers 1,3,5,7</span>
+<span class="kw">wire</span> <span class="port">p2</span> = <span class="port">d1</span> ^ <span class="port">d3</span> ^ <span class="port">d4</span>;  <span class="cmt">// covers 2,3,6,7</span>
+<span class="kw">wire</span> <span class="port">p3</span> = <span class="port">d2</span> ^ <span class="port">d3</span> ^ <span class="port">d4</span>;  <span class="cmt">// covers 4,5,6,7</span>
+
+<span class="cmt">// Assemble codeword: positions 7,6,5,4,3,2,1</span>
+<span class="kw">assign</span> <span class="port">codeword</span> = {<span class="port">d4</span>, <span class="port">d3</span>, <span class="port">d2</span>, <span class="port">p3</span>, <span class="port">d1</span>, <span class="port">p2</span>, <span class="port">p1</span>};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Hamming(7,4) Decoder with SEC</span>
+<span class="kw">module</span> hamming_decoder (
+    <span class="kw">input</span>      [<span class="num">6</span>:<span class="num">0</span>] <span class="port">received</span>,
+    <span class="kw">output</span>     [<span class="num">3</span>:<span class="num">0</span>] <span class="port">data</span>,
+    <span class="kw">output</span>     [<span class="num">2</span>:<span class="num">0</span>] <span class="port">syndrome</span>,
+    <span class="kw">output</span>           <span class="port">error_detected</span>
+);
+
+<span class="cmt">// Extract received bits</span>
+<span class="kw">wire</span> <span class="port">r7</span> = <span class="port">received</span>[<span class="num">6</span>];  <span class="cmt">// D4</span>
+<span class="kw">wire</span> <span class="port">r6</span> = <span class="port">received</span>[<span class="num">5</span>];  <span class="cmt">// D3</span>
+<span class="kw">wire</span> <span class="port">r5</span> = <span class="port">received</span>[<span class="num">4</span>];  <span class="cmt">// D2</span>
+<span class="kw">wire</span> <span class="port">r4</span> = <span class="port">received</span>[<span class="num">3</span>];  <span class="cmt">// P3</span>
+<span class="kw">wire</span> <span class="port">r3</span> = <span class="port">received</span>[<span class="num">2</span>];  <span class="cmt">// D1</span>
+<span class="kw">wire</span> <span class="port">r2</span> = <span class="port">received</span>[<span class="num">1</span>];  <span class="cmt">// P2</span>
+<span class="kw">wire</span> <span class="port">r1</span> = <span class="port">received</span>[<span class="num">0</span>];  <span class="cmt">// P1</span>
+
+<span class="cmt">// Calculate syndrome</span>
+<span class="kw">wire</span> <span class="port">s1</span> = <span class="port">r1</span> ^ <span class="port">r3</span> ^ <span class="port">r5</span> ^ <span class="port">r7</span>;  <span class="cmt">// positions 1,3,5,7</span>
+<span class="kw">wire</span> <span class="port">s2</span> = <span class="port">r2</span> ^ <span class="port">r3</span> ^ <span class="port">r6</span> ^ <span class="port">r7</span>;  <span class="cmt">// positions 2,3,6,7</span>
+<span class="kw">wire</span> <span class="port">s3</span> = <span class="port">r4</span> ^ <span class="port">r5</span> ^ <span class="port">r6</span> ^ <span class="port">r7</span>;  <span class="cmt">// positions 4,5,6,7</span>
+
+<span class="kw">assign</span> <span class="port">syndrome</span> = {<span class="port">s3</span>, <span class="port">s2</span>, <span class="port">s1</span>};
+<span class="kw">assign</span> <span class="port">error_detected</span> = |<span class="port">syndrome</span>;
+
+<span class="cmt">// Correct the error</span>
+<span class="kw">wire</span> [<span class="num">6</span>:<span class="num">0</span>] <span class="port">corrected</span>;
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < <span class="num">7</span>; i = i + <span class="num">1</span>) <span class="kw">begin</span> : correct_loop
+        <span class="kw">assign</span> <span class="port">corrected</span>[i] = <span class="port">received</span>[i] ^ (<span class="port">syndrome</span> == (i + <span class="num">1</span>));
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="cmt">// Extract data bits from corrected codeword</span>
+<span class="kw">assign</span> <span class="port">data</span> = {<span class="port">corrected</span>[<span class="num">6</span>], <span class="port">corrected</span>[<span class="num">5</span>], <span class="port">corrected</span>[<span class="num">4</span>], <span class="port">corrected</span>[<span class="num">2</span>]};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Complete Hamming(7,4) SECDED System</span>
+<span class="kw">module</span> hamming_74_secded (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">7</span>:<span class="num">0</span>] <span class="port">encoded</span>,   <span class="cmt">// 7 bits + overall parity</span>
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">received</span>,
+    <span class="kw">output</span>     [<span class="num">3</span>:<span class="num">0</span>] <span class="port">data_out</span>,
+    <span class="kw">output</span>           <span class="port">single_error</span>,
+    <span class="kw">output</span>           <span class="port">double_error</span>
+);
+
+<span class="cmt">// Encoder</span>
+<span class="kw">wire</span> [<span class="num">6</span>:<span class="num">0</span>] <span class="port">hamming_code</span>;
+hamming_encoder enc (.<span class="port">data</span>(<span class="port">data_in</span>), .<span class="port">codeword</span>(<span class="port">hamming_code</span>));
+
+<span class="cmt">// Add overall parity for DED</span>
+<span class="kw">wire</span> <span class="port">p0</span> = ^<span class="port">hamming_code</span>;
+<span class="kw">assign</span> <span class="port">encoded</span> = {<span class="port">p0</span>, <span class="port">hamming_code</span>};
+
+<span class="cmt">// Decoder</span>
+<span class="kw">wire</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">syndrome</span>;
+<span class="kw">wire</span> <span class="port">error_det</span>;
+<span class="kw">wire</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">decoded_data</span>;
+
+hamming_decoder dec (
+    .<span class="port">received</span>(<span class="port">received</span>[<span class="num">6</span>:<span class="num">0</span>]),
+    .<span class="port">data</span>(<span class="port">decoded_data</span>),
+    .<span class="port">syndrome</span>(<span class="port">syndrome</span>),
+    .<span class="port">error_detected</span>(<span class="port">error_det</span>)
+);
+
+<span class="cmt">// Check overall parity</span>
+<span class="kw">wire</span> <span class="port">overall_parity</span> = ^<span class="port">received</span>;
+
+<span class="cmt">// SECDED logic</span>
+<span class="kw">assign</span> <span class="port">single_error</span> = <span class="port">error_det</span> && <span class="port">overall_parity</span>;
+<span class="kw">assign</span> <span class="port">double_error</span> = <span class="port">error_det</span> && !<span class="port">overall_parity</span>;
+<span class="kw">assign</span> <span class="port">data_out</span> = <span class="port">decoded_data</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">hamming_74.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> hamming_encoder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">data</span>     : <span class="kw">in</span>  std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">codeword</span> : <span class="kw">out</span> std_logic_vector(<span class="num">6</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> hamming_encoder;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> hamming_encoder <span class="kw">is</span>
+    <span class="kw">signal</span> p1, p2, p3 : std_logic;
+<span class="kw">begin</span>
+    <span class="cmt">-- Calculate parity bits</span>
+    p1 <= <span class="port">data</span>(<span class="num">0</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">1</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">3</span>);
+    p2 <= <span class="port">data</span>(<span class="num">0</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">2</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">3</span>);
+    p3 <= <span class="port">data</span>(<span class="num">1</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">2</span>) <span class="kw">xor</span> <span class="port">data</span>(<span class="num">3</span>);
+    
+    <span class="cmt">-- Assemble codeword</span>
+    <span class="port">codeword</span> <= <span class="port">data</span>(<span class="num">3</span>) & <span class="port">data</span>(<span class="num">2</span>) & <span class="port">data</span>(<span class="num">1</span>) & p3 & 
+                <span class="port">data</span>(<span class="num">0</span>) & p2 & p1;
+<span class="kw">end</span> behavioral;
+
+<span class="kw">entity</span> hamming_decoder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">received</span>       : <span class="kw">in</span>  std_logic_vector(<span class="num">6</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">data</span>           : <span class="kw">out</span> std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">syndrome</span>       : <span class="kw">out</span> std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">error_detected</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> hamming_decoder;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> hamming_decoder <span class="kw">is</span>
+    <span class="kw">signal</span> s : std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> corrected : std_logic_vector(<span class="num">6</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    <span class="cmt">-- Calculate syndrome</span>
+    s(<span class="num">0</span>) <= <span class="port">received</span>(<span class="num">0</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">2</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">4</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">6</span>);
+    s(<span class="num">1</span>) <= <span class="port">received</span>(<span class="num">1</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">2</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">5</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">6</span>);
+    s(<span class="num">2</span>) <= <span class="port">received</span>(<span class="num">3</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">4</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">5</span>) <span class="kw">xor</span> <span class="port">received</span>(<span class="num">6</span>);
+    
+    <span class="port">syndrome</span> <= s;
+    <span class="port">error_detected</span> <= s(<span class="num">0</span>) <span class="kw">or</span> s(<span class="num">1</span>) <span class="kw">or</span> s(<span class="num">2</span>);
+    
+    <span class="cmt">-- Correct error</span>
+    correct_gen: <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">6</span> <span class="kw">generate</span>
+        corrected(i) <= <span class="port">received</span>(i) <span class="kw">xor</span> (<span class="str">'1'</span> <span class="kw">when</span> to_integer(unsigned(s)) = i+<span class="num">1</span> <span class="kw">else</span> <span class="str">'0'</span>);
+    <span class="kw">end generate</span>;
+    
+    <span class="port">data</span> <= corrected(<span class="num">6</span>) & corrected(<span class="num">5</span>) & corrected(<span class="num">4</span>) & corrected(<span class="num">2</span>);
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="secded">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    SECDED Extension
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Overall Parity (P₀)</h5>
+      <p>Add one extra bit: XOR of entire Hamming codeword.</p>
+      <div class="formula">P₀ = ⊕(all bits)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Single Error</h5>
+      <p>Syndrome ≠ 0 AND overall parity = 1. Correctable.</p>
+      <div class="formula">Flip bit at syndrome position</div>
+    </div>
+    <div class="concept-card">
+      <h5>Double Error</h5>
+      <p>Syndrome ≠ 0 AND overall parity = 0. Detectable, not correctable.</p>
+      <div class="formula">Signal uncorrectable error</div>
+    </div>
+    <div class="concept-card">
+      <h5>No Error</h5>
+      <p>Syndrome = 0 AND overall parity = 0. Data is valid.</p>
+      <div class="formula">Pass through unchanged</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Syndrome</th>
+          <th>Overall P</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>= 0</td>
+          <td>= 0</td>
+          <td class="highlight">No error</td>
+          <td>Use data as-is</td>
+        </tr>
+        <tr>
+          <td>= 0</td>
+          <td>= 1</td>
+          <td>P₀ error</td>
+          <td>Ignore (parity-only)</td>
+        </tr>
+        <tr>
+          <td>≠ 0</td>
+          <td>= 1</td>
+          <td class="highlight">Single error</td>
+          <td>Correct at syndrome</td>
+        </tr>
+        <tr>
+          <td>≠ 0</td>
+          <td>= 0</td>
+          <td style="color: #c53030;">Double error</td>
+          <td>Signal UE, discard</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>ECC Memory</h5>
+      <p>Server RAM uses Hamming codes. Corrects soft errors from cosmic rays.</p>
+      <div class="formula">72-bit (64 data + 8 ECC)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Satellite Links</h5>
+      <p>Deep space communication uses extended Hamming codes for reliability.</p>
+      <div class="formula">Low SNR environments</div>
+    </div>
+    <div class="concept-card">
+      <h5>Flash Storage</h5>
+      <p>NAND flash uses Hamming or BCH codes for error correction.</p>
+      <div class="formula">Block-level ECC</div>
+    </div>
+    <div class="concept-card">
+      <h5>QR Codes</h5>
+      <p>2D barcodes use Reed-Solomon (extended from Hamming concepts).</p>
+      <div class="formula">Up to 30% damage tolerance</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Hamming code places parity bits at power-of-2 positions: 1, 2, 4, 8, 16...</li>
+    <li>Each parity bit covers positions whose binary representation has a 1 in that bit position.</li>
+    <li>Syndrome is the concatenation of all parity check results. Non-zero syndrome = error position.</li>
+    <li>Hamming(7,4): 4 data bits, 3 parity bits. Minimum distance d=3 (SEC capability).</li>
+    <li>SECDED adds overall parity. If syndrome≠0 and overall=1: single error. If overall=0: double error.</li>
+    <li>For n data bits, need k parity bits where 2ᵏ ≥ n + k + 1. ECC RAM: 64 data + 8 check bits.</li>
+  </ul>
+</section>

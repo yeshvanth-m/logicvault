@@ -1,0 +1,616 @@
+---
+layout: edc
+title: "CRC (Cyclic Redundancy Check)"
+sidebar: crc
+group: edc
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Error Detection }
+  - { color: red, text: Polynomial Division }
+subtitle: "Powerful error detection using polynomial division in GF(2). Computes a checksum by dividing message by generator polynomial. Detects all single-bit, double-bit, odd-bit errors, and burst errors up to polynomial degree."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "theory", title: "Theory" }
+  - { id: "polynomials", title: "Common Polynomials" }
+  - { id: "calculation", title: "Calculation Process" }
+  - { id: "example", title: "Worked Example" }
+  - { id: "circuit", title: "LFSR Circuit" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Method", value: "Polynomial division in GF(2)" }
+  - { label: "Checksum", value: "Remainder after division" }
+  - { label: "Generator", value: "Standardized polynomials" }
+  - { label: "Burst Detection", value: "Up to (n-1) bit bursts" }
+  - { label: "CRC-32", value: "32-bit, used in Ethernet/ZIP" }
+  - { label: "CRC-16", value: "16-bit, used in Modbus/USB" }
+  - { label: "Hardware", value: "LFSR shift register" }
+related:
+  - { url: "/edc/parity-gen.html", name: "Parity Generator", desc: "Simple XOR check" }
+  - { url: "/edc/hamming.html", name: "Hamming Code", desc: "Error correction" }
+  - { url: "/codec/gray.html", name: "Gray Code", desc: "Error reduction" }
+  - { url: "/gates/xor.html", name: "XOR Gate", desc: "Core operation" }
+prev: { url: "/edc/hamming.html", title: "Hamming Code" }
+next: { url: "/sequential/sr-latch.html", title: "SR Latch" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>Cyclic Redundancy Check (CRC)</strong> is a powerful error-detection scheme based on 
+    polynomial arithmetic over GF(2) (binary field). The sender divides the message polynomial 
+    by a generator polynomial and appends the remainder (CRC checksum) to the message. The 
+    receiver performs the same division—a zero remainder indicates no detected errors.
+  </p>
+  <p>
+    CRC is superior to simple parity for detecting burst errors common in serial communication 
+    and storage. It's implemented efficiently in hardware using Linear Feedback Shift Registers 
+    (LFSRs) and is ubiquitous in Ethernet, USB, ZIP files, and storage systems.
+  </p>
+</section>
+
+<section class="content-section" id="theory">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Theory
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>GF(2) Arithmetic</h5>
+      <p>Addition/subtraction = XOR. No carries. Multiplication follows polynomial rules.</p>
+      <div class="formula">1 + 1 = 0, 1 - 1 = 0</div>
+    </div>
+    <div class="concept-card">
+      <h5>Message Polynomial</h5>
+      <p>Data bits as polynomial coefficients. MSB is highest degree term.</p>
+      <div class="formula">1011 → x³ + x + 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Generator Polynomial</h5>
+      <p>Standardized polynomial that divides the message. Degree = CRC bits.</p>
+      <div class="formula">G(x) = x³ + x + 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>CRC Calculation</h5>
+      <p>Append n zeros, divide by G(x), remainder is CRC.</p>
+      <div class="formula">CRC = M(x)·xⁿ mod G(x)</div>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Mathematical Definition</div>
+    <div class="bool-expr">
+      <span class="out">Transmitted</span> = <span class="var">M(x)</span> · <span class="var">x<sup>n</sup></span> + <span class="var">R(x)</span><br><br>
+      Where:<br>
+      • <span class="var">M(x)</span> = message polynomial<br>
+      • <span class="var">n</span> = degree of generator G(x)<br>
+      • <span class="var">R(x)</span> = M(x)·x<sup>n</sup> mod G(x) = CRC remainder
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Detection Capabilities</h4>
+    <div class="analysis-item">
+      <span class="label">All single-bit errors</span>
+      <span class="value">100% detected</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">All double-bit errors</span>
+      <span class="value">100% (if G(x) has factor x+1)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">All odd-bit errors</span>
+      <span class="value">100% (if G(x) has factor x+1)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Burst errors ≤ n bits</span>
+      <span class="value">100% detected</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Burst errors = n+1 bits</span>
+      <span class="value">1 - 2<sup>-(n-1)</sup> detected</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Random errors</span>
+      <span class="value">1 - 2<sup>-n</sup> detected</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="polynomials">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Common Polynomials
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Polynomial</th>
+          <th>Hex</th>
+          <th>Bits</th>
+          <th>Applications</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CRC-8</td>
+          <td>x⁸ + x² + x + 1</td>
+          <td>0x07</td>
+          <td>8</td>
+          <td>ATM HEC</td>
+        </tr>
+        <tr>
+          <td>CRC-16-CCITT</td>
+          <td>x¹⁶ + x¹² + x⁵ + 1</td>
+          <td>0x1021</td>
+          <td>16</td>
+          <td>X.25, HDLC, Bluetooth</td>
+        </tr>
+        <tr>
+          <td>CRC-16-IBM</td>
+          <td>x¹⁶ + x¹⁵ + x² + 1</td>
+          <td>0x8005</td>
+          <td>16</td>
+          <td>Modbus, USB</td>
+        </tr>
+        <tr>
+          <td class="highlight">CRC-32</td>
+          <td>x³² + x²⁶ + x²³ + x²² + x¹⁶ + x¹² + x¹¹ + x¹⁰ + x⁸ + x⁷ + x⁵ + x⁴ + x² + x + 1</td>
+          <td>0x04C11DB7</td>
+          <td>32</td>
+          <td>Ethernet, ZIP, PNG</td>
+        </tr>
+        <tr>
+          <td>CRC-32C</td>
+          <td>x³² + x²⁸ + x²⁷ + x²⁶ + x²⁵ + x²³ + x²² + x²⁰ + x¹⁹ + x¹⁸ + x¹⁴ + x¹³ + x¹¹ + x¹⁰ + x⁹ + x⁸ + x⁶ + 1</td>
+          <td>0x1EDC6F41</td>
+          <td>32</td>
+          <td>iSCSI, SCTP</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Polynomial Selection</h5>
+      <p>Good polynomials have high Hamming distance, detect specific error patterns.</p>
+      <div class="formula">Primitive polynomials preferred</div>
+    </div>
+    <div class="concept-card">
+      <h5>CRC Width</h5>
+      <p>More bits = better detection but higher overhead. 32-bit is standard for networks.</p>
+      <div class="formula">Trade-off: coverage vs. overhead</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="calculation">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Calculation Process
+  </h3>
+
+  <div class="derivation-box">
+    <h4>CRC Encoding Steps</h4>
+    <div class="derivation-table">
+      1. Choose generator polynomial G(x) of degree n
+      2. Append n zeros to message M (shift left by n)
+      3. Divide M·xⁿ by G using XOR division
+      4. Remainder R is the CRC checksum
+      5. Transmit: original message + R
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>CRC Verification Steps</h4>
+    <div class="derivation-table">
+      1. Receive message + CRC
+      2. Divide entire received word by G(x)
+      3. If remainder = 0: No error detected
+      4. If remainder ≠ 0: Error detected
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">XOR Division Rules</div>
+    <div class="bool-expr">
+      • If MSB of dividend = 1: XOR with divisor, shift left<br>
+      • If MSB of dividend = 0: XOR with 0 (just shift left)<br>
+      • Continue until all message bits processed<br>
+      • Remaining bits in register = CRC remainder
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="example">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Worked Example
+  </h3>
+
+  <div class="error-example">
+    <h4>CRC-3 Calculation: G(x) = x³ + x + 1 = 1011</h4>
+    <div class="data-row">
+      <span>Message:</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span>= 1101001</span>
+    </div>
+    <div class="data-row">
+      <span>Append 3 zeros:</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">0</span>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Division Process</h4>
+    <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.6;">
+  1101001000   ← Message + 3 zeros
+  1011         ← XOR with G(x) since MSB=1
+  ────
+   110001000
+   1011       ← XOR with G(x)
+   ────
+    11101000
+    1011      ← XOR with G(x)
+    ────
+     1011000
+     1011     ← XOR with G(x)
+     ────
+      000000
+          ↓
+      <span style="color: var(--green);">CRC = 000</span> (no remainder in this case)
+    </pre>
+  </div>
+
+  <div class="error-example">
+    <h4>Different Example: Message = 11010011101100</h4>
+    <div class="data-row">
+      <span>G(x) = x³ + x + 1 (1011)</span>
+    </div>
+    <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.6; background: var(--surface2); padding: 1rem; border-radius: var(--radius);">
+11010011101100 000   ← append 3 zeros
+1011                 ← XOR (MSB=1)
+────
+ 1100011101100 000
+ 1011
+ ────
+  111011101100 000
+  1011
+  ────
+   10101101100 000
+   1011
+   ────
+    0111101100 000   ← MSB=0, shift only
+     111101100 000
+     1011
+     ────
+      10001100 000
+      1011
+      ────
+       0011100 000   ← MSB=0, shift
+         11100 000
+         1011
+         ────
+          1010 000
+          1011
+          ────
+           001 000
+             1 000   ← MSB=0, continue...
+                ↓
+           <span style="color: var(--green);">CRC = 100</span>
+    </pre>
+    <div class="data-row">
+      <span>Transmitted:</span>
+      <span>11010011101100</span>
+      <span class="bit parity">1</span>
+      <span class="bit parity">0</span>
+      <span class="bit parity">0</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    LFSR Circuit
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 CRC-3 LFSR for G(x) = x³ + x + 1</p>
+      <pre style="font-family: var(--mono); font-size: 0.85rem;">
+Data ──→(+)─┬──→[ R₂ ]──→[ R₁ ]──→(+)──→[ R₀ ]───→ out
+           │                       ↑
+           └───────────────────────┘
+           
+(+) = XOR gate
+[ Rᵢ ] = D flip-flop (register bit)
+
+XOR feedback at positions matching G(x) terms:
+G(x) = x³ + x¹ + x⁰ → feedback after R₂ and R₀
+      </pre>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Serial Implementation</h5>
+      <p>Process one bit per clock. Simple, low area, but slow for high-speed applications.</p>
+      <div class="formula">n clocks for n-bit message</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parallel Implementation</h5>
+      <p>Process multiple bits (e.g., 8, 32) per clock. Uses lookup tables or matrix math.</p>
+      <div class="formula">Higher throughput</div>
+    </div>
+    <div class="concept-card">
+      <h5>LFSR Structure</h5>
+      <p>Shift register with XOR feedback. Feedback taps match polynomial terms.</p>
+      <div class="formula">Hardware-efficient</div>
+    </div>
+    <div class="concept-card">
+      <h5>Initial Value</h5>
+      <p>Register initialized to all 1s or all 0s depending on standard.</p>
+      <div class="formula">CRC-32: init=0xFFFFFFFF</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">crc.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// CRC-8 Serial Implementation</span>
+<span class="cmt">// G(x) = x^8 + x^2 + x + 1 (0x07)</span>
+<span class="kw">module</span> crc8_serial (
+    <span class="kw">input</span>        <span class="port">clk</span>,
+    <span class="kw">input</span>        <span class="port">rst_n</span>,
+    <span class="kw">input</span>        <span class="port">data_in</span>,
+    <span class="kw">input</span>        <span class="port">data_valid</span>,
+    <span class="kw">output</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">crc</span>
+);
+
+<span class="kw">reg</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">crc_reg</span>;
+
+<span class="kw">wire</span> <span class="port">feedback</span> = <span class="port">data_in</span> ^ <span class="port">crc_reg</span>[<span class="num">7</span>];
+
+<span class="kw">always</span> @(<span class="kw">posedge</span> <span class="port">clk</span> <span class="kw">or negedge</span> <span class="port">rst_n</span>) <span class="kw">begin</span>
+    <span class="kw">if</span> (!<span class="port">rst_n</span>) <span class="kw">begin</span>
+        <span class="port">crc_reg</span> <= <span class="num">8'h00</span>;
+    <span class="kw">end else if</span> (<span class="port">data_valid</span>) <span class="kw">begin</span>
+        <span class="cmt">// Shift and apply feedback at polynomial taps</span>
+        <span class="port">crc_reg</span>[<span class="num">7</span>] <= <span class="port">crc_reg</span>[<span class="num">6</span>];
+        <span class="port">crc_reg</span>[<span class="num">6</span>] <= <span class="port">crc_reg</span>[<span class="num">5</span>];
+        <span class="port">crc_reg</span>[<span class="num">5</span>] <= <span class="port">crc_reg</span>[<span class="num">4</span>];
+        <span class="port">crc_reg</span>[<span class="num">4</span>] <= <span class="port">crc_reg</span>[<span class="num">3</span>];
+        <span class="port">crc_reg</span>[<span class="num">3</span>] <= <span class="port">crc_reg</span>[<span class="num">2</span>];
+        <span class="port">crc_reg</span>[<span class="num">2</span>] <= <span class="port">crc_reg</span>[<span class="num">1</span>] ^ <span class="port">feedback</span>;  <span class="cmt">// x^2 term</span>
+        <span class="port">crc_reg</span>[<span class="num">1</span>] <= <span class="port">crc_reg</span>[<span class="num">0</span>] ^ <span class="port">feedback</span>;  <span class="cmt">// x^1 term</span>
+        <span class="port">crc_reg</span>[<span class="num">0</span>] <= <span class="port">feedback</span>;              <span class="cmt">// x^0 term</span>
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">assign</span> <span class="port">crc</span> = <span class="port">crc_reg</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// CRC-8 Parallel (8-bit input)</span>
+<span class="kw">module</span> crc8_parallel (
+    <span class="kw">input</span>        <span class="port">clk</span>,
+    <span class="kw">input</span>        <span class="port">rst_n</span>,
+    <span class="kw">input</span>  [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">input</span>        <span class="port">data_valid</span>,
+    <span class="kw">output</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">crc</span>
+);
+
+<span class="kw">reg</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">crc_reg</span>;
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">crc_next</span>;
+
+<span class="cmt">// Parallel CRC calculation (derived from serial equations)</span>
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">d</span> = <span class="port">data_in</span>;
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">c</span> = <span class="port">crc_reg</span>;
+
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">0</span>] = <span class="port">d</span>[<span class="num">7</span>] ^ <span class="port">d</span>[<span class="num">6</span>] ^ <span class="port">d</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">6</span>] ^ <span class="port">c</span>[<span class="num">7</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">1</span>] = <span class="port">d</span>[<span class="num">7</span>] ^ <span class="port">d</span>[<span class="num">1</span>] ^ <span class="port">d</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">1</span>] ^ <span class="port">c</span>[<span class="num">7</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">2</span>] = <span class="port">d</span>[<span class="num">7</span>] ^ <span class="port">d</span>[<span class="num">2</span>] ^ <span class="port">d</span>[<span class="num">1</span>] ^ <span class="port">d</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">0</span>] ^ <span class="port">c</span>[<span class="num">1</span>] ^ <span class="port">c</span>[<span class="num">2</span>] ^ <span class="port">c</span>[<span class="num">7</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">3</span>] = <span class="port">d</span>[<span class="num">3</span>] ^ <span class="port">d</span>[<span class="num">2</span>] ^ <span class="port">d</span>[<span class="num">1</span>] ^ <span class="port">c</span>[<span class="num">1</span>] ^ <span class="port">c</span>[<span class="num">2</span>] ^ <span class="port">c</span>[<span class="num">3</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">4</span>] = <span class="port">d</span>[<span class="num">4</span>] ^ <span class="port">d</span>[<span class="num">3</span>] ^ <span class="port">d</span>[<span class="num">2</span>] ^ <span class="port">c</span>[<span class="num">2</span>] ^ <span class="port">c</span>[<span class="num">3</span>] ^ <span class="port">c</span>[<span class="num">4</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">5</span>] = <span class="port">d</span>[<span class="num">5</span>] ^ <span class="port">d</span>[<span class="num">4</span>] ^ <span class="port">d</span>[<span class="num">3</span>] ^ <span class="port">c</span>[<span class="num">3</span>] ^ <span class="port">c</span>[<span class="num">4</span>] ^ <span class="port">c</span>[<span class="num">5</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">6</span>] = <span class="port">d</span>[<span class="num">6</span>] ^ <span class="port">d</span>[<span class="num">5</span>] ^ <span class="port">d</span>[<span class="num">4</span>] ^ <span class="port">c</span>[<span class="num">4</span>] ^ <span class="port">c</span>[<span class="num">5</span>] ^ <span class="port">c</span>[<span class="num">6</span>];
+<span class="kw">assign</span> <span class="port">crc_next</span>[<span class="num">7</span>] = <span class="port">d</span>[<span class="num">7</span>] ^ <span class="port">d</span>[<span class="num">6</span>] ^ <span class="port">d</span>[<span class="num">5</span>] ^ <span class="port">c</span>[<span class="num">5</span>] ^ <span class="port">c</span>[<span class="num">6</span>] ^ <span class="port">c</span>[<span class="num">7</span>];
+
+<span class="kw">always</span> @(<span class="kw">posedge</span> <span class="port">clk</span> <span class="kw">or negedge</span> <span class="port">rst_n</span>) <span class="kw">begin</span>
+    <span class="kw">if</span> (!<span class="port">rst_n</span>)
+        <span class="port">crc_reg</span> <= <span class="num">8'h00</span>;
+    <span class="kw">else if</span> (<span class="port">data_valid</span>)
+        <span class="port">crc_reg</span> <= <span class="port">crc_next</span>;
+<span class="kw">end</span>
+
+<span class="kw">assign</span> <span class="port">crc</span> = <span class="port">crc_reg</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// CRC-32 for Ethernet (parallel 8-bit)</span>
+<span class="kw">module</span> crc32_eth (
+    <span class="kw">input</span>         <span class="port">clk</span>,
+    <span class="kw">input</span>         <span class="port">rst_n</span>,
+    <span class="kw">input</span>         <span class="port">init</span>,
+    <span class="kw">input</span>  [<span class="num">7</span>:<span class="num">0</span>]  <span class="port">data_in</span>,
+    <span class="kw">input</span>         <span class="port">data_valid</span>,
+    <span class="kw">output</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">crc</span>,
+    <span class="kw">output</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">crc_out</span>  <span class="cmt">// Inverted, bit-reversed for Ethernet</span>
+);
+
+<span class="kw">reg</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">crc_reg</span>;
+
+<span class="cmt">// CRC-32 polynomial: 0x04C11DB7</span>
+<span class="cmt">// This is a simplified representation; actual parallel</span>
+<span class="cmt">// equations would be much longer</span>
+
+<span class="kw">function</span> [<span class="num">31</span>:<span class="num">0</span>] crc32_byte;
+    <span class="kw">input</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data</span>;
+    <span class="kw">input</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">crc</span>;
+    <span class="kw">reg</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">c</span>;
+    <span class="kw">reg</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">d</span>;
+    <span class="kw">begin</span>
+        <span class="port">c</span> = <span class="port">crc</span>;
+        <span class="port">d</span> = <span class="port">data</span>;
+        <span class="cmt">// Simplified - actual implementation uses</span>
+        <span class="cmt">// full parallel equations or lookup table</span>
+        crc32_byte[<span class="num">0</span>] = <span class="port">c</span>[<span class="num">24</span>]^<span class="port">c</span>[<span class="num">30</span>]^<span class="port">d</span>[<span class="num">1</span>]^<span class="port">d</span>[<span class="num">7</span>];
+        <span class="cmt">// ... (30 more equations)</span>
+        crc32_byte[<span class="num">31</span>] = <span class="port">c</span>[<span class="num">7</span>]^<span class="port">c</span>[<span class="num">31</span>]^<span class="port">d</span>[<span class="num">0</span>]^<span class="port">d</span>[<span class="num">6</span>];
+    <span class="kw">end</span>
+<span class="kw">endfunction</span>
+
+<span class="kw">always</span> @(<span class="kw">posedge</span> <span class="port">clk</span> <span class="kw">or negedge</span> <span class="port">rst_n</span>) <span class="kw">begin</span>
+    <span class="kw">if</span> (!<span class="port">rst_n</span>)
+        <span class="port">crc_reg</span> <= <span class="num">32'hFFFFFFFF</span>;
+    <span class="kw">else if</span> (<span class="port">init</span>)
+        <span class="port">crc_reg</span> <= <span class="num">32'hFFFFFFFF</span>;
+    <span class="kw">else if</span> (<span class="port">data_valid</span>)
+        <span class="port">crc_reg</span> <= crc32_byte(<span class="port">data_in</span>, <span class="port">crc_reg</span>);
+<span class="kw">end</span>
+
+<span class="kw">assign</span> <span class="port">crc</span> = <span class="port">crc_reg</span>;
+<span class="cmt">// Ethernet: invert and bit-reverse</span>
+<span class="kw">assign</span> <span class="port">crc_out</span> = ~{<span class="port">crc_reg</span>[<span class="num">0</span>],<span class="port">crc_reg</span>[<span class="num">1</span>],<span class="port">crc_reg</span>[<span class="num">2</span>],...,<span class="port">crc_reg</span>[<span class="num">31</span>]};
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">crc8.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> crc8_serial <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">clk</span>        : <span class="kw">in</span>  std_logic;
+        <span class="port">rst_n</span>      : <span class="kw">in</span>  std_logic;
+        <span class="port">data_in</span>    : <span class="kw">in</span>  std_logic;
+        <span class="port">data_valid</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">crc</span>        : <span class="kw">out</span> std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> crc8_serial;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> crc8_serial <span class="kw">is</span>
+    <span class="kw">signal</span> crc_reg : std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> feedback : std_logic;
+<span class="kw">begin</span>
+    feedback <= <span class="port">data_in</span> <span class="kw">xor</span> crc_reg(<span class="num">7</span>);
+    
+    <span class="kw">process</span>(<span class="port">clk</span>, <span class="port">rst_n</span>)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> <span class="port">rst_n</span> = <span class="str">'0'</span> <span class="kw">then</span>
+            crc_reg <= (<span class="kw">others</span> => <span class="str">'0'</span>);
+        <span class="kw">elsif rising_edge</span>(<span class="port">clk</span>) <span class="kw">then</span>
+            <span class="kw">if</span> <span class="port">data_valid</span> = <span class="str">'1'</span> <span class="kw">then</span>
+                crc_reg(<span class="num">7</span>) <= crc_reg(<span class="num">6</span>);
+                crc_reg(<span class="num">6</span>) <= crc_reg(<span class="num">5</span>);
+                crc_reg(<span class="num">5</span>) <= crc_reg(<span class="num">4</span>);
+                crc_reg(<span class="num">4</span>) <= crc_reg(<span class="num">3</span>);
+                crc_reg(<span class="num">3</span>) <= crc_reg(<span class="num">2</span>);
+                crc_reg(<span class="num">2</span>) <= crc_reg(<span class="num">1</span>) <span class="kw">xor</span> feedback;
+                crc_reg(<span class="num">1</span>) <= crc_reg(<span class="num">0</span>) <span class="kw">xor</span> feedback;
+                crc_reg(<span class="num">0</span>) <= feedback;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+    
+    <span class="port">crc</span> <= crc_reg;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Ethernet</h5>
+      <p>Every Ethernet frame includes CRC-32 FCS (Frame Check Sequence).</p>
+      <div class="formula">Detects cable/switch errors</div>
+    </div>
+    <div class="concept-card">
+      <h5>Storage</h5>
+      <p>ZIP, PNG, GZIP files use CRC-32 for integrity verification.</p>
+      <div class="formula">Detects corruption</div>
+    </div>
+    <div class="concept-card">
+      <h5>Serial Protocols</h5>
+      <p>Modbus, CAN bus, USB all use CRC for frame checking.</p>
+      <div class="formula">CRC-16, CRC-5</div>
+    </div>
+    <div class="concept-card">
+      <h5>Flash Memory</h5>
+      <p>NAND flash controllers use CRC alongside ECC for data integrity.</p>
+      <div class="formula">Combined with Hamming/BCH</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>CRC is polynomial division over GF(2). Remainder after dividing message by generator polynomial.</li>
+    <li>Detects all single, double, odd-bit errors. All burst errors up to polynomial degree.</li>
+    <li>Hardware implementation uses LFSR with XOR feedback at polynomial tap positions.</li>
+    <li>CRC-32 (Ethernet): x³² + x²⁶ + x²³ + ... + 1. Initialized to all 1s, output inverted.</li>
+    <li>Parallel CRC processes multiple bits per clock using derived XOR equations or lookup tables.</li>
+    <li>CRC detects errors but cannot correct. Combine with Hamming/BCH for error correction.</li>
+  </ul>
+</section>

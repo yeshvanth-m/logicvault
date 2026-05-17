@@ -1,0 +1,555 @@
+---
+layout: codec
+title: "Priority Encoder"
+sidebar: priority-enc
+group: codec
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Encoder }
+  - { color: red, text: Priority Logic }
+subtitle: "Encodes the highest-priority active input to binary code. Handles multiple simultaneous inputs by prioritizing based on position — typically MSB has highest priority."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "implementations", title: "Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "cascading", title: "Cascading" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "2ⁿ lines (any active)" }
+  - { label: "Outputs", value: "N bits + valid + group" }
+  - { label: "Priority", value: "Higher index = higher priority" }
+  - { label: "8-to-3 Encoder", value: "I₇ highest priority" }
+  - { label: "No Input Active", value: "Valid = 0" }
+  - { label: "Propagation", value: "O(log N) with tree" }
+  - { label: "Common ICs", value: "74LS148, 74HC148" }
+related:
+  - { url: "/codec/binary-encoder.html", name: "Binary Encoder", desc: "Single input only" }
+  - { url: "/codec/binary-decoder.html", name: "Binary Decoder", desc: "Inverse operation" }
+  - { url: "/routing/mux8.html", name: "8:1 MUX", desc: "Selection circuit" }
+  - { url: "/arithmetic/comparator.html", name: "Comparator", desc: "Priority determination" }
+prev: { url: "/codec/binary-encoder.html", title: "Binary Encoder" }
+next: { url: "/codec/binary-decoder.html", title: "Binary Decoder" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Priority Encoder</strong> is an enhanced version of a binary encoder that handles 
+    multiple simultaneously active inputs. When multiple inputs are HIGH, it encodes only the 
+    highest-priority input (typically the one with the highest index) and ignores all others.
+  </p>
+  <p>
+    This is essential for interrupt controllers where multiple devices may request attention 
+    simultaneously — the CPU must know which interrupt to service first. Priority encoders also 
+    output a <strong>valid</strong> signal indicating whether any input is active.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">4-to-2 Priority Encoder</h4>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>I₃</th>
+          <th>I₂</th>
+          <th>I₁</th>
+          <th>I₀</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+          <th class="out-col">V</th>
+          <th>Encoded</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>X</td>
+          <td>X</td>
+          <td class="val-0">0</td>
+          <td>None</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td>X</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Understanding the Truth Table</h4>
+    <div class="analysis-item">
+      <span class="label">X (Don't Care)</span>
+      <span class="value">Lower-priority inputs ignored when higher is active</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">V (Valid)</span>
+      <span class="value">1 when any input is active, 0 when all inputs are 0</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Priority Order</span>
+      <span class="value">I₃ > I₂ > I₁ > I₀ (MSB highest)</span>
+    </div>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">8-to-3 Priority Encoder (74LS148)</h4>
+  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+    The 74LS148 has active-LOW inputs and outputs. EI (Enable In) and GS (Group Select) pins for cascading.
+  </p>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>EI̅</th>
+          <th>I̅₇...I̅₀</th>
+          <th class="out-col">A̅₂A̅₁A̅₀</th>
+          <th class="out-col">GS̅</th>
+          <th class="out-col">EO̅</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-1">1</td>
+          <td>X</td>
+          <td>111</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td>11111111</td>
+          <td>111</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td>0xxxxxxx</td>
+          <td>000</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td>10xxxxxx</td>
+          <td>001</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">4-to-2 Priority Encoder</h4>
+  <div class="bool-box">
+    <div class="bool-label">Priority-Aware Equations</div>
+    <div class="bool-expr">
+      <span class="out">Y₁</span> = <span class="var">I₃</span> <span class="op">+</span> <span class="var">I₂</span><br>
+      <span class="out">Y₀</span> = <span class="var">I₃</span> <span class="op">+</span> <span class="var">I̅₂</span><span class="op">·</span><span class="var">I₁</span><br>
+      <span class="out">V</span> = <span class="var">I₃</span> <span class="op">+</span> <span class="var">I₂</span> <span class="op">+</span> <span class="var">I₁</span> <span class="op">+</span> <span class="var">I₀</span>
+    </div>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">Derivation</h4>
+  <div class="derivation-box">
+    <h4>Using Minterm Expansion</h4>
+    <div class="derivation-table">
+      <pre>
+For Y₀: Active when encoded value has LSB = 1 (i.e., 1 or 3)
+
+  Y₀ = I₃ + I̅₃·I̅₂·I₁  (I₃ has priority, else I₁ if I₂,I₃ inactive)
+     = I₃ + I̅₂·I₁      (simplified with priority)
+
+For Y₁: Active when encoded value has bit 1 = 1 (i.e., 2 or 3)
+
+  Y₁ = I₃ + I₂         (I₃ or I₂ active)
+
+Valid: Any input active
+  V = I₃ + I₂ + I₁ + I₀</pre>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Key Insight</h5>
+      <p>Higher-priority inputs mask lower ones. I₃ active → ignore I₂,I₁,I₀.</p>
+      <div class="formula">Priority masking</div>
+    </div>
+    <div class="concept-card">
+      <h5>Gate Complexity</h5>
+      <p>More complex than basic encoder due to priority logic (AND-OR structure).</p>
+      <div class="formula">O(N²) gates for N outputs</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+    Implementations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Cascaded If-Else</h5>
+      <p>Check highest priority first, then descend. Simple but O(N) delay.</p>
+      <div class="formula">if I₇ then 7 else if I₆...</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parallel Tree</h5>
+      <p>Binary tree comparison. O(log N) delay but more gates.</p>
+      <div class="formula">Divide-and-conquer priority</div>
+    </div>
+    <div class="concept-card">
+      <h5>Leading-Zero Counter</h5>
+      <p>Count leading zeros = position of first 1. Used in floating-point.</p>
+      <div class="formula">CLZ instruction</div>
+    </div>
+    <div class="concept-card">
+      <h5>Thermometer Code</h5>
+      <p>Convert to thermometer first, then extract position.</p>
+      <div class="formula">input → thermo → binary</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Delay</th>
+          <th>Area</th>
+          <th>Use Case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cascaded</td>
+          <td>O(N)</td>
+          <td class="highlight">O(N)</td>
+          <td>Small encoders</td>
+        </tr>
+        <tr>
+          <td>Tree</td>
+          <td class="highlight">O(log N)</td>
+          <td>O(N log N)</td>
+          <td>High-speed</td>
+        </tr>
+        <tr>
+          <td>ROM/LUT</td>
+          <td class="highlight">O(1)</td>
+          <td>O(2ⁿ)</td>
+          <td>Very small N</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 8-to-3 Priority Encoder</p>
+      <p>I₇ (highest) → I₀ (lowest) priority</p>
+      <p>Outputs: Y₂Y₁Y₀ (encoded), V (valid)</p>
+      <p>74LS148: Active-low I/O with cascade pins</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">priority_encoder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 8-to-3 Priority Encoder (casez implementation)</span>
+<span class="kw">module</span> priority_encoder_8to3 (
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">in</span>,
+    <span class="kw">output reg</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">out</span>,
+    <span class="kw">output</span>           <span class="port">valid</span>
+);
+
+<span class="kw">assign</span> <span class="port">valid</span> = |<span class="port">in</span>;
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">casez</span> (<span class="port">in</span>)  <span class="cmt">// 'z' matches any value (don't care)</span>
+        <span class="num">8'b1???????</span>: <span class="port">out</span> = <span class="num">3'd7</span>;  <span class="cmt">// Highest priority</span>
+        <span class="num">8'b01??????</span>: <span class="port">out</span> = <span class="num">3'd6</span>;
+        <span class="num">8'b001?????</span>: <span class="port">out</span> = <span class="num">3'd5</span>;
+        <span class="num">8'b0001????</span>: <span class="port">out</span> = <span class="num">3'd4</span>;
+        <span class="num">8'b00001???</span>: <span class="port">out</span> = <span class="num">3'd3</span>;
+        <span class="num">8'b000001??</span>: <span class="port">out</span> = <span class="num">3'd2</span>;
+        <span class="num">8'b0000001?</span>: <span class="port">out</span> = <span class="num">3'd1</span>;
+        <span class="num">8'b00000001</span>: <span class="port">out</span> = <span class="num">3'd0</span>;  <span class="cmt">// Lowest priority</span>
+        <span class="kw">default</span>:     <span class="port">out</span> = <span class="num">3'd0</span>;  <span class="cmt">// No input active</span>
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Parametrized Priority Encoder</span>
+<span class="kw">module</span> priority_encoder #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">in</span>,
+    <span class="kw">output reg</span> [$clog2(<span class="port">WIDTH</span>)-<span class="num">1</span>:<span class="num">0</span>] <span class="port">out</span>,
+    <span class="kw">output</span>                       <span class="port">valid</span>
+);
+
+<span class="kw">integer</span> <span class="port">i</span>;
+
+<span class="kw">assign</span> <span class="port">valid</span> = |<span class="port">in</span>;
+
+<span class="cmt">// Scan from MSB to LSB (highest priority first)</span>
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">out</span> = <span class="num">0</span>;
+    <span class="kw">for</span> (<span class="port">i</span> = <span class="num">0</span>; <span class="port">i</span> < <span class="port">WIDTH</span>; <span class="port">i</span> = <span class="port">i</span> + <span class="num">1</span>) <span class="kw">begin</span>
+        <span class="kw">if</span> (<span class="port">in</span>[<span class="port">i</span>])
+            <span class="port">out</span> = <span class="port">i</span>[$clog2(<span class="port">WIDTH</span>)-<span class="num">1</span>:<span class="num">0</span>];
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// One-hot to Binary (alternative implementation)</span>
+<span class="kw">module</span> onehot_to_binary #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">onehot</span>,
+    <span class="kw">output</span> [$clog2(<span class="port">WIDTH</span>)-<span class="num">1</span>:<span class="num">0</span>] <span class="port">binary</span>
+);
+
+<span class="kw">genvar</span> <span class="port">i</span>, <span class="port">j</span>;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (<span class="port">j</span> = <span class="num">0</span>; <span class="port">j</span> < $clog2(<span class="port">WIDTH</span>); <span class="port">j</span> = <span class="port">j</span> + <span class="num">1</span>) <span class="kw">begin</span> : bit_loop
+        <span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">mask</span>;
+        <span class="kw">for</span> (<span class="port">i</span> = <span class="num">0</span>; <span class="port">i</span> < <span class="port">WIDTH</span>; <span class="port">i</span> = <span class="port">i</span> + <span class="num">1</span>) <span class="kw">begin</span> : mask_loop
+            <span class="kw">assign</span> <span class="port">mask</span>[<span class="port">i</span>] = (<span class="port">i</span> >> <span class="port">j</span>) & <span class="num">1</span>;
+        <span class="kw">end</span>
+        <span class="kw">assign</span> <span class="port">binary</span>[<span class="port">j</span>] = |(<span class="port">onehot</span> & <span class="port">mask</span>);
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">priority_encoder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="cmt">-- 8-to-3 Priority Encoder</span>
+<span class="kw">entity</span> priority_encoder_8to3 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">input_lines</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">output_code</span> : <span class="kw">out</span> std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">valid</span>       : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> priority_encoder_8to3;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> priority_encoder_8to3 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">valid</span> <= <span class="kw">or</span> <span class="port">input_lines</span>;
+    
+    <span class="kw">process</span>(<span class="port">input_lines</span>)
+    <span class="kw">begin</span>
+        <span class="kw">if</span>    <span class="port">input_lines</span>(<span class="num">7</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"111"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">6</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"110"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">5</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"101"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">4</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"100"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">3</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"011"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">2</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"010"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">1</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"001"</span>;
+        <span class="kw">elsif</span> <span class="port">input_lines</span>(<span class="num">0</span>) = <span class="str">'1'</span> <span class="kw">then</span> <span class="port">output_code</span> <= <span class="str">"000"</span>;
+        <span class="kw">else</span>  <span class="port">output_code</span> <= <span class="str">"000"</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="cascading">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Cascading Priority Encoders
+  </h3>
+
+  <p>
+    Multiple 8-to-3 priority encoders can be cascaded to create larger encoders using 
+    Enable-In (EI) and Enable-Out (EO) signals. The 74LS148 has built-in cascade support.
+  </p>
+
+  <div class="derivation-box">
+    <h4>16-to-4 from Two 8-to-3 Encoders</h4>
+    <div class="derivation-table">
+      <pre>
+  I₁₅-I₈ ──┬──[8-to-3 Encoder A]──┬── A₂A₁A₀
+           │                      │
+           │                      ├── GS_A (Group Select)
+           │                      │
+           └── EI_A = '0' (enabled)
+                                  │
+                                  └── EO_A ──→ EI_B
+                                  
+  I₇-I₀  ──┬──[8-to-3 Encoder B]──┬── B₂B₁B₀
+           │                      │
+           └── EI_B = EO_A        ├── GS_B
+                                  
+  Output: Y₃ = GS_A  (High group active)
+          Y₂ = GS_A ? A₂ : B₂
+          Y₁ = GS_A ? A₁ : B₁
+          Y₀ = GS_A ? A₀ : B₀</pre>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Cascade Logic</h4>
+    <div class="analysis-item">
+      <span class="label">EI (Enable In)</span>
+      <span class="value">Active-low. When HIGH, encoder outputs are disabled.</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">EO (Enable Out)</span>
+      <span class="value">Active-low when enabled AND no inputs active.</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">GS (Group Select)</span>
+      <span class="value">Active-low when enabled AND at least one input active.</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Chain Rule</span>
+      <span class="value">EO of higher-priority encoder → EI of lower-priority.</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Interrupt Controller</h5>
+      <p>Multiple IRQ lines to interrupt vector. Highest priority IRQ serviced first.</p>
+      <div class="formula">PIC, APIC in x86</div>
+    </div>
+    <div class="concept-card">
+      <h5>Arbiter</h5>
+      <p>Multiple bus masters requesting access. Priority encoder selects winner.</p>
+      <div class="formula">Fixed-priority arbiter</div>
+    </div>
+    <div class="concept-card">
+      <h5>Leading-One Detector</h5>
+      <p>Find position of MSB set bit. Used in floating-point normalization.</p>
+      <div class="formula">CLZ (Count Leading Zeros)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Keyboard Scanner</h5>
+      <p>When multiple keys pressed, report highest-priority key.</p>
+      <div class="formula">Key rollover handling</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Priority encoder handles multiple active inputs by encoding only the highest-priority one.</li>
+    <li>In Verilog, use `casez` with don't-care patterns or if-else chain for priority encoding.</li>
+    <li>Valid output indicates at least one input is active (avoids ambiguity when output = 0).</li>
+    <li>74LS148 is classic 8-to-3 priority encoder IC with cascade pins (EI, EO, GS).</li>
+    <li>Tree-based implementation: O(log N) delay vs O(N) for cascaded if-else.</li>
+    <li>Common in interrupt controllers (NVIC, PIC) where multiple interrupts need prioritization.</li>
+  </ul>
+</section>

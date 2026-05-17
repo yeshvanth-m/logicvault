@@ -1,0 +1,268 @@
+---
+layout: arithmetic
+title: Carry Lookahead Adder
+sidebar: cla
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: High Performance }
+
+subtitle: >
+  A fast adder architecture that computes all carry bits in parallel using Generate (G) and Propagate (P) signals. By "looking ahead" at all input bits simultaneously, CLA reduces the critical path from O(N) to O(log N), making it ideal for high-speed arithmetic units.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: pg-signals, title: P and G Signals }
+  - { id: carry-equations, title: Carry Equations }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: RTL Implementation }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A[N-1:0], B[N-1:0], Cin" }
+  - { label: Outputs, value: "Sum[N-1:0], Cout" }
+  - { label: Gate count, value: "O(N log N)" }
+  - { label: Logic depth, value: "O(log N)" }
+  - { label: Key concept, value: "Generate & Propagate" }
+  - { label: Use case, value: "ALUs, high-speed DSP" }
+
+related:
+  - { name: Ripple Carry, url: /arithmetic/ripple-carry.html, desc: "Simpler, slower" }
+  - { name: Carry Select, url: /arithmetic/carry-select.html, desc: "Hybrid approach" }
+  - { name: Kogge-Stone, url: /arithmetic/kogge-stone.html, desc: "Parallel prefix" }
+  - { name: Brent-Kung, url: /arithmetic/brent-kung.html, desc: "Area-efficient prefix" }
+
+prev: { title: Ripple Carry Adder, url: /arithmetic/ripple-carry.html }
+next: { title: Carry Select Adder, url: /arithmetic/carry-select.html }
+---
+
+<!-- P and G Signals -->
+<section class="section" id="pg-signals">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Generate and Propagate Signals</h2>
+    <a href="#pg-signals" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>The key insight of CLA is that for each bit position, we can determine two things:</p>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Generate (G)</h5>
+      <p>A carry is <strong>generated</strong> at position i when both inputs are 1. This creates a carry regardless of any incoming carry.</p>
+      <div class="formula">G<sub>i</sub> = A<sub>i</sub> · B<sub>i</sub></div>
+    </div>
+    <div class="concept-card">
+      <h5>Propagate (P)</h5>
+      <p>A carry is <strong>propagated</strong> through position i when exactly one input is 1. An incoming carry passes through to the next stage.</p>
+      <div class="formula">P<sub>i</sub> = A<sub>i</sub> ⊕ B<sub>i</sub></div>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Carry equation (fundamental CLA recurrence)</p>
+    <p class="bool-expr">
+      <span class="out">C<sub>i+1</sub></span> = <span class="var">G<sub>i</sub></span> <span class="op">+</span> (<span class="var">P<sub>i</sub></span> <span class="op">·</span> <span class="var">C<sub>i</sub></span>)
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Sum equation</p>
+    <p class="bool-expr">
+      <span class="out">Sum<sub>i</sub></span> = <span class="var">P<sub>i</sub></span> <span class="op">⊕</span> <span class="var">C<sub>i</sub></span>
+    </p>
+  </div>
+
+  <div class="callout callout-tip">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+    <p><strong>Key insight:</strong> P<sub>i</sub> is the same as the half-adder sum (XOR). The propagate signal tells us "if a carry comes in, it will go out."</p>
+  </div>
+</section>
+
+<!-- Carry Equations -->
+<section class="section" id="carry-equations">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+    </div>
+    <h2 class="section-title">Expanded Carry Equations (4-bit CLA)</h2>
+    <a href="#carry-equations" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>By recursively expanding the carry equation, we can express each carry in terms of G, P, and C<sub>0</sub> only:</p>
+  </div>
+
+  <div class="derivation-box">
+    <h4>4-bit CLA Carry Equations</h4>
+    <div class="derivation-table">
+      <p><span class="var">C<sub>1</sub></span> = <span class="var">G<sub>0</sub></span> <span class="op">+</span> <span class="var">P<sub>0</sub></span>·<span class="var">C<sub>0</sub></span></p>
+      <p><span class="var">C<sub>2</sub></span> = <span class="var">G<sub>1</sub></span> <span class="op">+</span> <span class="var">P<sub>1</sub></span>·<span class="var">G<sub>0</sub></span> <span class="op">+</span> <span class="var">P<sub>1</sub></span>·<span class="var">P<sub>0</sub></span>·<span class="var">C<sub>0</sub></span></p>
+      <p><span class="var">C<sub>3</sub></span> = <span class="var">G<sub>2</sub></span> <span class="op">+</span> <span class="var">P<sub>2</sub></span>·<span class="var">G<sub>1</sub></span> <span class="op">+</span> <span class="var">P<sub>2</sub></span>·<span class="var">P<sub>1</sub></span>·<span class="var">G<sub>0</sub></span> <span class="op">+</span> <span class="var">P<sub>2</sub></span>·<span class="var">P<sub>1</sub></span>·<span class="var">P<sub>0</sub></span>·<span class="var">C<sub>0</sub></span></p>
+      <p><span class="var">C<sub>4</sub></span> = <span class="var">G<sub>3</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">G<sub>2</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">P<sub>2</sub></span>·<span class="var">G<sub>1</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">P<sub>2</sub></span>·<span class="var">P<sub>1</sub></span>·<span class="var">G<sub>0</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">P<sub>2</sub></span>·<span class="var">P<sub>1</sub></span>·<span class="var">P<sub>0</sub></span>·<span class="var">C<sub>0</sub></span></p>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Group Generate and Propagate (for hierarchical CLA)</p>
+    <p class="bool-expr">
+      <span class="out">G<sub>group</sub></span> = <span class="var">G<sub>3</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">G<sub>2</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">P<sub>2</sub></span>·<span class="var">G<sub>1</sub></span> <span class="op">+</span> <span class="var">P<sub>3</sub></span>·<span class="var">P<sub>2</sub></span>·<span class="var">P<sub>1</sub></span>·<span class="var">G<sub>0</sub></span>
+    </p>
+    <p class="bool-expr" style="margin-top: 0.5rem;">
+      <span class="out">P<sub>group</sub></span> = <span class="var">P<sub>3</sub></span> <span class="op">·</span> <span class="var">P<sub>2</sub></span> <span class="op">·</span> <span class="var">P<sub>1</sub></span> <span class="op">·</span> <span class="var">P<sub>0</sub></span>
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Fan-in limitation:</strong> Each carry equation requires increasingly wide AND/OR gates. For C<sub>4</sub>, we need a 5-input OR gate. This limits practical single-level CLA to 4 bits. Larger adders use hierarchical (multi-level) CLA.</p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert 4-bit CLA block diagram here.<br/>Show: P/G generation block, Carry Lookahead Unit (CLU),<br/>and Sum generation. Highlight parallel carry computation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">cla_4bit.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 4-bit Carry Lookahead Adder</span>
+<span class="kw">module</span> cla_4bit (
+    <span class="kw">input</span>  [3:0] <span class="port">a</span>, <span class="port">b</span>,
+    <span class="kw">input</span>        <span class="port">cin</span>,
+    <span class="kw">output</span> [3:0] <span class="port">sum</span>,
+    <span class="kw">output</span>       <span class="port">cout</span>,
+    <span class="kw">output</span>       <span class="port">pg</span>, <span class="port">gg</span>  <span class="cmt">// Group P and G for hierarchical CLA</span>
+);
+
+    <span class="kw">wire</span> [3:0] p, g;
+    <span class="kw">wire</span> [4:0] c;
+
+    <span class="cmt">// Generate P and G for each bit</span>
+    <span class="kw">assign</span> p = <span class="port">a</span> ^ <span class="port">b</span>;  <span class="cmt">// Propagate</span>
+    <span class="kw">assign</span> g = <span class="port">a</span> & <span class="port">b</span>;  <span class="cmt">// Generate</span>
+
+    <span class="cmt">// Carry Lookahead Logic</span>
+    <span class="kw">assign</span> c[0] = <span class="port">cin</span>;
+    <span class="kw">assign</span> c[1] = g[0] | (p[0] & c[0]);
+    <span class="kw">assign</span> c[2] = g[1] | (p[1] & g[0]) | (p[1] & p[0] & c[0]);
+    <span class="kw">assign</span> c[3] = g[2] | (p[2] & g[1]) | (p[2] & p[1] & g[0]) | (p[2] & p[1] & p[0] & c[0]);
+    <span class="kw">assign</span> c[4] = g[3] | (p[3] & g[2]) | (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]) | (p[3] & p[2] & p[1] & p[0] & c[0]);
+
+    <span class="cmt">// Sum computation</span>
+    <span class="kw">assign</span> <span class="port">sum</span> = p ^ c[3:0];
+    <span class="kw">assign</span> <span class="port">cout</span> = c[4];
+
+    <span class="cmt">// Group signals for hierarchical CLA</span>
+    <span class="kw">assign</span> <span class="port">pg</span> = p[3] & p[2] & p[1] & p[0];
+    <span class="kw">assign</span> <span class="port">gg</span> = g[3] | (p[3] & g[2]) | (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]);
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">cla_4bit.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> cla_4bit <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>, <span class="port">b</span> : <span class="kw">in</span>  std_logic_vector(3 <span class="kw">downto</span> 0);
+        <span class="port">cin</span>   : <span class="kw">in</span>  std_logic;
+        <span class="port">sum</span>   : <span class="kw">out</span> std_logic_vector(3 <span class="kw">downto</span> 0);
+        <span class="port">cout</span>  : <span class="kw">out</span> std_logic;
+        <span class="port">pg</span>, <span class="port">gg</span>: <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> cla_4bit;
+
+<span class="kw">architecture</span> dataflow <span class="kw">of</span> cla_4bit <span class="kw">is</span>
+    <span class="kw">signal</span> p, g : std_logic_vector(3 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> c    : std_logic_vector(4 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    p <= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>;
+    g <= <span class="port">a</span> <span class="kw">and</span> <span class="port">b</span>;
+    
+    c(0) <= <span class="port">cin</span>;
+    c(1) <= g(0) <span class="kw">or</span> (p(0) <span class="kw">and</span> c(0));
+    c(2) <= g(1) <span class="kw">or</span> (p(1) <span class="kw">and</span> g(0)) <span class="kw">or</span> (p(1) <span class="kw">and</span> p(0) <span class="kw">and</span> c(0));
+    c(3) <= g(2) <span class="kw">or</span> (p(2) <span class="kw">and</span> g(1)) <span class="kw">or</span> (p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> g(0)) 
+            <span class="kw">or</span> (p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> p(0) <span class="kw">and</span> c(0));
+    c(4) <= g(3) <span class="kw">or</span> (p(3) <span class="kw">and</span> g(2)) <span class="kw">or</span> (p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> g(1))
+            <span class="kw">or</span> (p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> g(0))
+            <span class="kw">or</span> (p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> p(0) <span class="kw">and</span> c(0));
+    
+    <span class="port">sum</span>  <= p <span class="kw">xor</span> c(3 <span class="kw">downto</span> 0);
+    <span class="port">cout</span> <= c(4);
+    <span class="port">pg</span>   <= p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> p(0);
+    <span class="port">gg</span>   <= g(3) <span class="kw">or</span> (p(3) <span class="kw">and</span> g(2)) <span class="kw">or</span> (p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> g(1))
+            <span class="kw">or</span> (p(3) <span class="kw">and</span> p(2) <span class="kw">and</span> p(1) <span class="kw">and</span> g(0));
+<span class="kw">end</span> dataflow;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>What's the difference between P and G?</strong> — Generate (G = A·B) creates a carry unconditionally. Propagate (P = A⊕B) passes an incoming carry to the next stage.</li>
+    <li><strong>Why is CLA faster than RCA?</strong> — CLA computes all carries in parallel using combinational logic, while RCA waits for carry to ripple through each stage sequentially.</li>
+    <li><strong>What limits single-level CLA to ~4 bits?</strong> — Fan-in constraints. C<sub>4</sub> needs a 5-input OR gate, and gate delays increase with fan-in. Larger CLAs use hierarchical (multi-level) design.</li>
+    <li><strong>How do you build a 16-bit CLA?</strong> — Use four 4-bit CLA blocks with a second-level CLU that computes carries between groups using group P and G signals.</li>
+    <li><strong>What's the delay of an N-bit hierarchical CLA?</strong> — O(log N). Specifically, ~4 + 2⌈log₄N⌉ gate delays for N bits using 4-bit blocks.</li>
+  </ul>
+</section>

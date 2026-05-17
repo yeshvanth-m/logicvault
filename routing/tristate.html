@@ -1,0 +1,436 @@
+---
+layout: routing
+title: "Tri-state Buffer"
+sidebar: tri-state
+group: routing
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Data Routing }
+  - { color: red, text: Bus Interface }
+subtitle: "A buffer with three output states: logic 0, logic 1, and high-impedance (Hi-Z). Essential for bus architectures where multiple devices share a common wire. Only one driver active at a time."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "hiz-state", title: "High-Impedance State" }
+  - { id: "bus-design", title: "Bus Architecture" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "D (data), EN (enable)" }
+  - { label: "Output States", value: "0, 1, or Z (Hi-Z)" }
+  - { label: "When EN=1", value: "Y = D (buffer)" }
+  - { label: "When EN=0", value: "Y = Z (disconnected)" }
+  - { label: "Bus Conflict", value: "Never enable 2+ drivers" }
+  - { label: "CMOS Implementation", value: "Transmission gate + inverter" }
+  - { label: "Common ICs", value: "74LS244, 74LS245" }
+related:
+  - { url: "/routing/mux2.html", name: "2:1 MUX", desc: "Alternative to tri-state for selection" }
+  - { url: "/routing/demux.html", name: "DEMUX", desc: "Data distribution" }
+  - { url: "/gates/buf.html", name: "Buffer", desc: "Two-state version" }
+  - { url: "/gates/not.html", name: "Inverter", desc: "Inverting buffer" }
+prev: { url: "/routing/demux.html", title: "Demultiplexer" }
+next: { url: "/routing/mux2.html", title: "2:1 Multiplexer" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Tri-state Buffer</strong> (three-state buffer) is a digital circuit whose output can 
+    take one of three states: logic 0, logic 1, or <strong>high-impedance (Z)</strong>. In the 
+    high-impedance state, the output is effectively disconnected from the circuit, allowing 
+    multiple outputs to share a single wire without conflict.
+  </p>
+  <p>
+    Tri-state buffers are essential for bus architectures in computers and embedded systems, where 
+    multiple devices (CPU, memory, I/O) need to drive a shared data bus. Only one device drives the 
+    bus at any time; all others present high-impedance outputs to avoid short circuits.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>EN</th>
+          <th>D</th>
+          <th class="out-col">Y</th>
+          <th>State</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td style="color: var(--amber);">Z</td>
+          <td>High-impedance</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td style="color: var(--amber);">Z</td>
+          <td>High-impedance</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>Active low</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>Active high</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Active-High Enable</h5>
+      <p>EN=1 enables output. EN=0 → Hi-Z. Most common logic convention.</p>
+      <div class="formula">Y = EN ? D : Z</div>
+    </div>
+    <div class="concept-card">
+      <h5>Active-Low Enable</h5>
+      <p>EN̄=0 enables output. EN̄=1 → Hi-Z. Common in TTL ICs (74LS244).</p>
+      <div class="formula">Y = ĒN̄ ? D : Z</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="hiz-state">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    High-Impedance State
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>What is Hi-Z?</h5>
+      <p>Output transistors are OFF, presenting very high resistance (~MΩ) to the wire.</p>
+      <div class="formula">Like an open switch</div>
+    </div>
+    <div class="concept-card">
+      <h5>Why Hi-Z?</h5>
+      <p>Allows multiple outputs on one wire. Only one active driver; others in Hi-Z.</p>
+      <div class="formula">Enables bus sharing</div>
+    </div>
+    <div class="concept-card">
+      <h5>Floating Node</h5>
+      <p>When all drivers are Hi-Z, wire floats to undefined state. Use pull-up/down resistors.</p>
+      <div class="formula">Risk: noise, metastability</div>
+    </div>
+    <div class="concept-card">
+      <h5>Bus Contention</h5>
+      <p>Two drivers active simultaneously → short circuit, damage, undefined value.</p>
+      <div class="formula">⚠️ Never enable 2+ drivers!</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>CMOS Tri-state Implementation</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+      A CMOS tri-state buffer uses two transmission paths controlled by enable:
+    </p>
+    <div class="analysis-item">
+      <span class="label">When EN=1</span>
+      <span class="value">Both PMOS (pull-up) and NMOS (pull-down) active</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">When EN=0</span>
+      <span class="value">Both transistor paths disabled → output floats</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Transistor count</span>
+      <span class="value">~6-8 transistors (vs 4 for standard buffer)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="bus-design">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Bus Architecture
+  </h3>
+
+  <p>
+    Tri-state buffers enable shared bus architectures where multiple devices communicate over 
+    common wires. Critical rule: only one driver enabled at any time.
+  </p>
+
+  <div class="derivation-box">
+    <h4>Simple Shared Bus Example</h4>
+    <div class="derivation-table">
+      <pre>
+Device A ──┬── Tri-state ──┐
+           │               │
+Device B ──┼── Tri-state ──┼──── Shared Bus ────┬── Device X
+           │               │                    │
+Device C ──┴── Tri-state ──┘                    └── Device Y
+
+Control Logic ensures only ONE tri-state buffer
+is enabled at any time:
+
+  ┌────────────────────────────────────────────────────┐
+  │ Time │ EN_A │ EN_B │ EN_C │ Bus Driven By          │
+  │──────│──────│──────│──────│────────────────────────│
+  │  T1  │   1  │   0  │   0  │ Device A               │
+  │  T2  │   0  │   1  │   0  │ Device B               │
+  │  T3  │   0  │   0  │   1  │ Device C               │
+  │  T4  │   0  │   0  │   0  │ None (pull-up to 1)    │
+  └────────────────────────────────────────────────────┘</pre>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>Tri-state Bus</th>
+          <th>MUX-based Bus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Wire Count</td>
+          <td class="highlight">1 wire per bit</td>
+          <td>N wires to MUX</td>
+        </tr>
+        <tr>
+          <td>Area</td>
+          <td class="highlight">Smaller</td>
+          <td>Larger (MUX logic)</td>
+        </tr>
+        <tr>
+          <td>Timing</td>
+          <td>Needs dead time</td>
+          <td class="highlight">Glitch-free</td>
+        </tr>
+        <tr>
+          <td>Conflict Risk</td>
+          <td>Yes (bus contention)</td>
+          <td class="highlight">No</td>
+        </tr>
+        <tr>
+          <td>FPGA Support</td>
+          <td>Internal: Limited</td>
+          <td class="highlight">Native</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Tri-state Buffer Symbol</p>
+      <p>Triangle (buffer) with enable input on top</p>
+      <p>D ──▷── Y &nbsp;&nbsp; with EN controlling output</p>
+      <p>Common IC: 74LS244 (octal buffer)</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">tristate.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Single-bit tri-state buffer</span>
+<span class="kw">module</span> tristate_buf (
+    <span class="kw">input</span>  <span class="port">d</span>,
+    <span class="kw">input</span>  <span class="port">en</span>,
+    <span class="kw">output</span> <span class="port">y</span>
+);
+
+<span class="cmt">// 'z' represents high-impedance</span>
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">en</span> ? <span class="port">d</span> : <span class="num">1'bz</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// N-bit tri-state buffer (bus driver)</span>
+<span class="kw">module</span> tristate_bus #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">d</span>,
+    <span class="kw">input</span>              <span class="port">en</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">en</span> ? <span class="port">d</span> : {<span class="port">WIDTH</span>{<span class="num">1'bz</span>}};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Bidirectional I/O pad</span>
+<span class="kw">module</span> bidir_io (
+    <span class="kw">inout</span>  <span class="port">pin</span>,        <span class="cmt">// External bidirectional pin</span>
+    <span class="kw">input</span>  <span class="port">data_out</span>,   <span class="cmt">// Data to send</span>
+    <span class="kw">output</span> <span class="port">data_in</span>,    <span class="cmt">// Data received</span>
+    <span class="kw">input</span>  <span class="port">output_en</span>   <span class="cmt">// 1 = drive, 0 = receive</span>
+);
+
+<span class="cmt">// Drive pin when output enabled</span>
+<span class="kw">assign</span> <span class="port">pin</span> = <span class="port">output_en</span> ? <span class="port">data_out</span> : <span class="num">1'bz</span>;
+
+<span class="cmt">// Always read pin (input buffer)</span>
+<span class="kw">assign</span> <span class="port">data_in</span> = <span class="port">pin</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Shared bus with multiple drivers</span>
+<span class="kw">module</span> shared_bus (
+    <span class="kw">input</span>  [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_a</span>, <span class="port">data_b</span>, <span class="port">data_c</span>,
+    <span class="kw">input</span>        <span class="port">en_a</span>, <span class="port">en_b</span>, <span class="port">en_c</span>,
+    <span class="kw">output</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">bus</span>
+);
+
+<span class="cmt">// WARNING: Only one enable should be high!</span>
+<span class="kw">assign</span> <span class="port">bus</span> = <span class="port">en_a</span> ? <span class="port">data_a</span> :
+              <span class="port">en_b</span> ? <span class="port">data_b</span> :
+              <span class="port">en_c</span> ? <span class="port">data_c</span> : <span class="num">8'bz</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">tristate.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> tristate_buf <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">d</span>  : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">en</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">y</span>  : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> tristate_buf;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> tristate_buf <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">y</span> <= <span class="port">d</span> <span class="kw">when</span> <span class="port">en</span> = <span class="str">'1'</span> <span class="kw">else</span> (<span class="kw">others</span> => <span class="str">'Z'</span>);
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Bidirectional I/O</span>
+<span class="kw">entity</span> bidir_io <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">pin</span>       : <span class="kw">inout</span> std_logic;
+        <span class="port">data_out</span>  : <span class="kw">in</span>    std_logic;
+        <span class="port">data_in</span>   : <span class="kw">out</span>   std_logic;
+        <span class="port">output_en</span> : <span class="kw">in</span>    std_logic
+    );
+<span class="kw">end</span> bidir_io;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> bidir_io <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">pin</span> <= <span class="port">data_out</span> <span class="kw">when</span> <span class="port">output_en</span> = <span class="str">'1'</span> <span class="kw">else</span> <span class="str">'Z'</span>;
+    <span class="port">data_in</span> <= <span class="port">pin</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>CPU Data Bus</h5>
+      <p>CPU, RAM, ROM, I/O all share data bus using tri-state drivers.</p>
+      <div class="formula">Only selected device drives bus</div>
+    </div>
+    <div class="concept-card">
+      <h5>Bidirectional I/O</h5>
+      <p>GPIO pins that can be input or output. Tri-state when input mode.</p>
+      <div class="formula">MCU port pins</div>
+    </div>
+    <div class="concept-card">
+      <h5>Memory Interface</h5>
+      <p>Memory data pins are bidirectional — read or write but not both.</p>
+      <div class="formula">DDR, SRAM interfaces</div>
+    </div>
+    <div class="concept-card">
+      <h5>Level Shifting</h5>
+      <p>Tri-state buffers with different supply voltages for level translation.</p>
+      <div class="formula">3.3V ↔ 5V conversion</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Common Tri-state ICs</h4>
+    <div class="analysis-item">
+      <span class="label">74LS244</span>
+      <span class="value">Octal buffer (8-bit, unidirectional)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">74LS245</span>
+      <span class="value">Octal transceiver (8-bit, bidirectional)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">74LS125</span>
+      <span class="value">Quad buffer with individual enables</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">74LS126</span>
+      <span class="value">Quad buffer (active-high enable)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Tri-state has 3 states: 0, 1, and Z (high-impedance). Z = effectively disconnected.</li>
+    <li>Bus contention: Two drivers enabled → short circuit. Use one-hot enable decoding.</li>
+    <li>Floating bus: All Hi-Z → undefined voltage. Add pull-up/pull-down resistors.</li>
+    <li>In Verilog/VHDL, use 'z' or 'Z' for high-impedance. Synthesis infers tri-state buffers.</li>
+    <li>FPGAs: Internal tri-state largely replaced by MUXes. External I/O still uses tri-state.</li>
+    <li>Dead time: Brief period where old driver disables before new driver enables. Prevents contention.</li>
+  </ul>
+</section>

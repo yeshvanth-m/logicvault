@@ -1,0 +1,337 @@
+---
+layout: arithmetic
+title: Full Subtractor
+sidebar: fullsub
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: Essential }
+
+subtitle: >
+  Performs subtraction of three single-bit numbers: minuend A, subtrahend B, and borrow-in Bin. Produces Difference and Borrow-out, enabling cascaded multi-bit subtraction.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: truth-table, title: Truth Table }
+  - { id: boolean, title: Boolean Expression }
+  - { id: derivation, title: Derivation }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: RTL Implementation }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A, B, Bin" }
+  - { label: Outputs, value: "D (Difference), Bout" }
+  - { label: Operation, value: "D = A - B - Bin" }
+  - { label: Gate count, value: "2 XOR, 2 AND, 1 OR, 1 NOT" }
+  - { label: Logic depth, value: "3 gate delays" }
+  - { label: Can be built from, value: "2 Half Subtractors + OR" }
+
+related:
+  - { name: Half Subtractor, url: /arithmetic/half-subtractor.html, desc: "Building block" }
+  - { name: Full Adder, url: /arithmetic/full-adder.html, desc: "Addition counterpart" }
+  - { name: Ripple Carry Adder, url: /arithmetic/ripple-carry.html, desc: "Multi-bit pattern" }
+  - { name: Half Adder, url: /arithmetic/half-adder.html, desc: "Basic addition" }
+
+prev: { title: Half Subtractor, url: /arithmetic/half-subtractor.html }
+next: { title: Arithmetic Circuits Index, url: /arithmetic/index.html }
+---
+
+<!-- Truth Table -->
+<section class="section" id="truth-table">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+    </div>
+    <h2 class="section-title">Truth Table</h2>
+    <a href="#truth-table" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>The full subtractor computes A - B - Bin. The borrow-out (Bout) is 1 whenever we need to borrow from the next higher bit position.</p>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>A</th>
+          <th>B</th>
+          <th>Bin</th>
+          <th class="out-col">D</th>
+          <th class="out-col">Bout</th>
+          <th>A - B - Bin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td>0 - 0 - 0 = 0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td>0 - 0 - 1 = -1</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td>0 - 1 - 0 = -1</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td>0 - 1 - 1 = -2</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td>1 - 0 - 0 = 1</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td>1 - 0 - 1 = 0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td>1 - 1 - 0 = 0</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td>1 - 1 - 1 = -1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Borrow semantics:</strong> Bout = 1 when the sum (B + Bin) > A. This indicates we need to borrow from the next higher bit. The Difference D gives the 2's complement result modulo 2.</p>
+  </div>
+</section>
+
+<!-- Boolean Expression -->
+<section class="section" id="boolean">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+    </div>
+    <h2 class="section-title">Boolean Expression</h2>
+    <a href="#boolean" class="section-anchor">#</a>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Difference</p>
+    <p class="bool-expr">
+      <span class="out">D</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span> <span class="op">⊕</span> <span class="var">Bin</span>
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Borrow-out</p>
+    <p class="bool-expr">
+      <span class="out">Bout</span> = <span class="var">A'</span><span class="op">·</span><span class="var">B</span> <span class="op">+</span> <span class="var">A'</span><span class="op">·</span><span class="var">Bin</span> <span class="op">+</span> <span class="var">B</span><span class="op">·</span><span class="var">Bin</span>
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Alternative Borrow-out (using XOR)</p>
+    <p class="bool-expr">
+      <span class="out">Bout</span> = <span class="var">A'</span><span class="op">·</span>(<span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span>)<span class="op">'</span> <span class="op">+</span> <span class="var">Bin</span><span class="op">·</span>(<span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span>)
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Canonical SOP (minterms)</p>
+    <p class="bool-expr" style="font-size:.78rem;">
+      <span class="out">D</span> = Σm(1, 2, 4, 7) &nbsp;|&nbsp;
+      <span class="out">Bout</span> = Σm(1, 2, 3, 7)
+    </p>
+  </div>
+
+  <div class="callout callout-tip">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+    <p><strong>Key insight:</strong> The Difference output is identical to the Full Adder's Sum — both are 3-input XOR (odd parity). The Borrow-out is a "minority function" of A against B+Bin.</p>
+  </div>
+</section>
+
+<!-- Derivation -->
+<section class="section" id="derivation">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Derivation from Half Subtractors</h2>
+    <a href="#derivation" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>A full subtractor can be constructed from <strong>two half subtractors and an OR gate</strong>, mirroring the full adder construction:</p>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Two-Stage Construction</h4>
+    <div class="derivation-table">
+      <p><strong>Stage 1 (HS1):</strong> Compute A - B</p>
+      <p><span class="var">D1</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span></p>
+      <p><span class="var">Borrow1</span> = <span class="var">A'</span> <span class="op">·</span> <span class="var">B</span></p>
+      <p style="margin-top: 1rem;"><strong>Stage 2 (HS2):</strong> Compute D1 - Bin</p>
+      <p><span class="var">D</span> = <span class="var">D1</span> <span class="op">⊕</span> <span class="var">Bin</span> = <span class="var">A</span> <span class="op">⊕</span> <span class="var">B</span> <span class="op">⊕</span> <span class="var">Bin</span></p>
+      <p><span class="var">Borrow2</span> = <span class="var">D1'</span> <span class="op">·</span> <span class="var">Bin</span></p>
+      <p style="margin-top: 1rem;"><strong>Final Borrow-out:</strong></p>
+      <p><span class="var">Bout</span> = <span class="var">Borrow1</span> <span class="op">+</span> <span class="var">Borrow2</span></p>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>OR gate reasoning:</strong> A borrow is needed if either HS1 generates a borrow (B > A) OR HS2 generates a borrow (Bin > D1). These are mutually exclusive in terms of "both true", so OR works correctly.</p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert Full Subtractor circuit diagram here.<br/>Show: Two Half Subtractor blocks, OR gate for Bout,<br/>inputs A, B, Bin and outputs D, Bout.<br/>Highlight the parallel with Full Adder structure.</p>
+    </div>
+  </div>
+
+  <div class="prose" style="margin-top: 1rem;">
+    <p>The full subtractor can be built from <strong>two half subtractors and an OR gate</strong>:</p>
+    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.88rem; color: var(--text-dim);">
+      <li><strong>Half Subtractor 1:</strong> Computes A - B, producing D1 and Borrow1</li>
+      <li><strong>Half Subtractor 2:</strong> Computes D1 - Bin, producing final D and Borrow2</li>
+      <li><strong>OR gate:</strong> Combines Borrow1 and Borrow2 to produce Bout</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">full_subtractor.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Full Subtractor — Dataflow style</span>
+<span class="kw">module</span> full_subtractor (
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">a</span>,      <span class="cmt">// Minuend</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">b</span>,      <span class="cmt">// Subtrahend</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> <span class="port">bin</span>,    <span class="cmt">// Borrow-in</span>
+    <span class="kw">output</span> <span class="kw">wire</span> <span class="port">diff</span>,   <span class="cmt">// Difference</span>
+    <span class="kw">output</span> <span class="kw">wire</span> <span class="port">bout</span>    <span class="cmt">// Borrow-out</span>
+);
+
+    <span class="kw">assign</span> <span class="port">diff</span> = <span class="port">a</span> ^ <span class="port">b</span> ^ <span class="port">bin</span>;
+    <span class="kw">assign</span> <span class="port">bout</span> = (~<span class="port">a</span> & <span class="port">b</span>) | (~<span class="port">a</span> & <span class="port">bin</span>) | (<span class="port">b</span> & <span class="port">bin</span>);
+
+<span class="kw">endmodule</span>
+
+
+<span class="cmt">// ─── Structural: Two Half Subtractors ──────────────</span>
+<span class="kw">module</span> half_subtractor (<span class="kw">input</span> <span class="port">a</span>, <span class="port">b</span>, <span class="kw">output</span> <span class="port">diff</span>, <span class="port">borrow</span>);
+    <span class="kw">assign</span> <span class="port">diff</span>   = <span class="port">a</span> ^ <span class="port">b</span>;
+    <span class="kw">assign</span> <span class="port">borrow</span> = ~<span class="port">a</span> & <span class="port">b</span>;
+<span class="kw">endmodule</span>
+
+<span class="kw">module</span> full_subtractor_struct (
+    <span class="kw">input</span>  <span class="port">a</span>, <span class="port">b</span>, <span class="port">bin</span>,
+    <span class="kw">output</span> <span class="port">diff</span>, <span class="port">bout</span>
+);
+    <span class="kw">wire</span> d1, borrow1, borrow2;
+
+    half_subtractor HS1 (.a(<span class="port">a</span>),  .b(<span class="port">b</span>),   .diff(d1),   .borrow(borrow1));
+    half_subtractor HS2 (.a(d1), .b(<span class="port">bin</span>), .diff(<span class="port">diff</span>), .borrow(borrow2));
+    <span class="kw">assign</span> <span class="port">bout</span> = borrow1 | borrow2;
+
+<span class="kw">endmodule</span>
+
+
+<span class="cmt">// ─── Testbench ─────────────────────────────────────</span>
+<span class="kw">module</span> tb_full_subtractor;
+    <span class="kw">reg</span> a, b, bin;
+    <span class="kw">wire</span> diff, bout;
+
+    full_subtractor dut (.*);
+
+    <span class="kw">initial</span> <span class="kw">begin</span>
+        $display(<span class="str">"A B Bin | Diff Bout"</span>);
+        $display(<span class="str">"--------+-----------"</span>);
+        <span class="kw">for</span> (<span class="kw">integer</span> i = <span class="num">0</span>; i < <span class="num">8</span>; i = i + <span class="num">1</span>) <span class="kw">begin</span>
+            {a, b, bin} = i[<span class="num">2</span>:<span class="num">0</span>];
+            #<span class="num">10</span>;
+            $display(<span class="str">"%b %b  %b  |  %b    %b"</span>, a, b, bin, diff, bout);
+        <span class="kw">end</span>
+        $finish;
+    <span class="kw">end</span>
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">full_subtractor.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">-- Full Subtractor - Dataflow architecture</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> full_subtractor <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>    : <span class="kw">in</span>  std_logic;  <span class="cmt">-- Minuend</span>
+        <span class="port">b</span>    : <span class="kw">in</span>  std_logic;  <span class="cmt">-- Subtrahend</span>
+        <span class="port">bin</span>  : <span class="kw">in</span>  std_logic;  <span class="cmt">-- Borrow-in</span>
+        <span class="port">diff</span> : <span class="kw">out</span> std_logic;  <span class="cmt">-- Difference</span>
+        <span class="port">bout</span> : <span class="kw">out</span> std_logic   <span class="cmt">-- Borrow-out</span>
+    );
+<span class="kw">end</span> full_subtractor;
+
+<span class="kw">architecture</span> dataflow <span class="kw">of</span> full_subtractor <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">diff</span> <= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span> <span class="kw">xor</span> <span class="port">bin</span>;
+    <span class="port">bout</span> <= ((<span class="kw">not</span> <span class="port">a</span>) <span class="kw">and</span> <span class="port">b</span>) <span class="kw">or</span> 
+            ((<span class="kw">not</span> <span class="port">a</span>) <span class="kw">and</span> <span class="port">bin</span>) <span class="kw">or</span> 
+            (<span class="port">b</span> <span class="kw">and</span> <span class="port">bin</span>);
+<span class="kw">end</span> dataflow;
+
+
+<span class="cmt">-- Structural version using half subtractors</span>
+<span class="kw">architecture</span> structural <span class="kw">of</span> full_subtractor <span class="kw">is</span>
+    <span class="kw">component</span> half_subtractor
+        <span class="kw">port</span> (a, b : <span class="kw">in</span> std_logic; diff, borrow : <span class="kw">out</span> std_logic);
+    <span class="kw">end component</span>;
+    
+    <span class="kw">signal</span> d1, borrow1, borrow2 : std_logic;
+<span class="kw">begin</span>
+    HS1: half_subtractor <span class="kw">port map</span> (<span class="port">a</span>, <span class="port">b</span>, d1, borrow1);
+    HS2: half_subtractor <span class="kw">port map</span> (d1, <span class="port">bin</span>, <span class="port">diff</span>, borrow2);
+    <span class="port">bout</span> <= borrow1 <span class="kw">or</span> borrow2;
+<span class="kw">end</span> structural;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>What's the relation to full adder?</strong> — Same Difference/Sum equation (3-input XOR). Borrow-out uses A' instead of A in the carry terms.</li>
+    <li><strong>How to cascade for N-bit subtraction?</strong> — Chain full subtractors: Bout of stage i connects to Bin of stage i+1. LSB has Bin=0.</li>
+    <li><strong>Can you use adders for subtraction?</strong> — Yes: A - B = A + (~B) + 1. Invert B, set Cin=1. This is how ALUs typically implement subtraction.</li>
+    <li><strong>What function is Bout?</strong> — It's the "minority" function of A vs (B+Bin): true when A is "outvoted" by B and Bin combined.</li>
+    <li><strong>Gate count comparison?</strong> — Full subtractor: ~6-7 gates. Full adder: ~9 gates. Subtractor is slightly simpler due to borrow vs carry logic.</li>
+    <li><strong>Critical path?</strong> — Through the XOR chain for Difference (2 XOR delays) or through AND-OR for Bout (2-3 delays).</li>
+    <li><strong>Two's complement advantage?</strong> — Using adder with inverted B avoids separate subtractor hardware. One adder handles both operations.</li>
+  </ul>
+</section>

@@ -1,0 +1,393 @@
+---
+layout: routing
+title: "2:1 Multiplexer"
+sidebar: mux-2
+group: routing
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Data Routing }
+  - { color: amber, text: Basic }
+subtitle: "The fundamental data selector that routes one of two inputs to the output based on a single select line. Building block for larger multiplexers, data paths, and control logic in digital systems."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Expression" }
+  - { id: "implementations", title: "Gate Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Data Inputs", value: "I₀, I₁ (2 inputs)" }
+  - { label: "Select Lines", value: "S (1 bit)" }
+  - { label: "Output", value: "Y" }
+  - { label: "Operation", value: "Y = S ? I₁ : I₀" }
+  - { label: "Gate Count", value: "2 AND + 1 OR + 1 NOT" }
+  - { label: "Logic Depth", value: "2 gate delays" }
+  - { label: "Symbol", value: "Trapezoid with S" }
+related:
+  - { url: "/routing/mux4.html", name: "4:1 MUX", desc: "Four-input multiplexer" }
+  - { url: "/routing/mux8.html", name: "8:1 MUX", desc: "Eight-input multiplexer" }
+  - { url: "/routing/demux.html", name: "DEMUX", desc: "Inverse operation — 1-to-N" }
+  - { url: "/routing/tristate.html", name: "Tri-state Buffer", desc: "Alternative bus routing" }
+prev: { url: "/arithmetic/comparator.html", title: "Comparators" }
+next: { url: "/routing/mux4.html", title: "4:1 Multiplexer" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>2:1 Multiplexer (MUX)</strong> is a combinational circuit that selects one of two input 
+    signals and forwards it to a single output line. The selection is controlled by a single select 
+    line S: when S=0, input I₀ is passed to output; when S=1, input I₁ is passed.
+  </p>
+  <p>
+    Multiplexers are fundamental building blocks in digital design, used for data routing, bus 
+    arbitration, function generation, and implementing complex logic with minimal gates. A 2:1 MUX 
+    can implement any 2-variable Boolean function by connecting constants or variables to its inputs.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>S</th>
+          <th>I₁</th>
+          <th>I₀</th>
+          <th class="out-col">Y</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>Select I₀ (0)</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>Select I₀ (1)</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>Select I₀ (0)</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>Select I₀ (1)</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>Select I₁ (0)</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td>Select I₁ (0)</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>Select I₁ (1)</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>Select I₁ (1)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card" style="margin-top: 1rem;">
+    <h5>Simplified View</h5>
+    <div class="formula">Y = I₀ when S = 0<br>Y = I₁ when S = 1</div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Boolean Expression
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Multiplexer Equation</div>
+    <div class="bool-expr">
+      <span class="out">Y</span> = <span class="var">S̄</span><span class="op">·</span><span class="var">I₀</span> <span class="op">+</span> <span class="var">S</span><span class="op">·</span><span class="var">I₁</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Ternary Operator Form</h5>
+      <p>Common in HDL and programming:</p>
+      <div class="formula">Y = S ? I₁ : I₀</div>
+    </div>
+    <div class="concept-card">
+      <h5>If-Then-Else Form</h5>
+      <p>Behavioral description:</p>
+      <div class="formula">if (S == 0) Y = I₀<br>else Y = I₁</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Derivation from Truth Table</h4>
+    <div class="derivation-table">
+      <pre>
+Canonical SOP (minterms where Y=1):
+Y = S̄·I₁̄·I₀ + S̄·I₁·I₀ + S·I₁·I₀̄ + S·I₁·I₀
+
+Factor out common terms:
+Y = S̄·I₀·(I₁̄ + I₁) + S·I₁·(I₀̄ + I₀)
+Y = S̄·I₀·1 + S·I₁·1
+Y = <span class="var">S̄·I₀</span> + <span class="var">S·I₁</span></pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Gate Implementations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Standard AND-OR</h5>
+      <p>Direct implementation of the Boolean equation.</p>
+      <div class="formula">2 AND + 1 OR + 1 NOT<br>Delay: 2 gate levels</div>
+    </div>
+    <div class="concept-card">
+      <h5>NAND-Only</h5>
+      <p>Using DeMorgan's theorem.</p>
+      <div class="formula">4 NAND gates<br>Delay: 3 gate levels</div>
+    </div>
+    <div class="concept-card">
+      <h5>Transmission Gate</h5>
+      <p>CMOS pass transistor logic — very efficient.</p>
+      <div class="formula">2 transmission gates<br>Delay: ~1 gate delay</div>
+    </div>
+    <div class="concept-card">
+      <h5>Tri-state Buffers</h5>
+      <p>Using tri-state outputs on shared wire.</p>
+      <div class="formula">2 tri-state buffers<br>Requires complementary S</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>CMOS Implementation</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+      In CMOS technology, a 2:1 MUX is typically implemented using transmission gates for 
+      minimal area and delay. Each transmission gate consists of an NMOS and PMOS transistor 
+      in parallel, passing the input signal when enabled.
+    </p>
+    <div class="analysis-item">
+      <span class="label">Transistor Count</span>
+      <span class="value">6 transistors (2 TG + inverter)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Propagation Delay</span>
+      <span class="value">~0.5-1 gate delay</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 2:1 MUX Gate-Level Circuit</p>
+      <p>I₀ → AND (with S̄) → OR → Y</p>
+      <p>I₁ → AND (with S) ↗</p>
+      <p>Trapezoid symbol with select input</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">mux2.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 2:1 MUX - Behavioral (ternary operator)</span>
+<span class="kw">module</span> mux2_behavioral (
+    <span class="kw">input</span>  <span class="port">i0</span>,
+    <span class="kw">input</span>  <span class="port">i1</span>,
+    <span class="kw">input</span>  <span class="port">sel</span>,
+    <span class="kw">output</span> <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">sel</span> ? <span class="port">i1</span> : <span class="port">i0</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 2:1 MUX - Dataflow (Boolean expression)</span>
+<span class="kw">module</span> mux2_dataflow (
+    <span class="kw">input</span>  <span class="port">i0</span>,
+    <span class="kw">input</span>  <span class="port">i1</span>,
+    <span class="kw">input</span>  <span class="port">sel</span>,
+    <span class="kw">output</span> <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = (~<span class="port">sel</span> & <span class="port">i0</span>) | (<span class="port">sel</span> & <span class="port">i1</span>);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 2:1 MUX - Parametrized width</span>
+<span class="kw">module</span> mux2 #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i0</span>,
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i1</span>,
+    <span class="kw">input</span>              <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">sel</span> ? <span class="port">i1</span> : <span class="port">i0</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">mux2.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> mux2 <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">i0</span>  : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">i1</span>  : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">sel</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">y</span>   : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> mux2;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> mux2 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">y</span> <= <span class="port">i1</span> <span class="kw">when</span> <span class="port">sel</span> = <span class="str">'1'</span> <span class="kw">else</span> <span class="port">i0</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Using with-select</span>
+<span class="kw">architecture</span> with_select <span class="kw">of</span> mux2 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">with</span> <span class="port">sel</span> <span class="kw">select</span>
+        <span class="port">y</span> <= <span class="port">i0</span> <span class="kw">when</span> <span class="str">'0'</span>,
+             <span class="port">i1</span> <span class="kw">when</span> <span class="kw">others</span>;
+<span class="kw">end</span> with_select;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Function Implementation</h5>
+      <p>Any 2-variable function can be implemented by setting I₀, I₁ to 0, 1, S, or S̄.</p>
+      <div class="formula">Example: XOR = MUX(S, S̄, S)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Data Selection</h5>
+      <p>Choose between two data sources based on control signal.</p>
+      <div class="formula">ALU operand selection</div>
+    </div>
+    <div class="concept-card">
+      <h5>Building Larger MUX</h5>
+      <p>Cascade 2:1 MUXes to build 4:1, 8:1, or larger multiplexers.</p>
+      <div class="formula">4:1 = three 2:1 MUXes</div>
+    </div>
+    <div class="concept-card">
+      <h5>Conditional Assignment</h5>
+      <p>Hardware equivalent of if-else statements in software.</p>
+      <div class="formula">Register file write-back mux</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Implementing Logic Functions with 2:1 MUX</h4>
+    <div class="derivation-table">
+      <pre>
+Use S as one variable, connect I₀ and I₁ appropriately:
+
+AND gate:  Y = A·B     → MUX(A, 0, B)    [I₀=0, I₁=B, S=A]
+OR gate:   Y = A+B     → MUX(A, B, 1)    [I₀=B, I₁=1, S=A]
+XOR gate:  Y = A⊕B     → MUX(A, B, B̄)   [I₀=B, I₁=B̄, S=A]
+NOT gate:  Y = Ā       → MUX(A, 1, 0)    [I₀=1, I₁=0, S=A]</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>2:1 MUX equation: Y = S̄·I₀ + S·I₁. Fundamental building block for data routing.</li>
+    <li>Can implement any 2-variable function by connecting inputs to 0, 1, or variables.</li>
+    <li>N:1 MUX requires log₂(N) select lines. 2:1 has 1 select, 4:1 has 2, 8:1 has 3.</li>
+    <li>CMOS transmission gate implementation is most efficient: 6 transistors total.</li>
+    <li>Glitch-free if inputs are stable before select changes (important for clock muxing).</li>
+    <li>Can build a 4:1 MUX from three 2:1 MUXes in a tree structure.</li>
+  </ul>
+</section>

@@ -1,0 +1,469 @@
+---
+layout: arithmetic
+title: "Comparators"
+sidebar: comparator
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: Decision Logic }
+subtitle: "Combinational circuits that compare two binary numbers and produce outputs indicating their relative magnitude: greater-than, less-than, or equal. Essential for sorting, branching, and conditional operations."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "1bit", title: "1-Bit Comparator" }
+  - { id: "nbit", title: "N-Bit Comparator" }
+  - { id: "magnitude", title: "Magnitude Comparator" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "cascading", title: "Cascading Comparators" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "A[N-1:0], B[N-1:0]" }
+  - { label: "Outputs", value: "GT, LT, EQ (or subset)" }
+  - { label: "Operation", value: "Compare A vs B" }
+  - { label: "Basic Method", value: "Subtraction + sign check" }
+  - { label: "Fast Method", value: "Parallel prefix tree" }
+  - { label: "Logic Depth", value: "O(N) basic, O(log N) fast" }
+  - { label: "Use Cases", value: "ALU, sorting, branching" }
+related:
+  - { url: "/arithmetic/full-adder.html", name: "Full Adder", desc: "Subtraction-based comparison" }
+  - { url: "/arithmetic/carry-lookahead.html", name: "Carry Lookahead Adder", desc: "Fast subtraction for compare" }
+  - { url: "/gates/xnor.html", name: "XNOR Gate", desc: "Equality detection per bit" }
+  - { url: "/arithmetic/half-subtractor.html", name: "Half Subtractor", desc: "Single-bit difference" }
+prev: { url: "/arithmetic/wallace.html", title: "Wallace Tree" }
+next: { url: "/arithmetic/half-adder.html", title: "Half Adder" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>comparator</strong> is a combinational circuit that compares two binary numbers A and B 
+    and determines their relative magnitude. The outputs indicate whether A > B, A < B, or A = B.
+  </p>
+  <p>
+    Comparators are fundamental building blocks in processors (for branch conditions), sorting networks, 
+    priority encoders, and any system requiring magnitude decisions. They can be implemented using 
+    subtraction (A - B analysis) or direct bitwise comparison with cascading logic.
+  </p>
+</section>
+
+<section class="content-section" id="1bit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    1-Bit Comparator
+  </h3>
+  
+  <p>The simplest comparator compares single bits A and B:</p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>A</th>
+          <th>B</th>
+          <th class="out-col">A > B</th>
+          <th class="out-col">A < B</th>
+          <th class="out-col">A = B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Boolean Expressions</h5>
+      <div class="formula">
+        GT = A · B̄<br>
+        LT = Ā · B<br>
+        EQ = A ⊙ B = A·B + Ā·B̄
+      </div>
+    </div>
+    <div class="concept-card">
+      <h5>Gate Count</h5>
+      <p>GT: 1 AND + 1 NOT<br>LT: 1 AND + 1 NOT<br>EQ: 1 XNOR (or 2 AND + 1 OR + 2 NOT)</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="nbit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    N-Bit Comparator
+  </h3>
+  
+  <p>
+    For multi-bit comparison, start from the most significant bit and propagate the comparison result 
+    down. If MSBs are equal, compare the next bit, and so on.
+  </p>
+
+  <div class="derivation-box">
+    <h4>Cascading Logic (MSB-first)</h4>
+    <div class="derivation-table">
+      <pre>
+For bits i from N-1 down to 0:
+
+  EQ[i]   = (A[i] ⊙ B[i]) · EQ[i+1]     (equal so far AND this bit equal)
+  GT[i]   = GT[i+1] OR (EQ[i+1] AND A[i] > B[i])
+  LT[i]   = LT[i+1] OR (EQ[i+1] AND A[i] < B[i])
+
+Where EQ[N] = 1 (initially assume equal)
+      GT[N] = LT[N] = 0
+
+Final outputs: GT = GT[0], LT = LT[0], EQ = EQ[0]</pre>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <h5>Alternative: Subtraction Method</h5>
+    <p>
+      Compute D = A - B using an adder/subtractor, then examine the result:
+    </p>
+    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.85rem; color: var(--text-dim);">
+      <li><strong>A > B:</strong> D is positive (sign bit = 0, D ≠ 0)</li>
+      <li><strong>A < B:</strong> D is negative (sign bit = 1, for unsigned: borrow out = 1)</li>
+      <li><strong>A = B:</strong> D = 0 (all bits zero)</li>
+    </ul>
+  </div>
+</section>
+
+<section class="content-section" id="magnitude">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    4-Bit Magnitude Comparator (74x85)
+  </h3>
+
+  <p>
+    The classic 74LS85 is a 4-bit magnitude comparator IC with cascading inputs for building 
+    larger comparators:
+  </p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th colspan="3">Cascade Inputs</th>
+          <th colspan="2">Data Inputs</th>
+          <th colspan="3">Outputs</th>
+        </tr>
+        <tr>
+          <th>A>B<sub>in</sub></th>
+          <th>A=B<sub>in</sub></th>
+          <th>A<B<sub>in</sub></th>
+          <th>A[3:0]</th>
+          <th>B[3:0]</th>
+          <th class="out-col">A>B</th>
+          <th class="out-col">A=B</th>
+          <th class="out-col">A<B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>A > B</td>
+          <td>—</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td>X</td>
+          <td>X</td>
+          <td>A < B</td>
+          <td>—</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>A = B</td>
+          <td>—</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td>A = B</td>
+          <td>—</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>A = B</td>
+          <td>—</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card">
+    <h5>Cascade Connection</h5>
+    <p>
+      For 8-bit comparison: Connect LS 74x85 outputs to MS 74x85 cascade inputs. 
+      LS chip gets A=B<sub>in</sub>=1, A>B<sub>in</sub>=A<B<sub>in</sub>=0.
+    </p>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>⚖️ 4-Bit Magnitude Comparator</p>
+      <p>XNOR gates for bit equality</p>
+      <p>AND-OR tree for GT/LT cascade</p>
+      <p>MSB has priority in comparison</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">comparator.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Simple behavioral comparator</span>
+<span class="kw">module</span> comparator #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span>        <span class="port">gt</span>,  <span class="cmt">// a > b</span>
+    <span class="kw">output</span>        <span class="port">lt</span>,  <span class="cmt">// a < b</span>
+    <span class="kw">output</span>        <span class="port">eq</span>   <span class="cmt">// a == b</span>
+);
+
+<span class="kw">assign</span> <span class="port">gt</span> = (<span class="port">a</span> > <span class="port">b</span>);
+<span class="kw">assign</span> <span class="port">lt</span> = (<span class="port">a</span> < <span class="port">b</span>);
+<span class="kw">assign</span> <span class="port">eq</span> = (<span class="port">a</span> == <span class="port">b</span>);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Structural comparator with cascade</span>
+<span class="kw">module</span> comparator_cascade #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">input</span>         <span class="port">gt_in</span>,  <span class="cmt">// cascade from lower bits</span>
+    <span class="kw">input</span>         <span class="port">lt_in</span>,
+    <span class="kw">input</span>         <span class="port">eq_in</span>,
+    <span class="kw">output</span>        <span class="port">gt</span>,
+    <span class="kw">output</span>        <span class="port">lt</span>,
+    <span class="kw">output</span>        <span class="port">eq</span>
+);
+
+<span class="cmt">// Per-bit equality</span>
+<span class="kw">wire</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] bit_eq = ~(<span class="port">a</span> ^ <span class="port">b</span>);
+
+<span class="cmt">// All bits equal in this segment</span>
+<span class="kw">wire</span> all_eq = &bit_eq;
+
+<span class="cmt">// Compare from MSB</span>
+<span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] gt_chain, lt_chain;
+<span class="kw">assign</span> gt_chain[<span class="port">N</span>] = <span class="num">0</span>;
+<span class="kw">assign</span> lt_chain[<span class="port">N</span>] = <span class="num">0</span>;
+
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="port">N</span>-<span class="num">1</span>; i >= <span class="num">0</span>; i = i - <span class="num">1</span>) <span class="kw">begin</span> : cmp
+        <span class="kw">wire</span> prev_eq = (i == <span class="port">N</span>-<span class="num">1</span>) ? <span class="num">1'b1</span> : 
+                        &bit_eq[<span class="port">N</span>-<span class="num">1</span>:i+<span class="num">1</span>];
+        <span class="kw">assign</span> gt_chain[i] = gt_chain[i+<span class="num">1</span>] | 
+                            (prev_eq & <span class="port">a</span>[i] & ~<span class="port">b</span>[i]);
+        <span class="kw">assign</span> lt_chain[i] = lt_chain[i+<span class="num">1</span>] | 
+                            (prev_eq & ~<span class="port">a</span>[i] & <span class="port">b</span>[i]);
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="cmt">// Combine with cascade inputs</span>
+<span class="kw">assign</span> <span class="port">gt</span> = gt_chain[<span class="num">0</span>] | (all_eq & <span class="port">gt_in</span>);
+<span class="kw">assign</span> <span class="port">lt</span> = lt_chain[<span class="num">0</span>] | (all_eq & <span class="port">lt_in</span>);
+<span class="kw">assign</span> <span class="port">eq</span> = all_eq & <span class="port">eq_in</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">comparator.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> comparator <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">N</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a</span>  : <span class="kw">in</span>  unsigned(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">b</span>  : <span class="kw">in</span>  unsigned(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">gt</span> : <span class="kw">out</span> std_logic;
+        <span class="port">lt</span> : <span class="kw">out</span> std_logic;
+        <span class="port">eq</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> comparator;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> comparator <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">gt</span> <= <span class="str">'1'</span> <span class="kw">when</span> <span class="port">a</span> > <span class="port">b</span> <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">lt</span> <= <span class="str">'1'</span> <span class="kw">when</span> <span class="port">a</span> < <span class="port">b</span> <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">eq</span> <= <span class="str">'1'</span> <span class="kw">when</span> <span class="port">a</span> = <span class="port">b</span> <span class="kw">else</span> <span class="str">'0'</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Signed comparator variant</span>
+<span class="kw">architecture</span> signed_cmp <span class="kw">of</span> comparator <span class="kw">is</span>
+    <span class="kw">signal</span> a_s, b_s : signed(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    a_s <= signed(<span class="port">a</span>);
+    b_s <= signed(<span class="port">b</span>);
+    <span class="port">gt</span> <= <span class="str">'1'</span> <span class="kw">when</span> a_s > b_s <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">lt</span> <= <span class="str">'1'</span> <span class="kw">when</span> a_s < b_s <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">eq</span> <= <span class="str">'1'</span> <span class="kw">when</span> a_s = b_s <span class="kw">else</span> <span class="str">'0'</span>;
+<span class="kw">end</span> signed_cmp;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="cascading">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17l-5-10-4 8-3-4"/></svg></span>
+    Cascading Comparators
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Serial Cascade (Ripple)</h5>
+      <p>Chain 4-bit comparators from LSB to MSB. Simple but O(N) delay.</p>
+      <div class="formula">Delay = N/4 × (comparator delay)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parallel Prefix</h5>
+      <p>Use tree structure like Kogge-Stone for O(log N) comparison delay.</p>
+      <div class="formula">Delay = O(log N)</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Delay</th>
+          <th>Area</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Subtraction</td>
+          <td>O(log N) with CLA</td>
+          <td>Adder + logic</td>
+          <td>ALUs (reuse adder)</td>
+        </tr>
+        <tr>
+          <td>Ripple Cascade</td>
+          <td>O(N)</td>
+          <td>O(N)</td>
+          <td>Small operands</td>
+        </tr>
+        <tr>
+          <td class="highlight">Parallel Prefix</td>
+          <td class="highlight">O(log N)</td>
+          <td>O(N log N)</td>
+          <td>High-speed compare</td>
+        </tr>
+        <tr>
+          <td>Tree of 4-bit</td>
+          <td>O(log N)</td>
+          <td>O(N)</td>
+          <td>General purpose</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>1-bit: GT = A·B̄, LT = Ā·B, EQ = A⊙B (XNOR). Foundation for multi-bit.</li>
+    <li>N-bit: Compare from MSB — first differing bit determines result; if all equal, use cascade input.</li>
+    <li>Subtraction method: A - B, then check sign bit (LT) and zero (EQ). Reuses ALU adder.</li>
+    <li>74LS85 is the classic 4-bit magnitude comparator IC with cascade inputs/outputs.</li>
+    <li>For signed comparison: XOR sign bits first, or use signed subtraction overflow handling.</li>
+    <li>Parallel prefix comparators achieve O(log N) delay, similar to Kogge-Stone adder structure.</li>
+  </ul>
+</section>

@@ -1,0 +1,469 @@
+---
+layout: arithmetic
+title: "CLZ (Count Leading Zeros)"
+sidebar: clz
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Priority Encoder }
+  - { color: purple, text: O(log n) Depth }
+subtitle: "Counts the number of consecutive zero bits starting from the most significant bit. Essential for floating-point normalization, integer division, and finding the position of the highest set bit (floor of log₂)."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "architecture", title: "Architecture" }
+  - { id: "example", title: "Worked Example" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "variations", title: "Variations" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Count leading zero bits" }
+  - { label: "Input", value: "n-bit value" }
+  - { label: "Output", value: "log₂(n)+1 bit count (0 to n)" }
+  - { label: "CLZ(0)", value: "n (all zeros)" }
+  - { label: "CLZ(1xxx)", value: "0 (MSB is 1)" }
+  - { label: "Related", value: "floor(log₂(x)) = n-1 - CLZ(x)" }
+  - { label: "Depth", value: "O(log n) with tree structure" }
+related:
+  - { url: "/arithmetic/popcount.html", name: "Popcount", desc: "Count all 1s" }
+  - { url: "/arithmetic/barrel-shifter.html", name: "Barrel Shifter", desc: "Normalization shift" }
+  - { url: "/arithmetic/alu.html", name: "ALU", desc: "Uses CLZ" }
+  - { url: "/routing/priority-encoder.html", name: "Priority Encoder", desc: "Similar structure" }
+prev: { url: "/arithmetic/alu.html", title: "ALU" }
+next: { url: "/arithmetic/popcount.html", title: "Popcount" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>CLZ (Count Leading Zeros)</strong>, also known as <strong>LZCNT</strong> (Leading Zero Count) 
+    or <strong>NLZO</strong> (Number of Leading Zero bits), counts consecutive zero bits starting from 
+    the most significant bit until the first '1' is encountered.
+  </p>
+  <p>
+    CLZ is critical for floating-point operations where normalization requires shifting the mantissa 
+    until the MSB is 1. It also enables efficient integer log₂ calculation: <code>floor(log₂(x)) = 
+    width - 1 - CLZ(x)</code> for x > 0.
+  </p>
+  <p>
+    The naive approach of checking each bit sequentially takes O(n) time. Using a binary tree 
+    structure, CLZ can be computed in O(log n) time, making it suitable for high-performance 
+    implementations.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Truth Table (8-bit)
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Input (binary)</th>
+          <th>Input (hex)</th>
+          <th class="out-col">CLZ</th>
+          <th>floor(log₂)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>00000000</td><td>0x00</td><td class="val-1">8</td><td>undefined</td></tr>
+        <tr><td>00000001</td><td>0x01</td><td class="val-1">7</td><td>0</td></tr>
+        <tr><td>00000010</td><td>0x02</td><td class="val-1">6</td><td>1</td></tr>
+        <tr><td>00000100</td><td>0x04</td><td class="val-1">5</td><td>2</td></tr>
+        <tr><td>00001000</td><td>0x08</td><td class="val-1">4</td><td>3</td></tr>
+        <tr><td>00010000</td><td>0x10</td><td class="val-1">3</td><td>4</td></tr>
+        <tr><td>00100000</td><td>0x20</td><td class="val-1">2</td><td>5</td></tr>
+        <tr><td>01000000</td><td>0x40</td><td class="val-1">1</td><td>6</td></tr>
+        <tr><td>10000000</td><td>0x80</td><td class="val-1">0</td><td>7</td></tr>
+        <tr><td>10110100</td><td>0xB4</td><td class="val-1">0</td><td>7</td></tr>
+        <tr><td>00110100</td><td>0x34</td><td class="val-1">2</td><td>5</td></tr>
+        <tr><td>00001101</td><td>0x0D</td><td class="val-1">4</td><td>3</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Relationship to log₂</div>
+    <div class="bool-expr">
+      <span class="out">floor(log₂(x))</span> = (<span class="var">WIDTH</span> - <span class="num">1</span>) - <span class="var">CLZ(x)</span>&nbsp;&nbsp;&nbsp;for x > 0<br><br>
+      <span class="cmt">// 32-bit example:</span><br>
+      CLZ(0x00000001) = 31 → log₂ = 31 - 31 = 0<br>
+      CLZ(0x80000000) = 0 → log₂ = 31 - 0 = 31
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="architecture">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Architecture
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Binary Tree CLZ (8-bit)</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+Level 0 (pairs): Check if upper half of each pair is zero
+    D7 D6  D5 D4  D3 D2  D1 D0
+      ↓      ↓      ↓      ↓
+    [2b]   [2b]   [2b]   [2b]   ← 2-bit CLZ blocks
+
+Level 1 (quads): Merge pairs
+    [2b][2b]     [2b][2b]
+        ↓           ↓
+      [3b]       [3b]           ← 4-bit CLZ blocks
+
+Level 2 (byte): Merge quads  
+      [3b][3b]
+          ↓
+        [4b]                     ← 8-bit CLZ result
+
+Key insight: At each level, if upper half all zeros,
+             add half-width to count and use lower half's CLZ
+      </pre>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">2-bit CLZ Building Block</div>
+    <div class="bool-expr">
+      <span class="kw">Input:</span> D[1:0]<br>
+      <span class="out">clz[1]</span> = ~<span class="var">D[1]</span> &amp; ~<span class="var">D[0]</span>&nbsp;&nbsp;&nbsp;<span class="cmt">// both zero → clz=2</span><br>
+      <span class="out">clz[0]</span> = ~<span class="var">D[1]</span>&nbsp;&nbsp;&nbsp;<span class="cmt">// MSB zero → at least 1</span><br><br>
+      <span class="cmt">D=00 → clz=10 (2), D=01 → clz=01 (1)</span><br>
+      <span class="cmt">D=10 → clz=00 (0), D=11 → clz=00 (0)</span>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Complexity Analysis</h4>
+    <div class="analysis-item">
+      <span class="label">Tree Levels</span>
+      <span class="value">log₂(n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Gate Depth</span>
+      <span class="value">O(log n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">8-bit CLZ</span>
+      <span class="value">3 levels</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">32-bit CLZ</span>
+      <span class="value">5 levels</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">64-bit CLZ</span>
+      <span class="value">6 levels</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="example">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Worked Example
+  </h3>
+
+  <div class="derivation-box">
+    <h4>8-bit CLZ: Input = 00101100</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+Input:    0 0 1 0 1 1 0 0  (decimal 44)
+
+Level 0 - Pair CLZ:
+  Pair 3 (00): clz = 2    Pair 2 (10): clz = 0
+  Pair 1 (11): clz = 0    Pair 0 (00): clz = 2
+
+Level 1 - Merge to 4-bit:
+  Upper half [00 10]:
+    Pair 3 all zero? NO (Pair 3 has clz=2, not all zero)
+    Wait - Pair 3 IS all zero. Use Pair 2's clz + 2
+    Upper 4-bit clz = 2 + clz(10) = 2 + 0 = 2
+    
+  Lower half [11 00]:
+    Pair 1 all zero? NO
+    Lower 4-bit clz = 0 + clz(11) = 0 + 0 = 0
+
+Level 2 - Merge to 8-bit:
+  Upper 4 bits (0010) has clz = 2 (not all zero)
+  Final clz = 2 + 0 = 2  ✓
+
+Verification: 00101100 has 2 leading zeros ✓
+      </pre>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>8-bit CLZ: Input = 00000011</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+Input:    0 0 0 0 0 0 1 1  (decimal 3)
+
+Level 0 - Pair CLZ:
+  Pair 3 (00): clz = 2    Pair 2 (00): clz = 2
+  Pair 1 (00): clz = 2    Pair 0 (11): clz = 0
+
+Level 1 - Merge to 4-bit:
+  Upper half [00 00]: both pairs all zero
+    Upper 4-bit clz = 4 (all zeros)
+    
+  Lower half [00 11]:
+    Pair 1 all zero? YES → use Pair 0's clz + 2
+    Lower 4-bit clz = 2 + 0 = 2
+
+Level 2 - Merge to 8-bit:
+  Upper 4 bits all zero? YES → use lower's clz + 4
+  Final clz = 4 + 2 = 6  ✓
+
+Verification: 00000011 has 6 leading zeros ✓
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">clz.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 32-bit CLZ - Behavioral (synthesizable)</span>
+<span class="kw">module</span> clz_32 (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output reg</span> [<span class="num">5</span>:<span class="num">0</span>]  <span class="port">count</span>     <span class="cmt">// 0-32</span>
+);
+
+<span class="kw">integer</span> i;
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">count</span> = <span class="num">6'd32</span>;  <span class="cmt">// Default: all zeros</span>
+    <span class="kw">for</span> (i = <span class="num">31</span>; i >= <span class="num">0</span>; i = i - <span class="num">1</span>) <span class="kw">begin</span>
+        <span class="kw">if</span> (<span class="port">data_in</span>[i] && <span class="port">count</span> == <span class="num">6'd32</span>)
+            <span class="port">count</span> = <span class="num">31</span> - i;
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 32-bit CLZ - Binary Tree Structure</span>
+<span class="kw">module</span> clz_32_tree (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">5</span>:<span class="num">0</span>]  <span class="port">count</span>
+);
+
+<span class="cmt">// Level 1: 16-bit halves</span>
+<span class="kw">wire</span> [<span class="num">4</span>:<span class="num">0</span>] <span class="port">clz_hi</span>, <span class="port">clz_lo</span>;
+<span class="kw">wire</span> <span class="port">hi_zero</span>;
+
+clz_16 u_hi (.data_in(<span class="port">data_in</span>[<span class="num">31</span>:<span class="num">16</span>]), .count(<span class="port">clz_hi</span>));
+clz_16 u_lo (.data_in(<span class="port">data_in</span>[<span class="num">15</span>:<span class="num">0</span>]),  .count(<span class="port">clz_lo</span>));
+
+<span class="kw">assign</span> <span class="port">hi_zero</span> = (<span class="port">clz_hi</span> == <span class="num">5'd16</span>);
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">hi_zero</span> ? (<span class="num">6'd16</span> + <span class="port">clz_lo</span>) : {<span class="num">1'b0</span>, <span class="port">clz_hi</span>};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 16-bit CLZ</span>
+<span class="kw">module</span> clz_16 (
+    <span class="kw">input</span>      [<span class="num">15</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">4</span>:<span class="num">0</span>]  <span class="port">count</span>
+);
+
+<span class="kw">wire</span> [<span class="num">3</span>:<span class="num">0</span>] <span class="port">clz_hi</span>, <span class="port">clz_lo</span>;
+<span class="kw">wire</span> <span class="port">hi_zero</span>;
+
+clz_8 u_hi (.data_in(<span class="port">data_in</span>[<span class="num">15</span>:<span class="num">8</span>]), .count(<span class="port">clz_hi</span>));
+clz_8 u_lo (.data_in(<span class="port">data_in</span>[<span class="num">7</span>:<span class="num">0</span>]),  .count(<span class="port">clz_lo</span>));
+
+<span class="kw">assign</span> <span class="port">hi_zero</span> = (<span class="port">clz_hi</span> == <span class="num">4'd8</span>);
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">hi_zero</span> ? (<span class="num">5'd8</span> + <span class="port">clz_lo</span>) : {<span class="num">1'b0</span>, <span class="port">clz_hi</span>};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 8-bit CLZ</span>
+<span class="kw">module</span> clz_8 (
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">3</span>:<span class="num">0</span>] <span class="port">count</span>
+);
+
+<span class="kw">wire</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">clz_hi</span>, <span class="port">clz_lo</span>;
+<span class="kw">wire</span> <span class="port">hi_zero</span>;
+
+clz_4 u_hi (.data_in(<span class="port">data_in</span>[<span class="num">7</span>:<span class="num">4</span>]), .count(<span class="port">clz_hi</span>));
+clz_4 u_lo (.data_in(<span class="port">data_in</span>[<span class="num">3</span>:<span class="num">0</span>]), .count(<span class="port">clz_lo</span>));
+
+<span class="kw">assign</span> <span class="port">hi_zero</span> = (<span class="port">clz_hi</span> == <span class="num">3'd4</span>);
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">hi_zero</span> ? (<span class="num">4'd4</span> + <span class="port">clz_lo</span>) : {<span class="num">1'b0</span>, <span class="port">clz_hi</span>};
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 4-bit CLZ (base case)</span>
+<span class="kw">module</span> clz_4 (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output reg</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">count</span>
+);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">casez</span> (<span class="port">data_in</span>)
+        <span class="num">4'b1???</span>: <span class="port">count</span> = <span class="num">3'd0</span>;
+        <span class="num">4'b01??</span>: <span class="port">count</span> = <span class="num">3'd1</span>;
+        <span class="num">4'b001?</span>: <span class="port">count</span> = <span class="num">3'd2</span>;
+        <span class="num">4'b0001</span>: <span class="port">count</span> = <span class="num">3'd3</span>;
+        <span class="num">4'b0000</span>: <span class="port">count</span> = <span class="num">3'd4</span>;
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">clz.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> clz_32 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">data_in</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">31</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">count</span>   : <span class="kw">out</span> std_logic_vector(<span class="num">5</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> clz_32;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> clz_32 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">data_in</span>)
+        <span class="kw">variable</span> cnt : integer <span class="kw">range</span> <span class="num">0</span> <span class="kw">to</span> <span class="num">32</span>;
+    <span class="kw">begin</span>
+        cnt := <span class="num">32</span>;
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="num">31</span> <span class="kw">downto</span> <span class="num">0</span> <span class="kw">loop</span>
+            <span class="kw">if</span> <span class="port">data_in</span>(i) = <span class="str">'1'</span> <span class="kw">then</span>
+                cnt := <span class="num">31</span> - i;
+                <span class="kw">exit</span>;
+            <span class="kw">end if</span>;
+        <span class="kw">end loop</span>;
+        <span class="port">count</span> <= std_logic_vector(to_unsigned(cnt, <span class="num">6</span>));
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Alternative: Using priority encoder</span>
+<span class="kw">architecture</span> tree <span class="kw">of</span> clz_32 <span class="kw">is</span>
+    <span class="kw">signal</span> upper_zero : std_logic;
+    <span class="kw">signal</span> clz_hi, clz_lo : std_logic_vector(<span class="num">4</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    <span class="cmt">-- Instance CLZ for upper and lower 16 bits</span>
+    u_hi: <span class="kw">entity</span> work.clz_16 <span class="kw">port map</span> (<span class="port">data_in</span>(<span class="num">31</span> <span class="kw">downto</span> <span class="num">16</span>), clz_hi);
+    u_lo: <span class="kw">entity</span> work.clz_16 <span class="kw">port map</span> (<span class="port">data_in</span>(<span class="num">15</span> <span class="kw">downto</span> <span class="num">0</span>), clz_lo);
+    
+    upper_zero <= <span class="str">'1'</span> <span class="kw">when</span> clz_hi = <span class="str">"10000"</span> <span class="kw">else</span> <span class="str">'0'</span>;
+    
+    <span class="port">count</span> <= std_logic_vector(unsigned(<span class="str">"010000"</span>) + unsigned(<span class="str">'0'</span> & clz_lo))
+             <span class="kw">when</span> upper_zero = <span class="str">'1'</span>
+             <span class="kw">else</span> <span class="str">'0'</span> & clz_hi;
+<span class="kw">end</span> tree;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="variations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Variations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>CLO (Count Leading Ones)</h5>
+      <p>Invert input, then apply CLZ. Used for sign extension checks.</p>
+      <div class="formula">CLO(x) = CLZ(~x)</div>
+    </div>
+    <div class="concept-card">
+      <h5>CTZ (Count Trailing Zeros)</h5>
+      <p>Reverse bits, then CLZ. Or use x & (-x) to isolate LSB.</p>
+      <div class="formula">CTZ(x) = CLZ(reverse(x))</div>
+    </div>
+    <div class="concept-card">
+      <h5>Find First Set (FFS)</h5>
+      <p>Position of first 1 from LSB. FFS = WIDTH - CLZ of reversed input.</p>
+      <div class="formula">FFS = CTZ + 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Priority Encoder</h5>
+      <p>Related circuit: outputs index of highest priority input.</p>
+      <div class="formula">Similar tree structure</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>FP Normalization</h5>
+      <p>After FP add/sub, normalize mantissa by shifting. CLZ finds shift amount.</p>
+      <div class="formula">Shift = CLZ(mantissa)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Integer Division</h5>
+      <p>Estimate quotient bits using CLZ difference: CLZ(dividend) - CLZ(divisor).</p>
+      <div class="formula">Fast division prep</div>
+    </div>
+    <div class="concept-card">
+      <h5>Log₂ Calculation</h5>
+      <p>Integer log₂ needed for memory allocators, hash tables.</p>
+      <div class="formula">log₂ = 31 - CLZ</div>
+    </div>
+    <div class="concept-card">
+      <h5>Graphics/Compression</h5>
+      <p>Entropy coding (Huffman), texture compression use CLZ.</p>
+      <div class="formula">Variable-length coding</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>CLZ counts leading zeros from MSB. CLZ(0) = width (all zeros), CLZ with MSB=1 gives 0.</li>
+    <li>Relationship: floor(log₂(x)) = width - 1 - CLZ(x) for x > 0.</li>
+    <li>Tree structure gives O(log n) depth. 32-bit CLZ has 5 levels.</li>
+    <li>Key technique: check if upper half all-zero, if so add half-width to lower's CLZ.</li>
+    <li>CTZ (trailing zeros): reverse bits then CLZ, or use isolate-LSB trick: x & (-x).</li>
+    <li>Critical for FP normalization: determines how much to left-shift mantissa.</li>
+    <li>RISC-V: CLZ is part of Zbb (bit manipulation) extension.</li>
+  </ul>
+</section>

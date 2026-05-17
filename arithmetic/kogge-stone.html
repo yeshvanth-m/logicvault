@@ -1,0 +1,366 @@
+---
+layout: arithmetic
+title: Kogge-Stone Adder
+sidebar: kogge
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: purple, text: Highest Speed }
+
+subtitle: >
+  The fastest known parallel prefix adder architecture, achieving minimum logic depth (log₂N levels) with maximum parallelism. Used in high-performance processors where speed is paramount.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: prefix, title: Parallel Prefix }
+  - { id: structure, title: Structure }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: RTL Implementation }
+  - { id: comparison, title: Comparison }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A[N-1:0], B[N-1:0], Cin" }
+  - { label: Outputs, value: "Sum[N-1:0], Cout" }
+  - { label: Logic depth, value: "log₂(N) + 1" }
+  - { label: Cell count, value: "N·log₂(N) - N + 1" }
+  - { label: Wiring, value: "O(N log N) — dense" }
+  - { label: Use case, value: "CPUs, FPUs, DSPs" }
+
+related:
+  - { name: Brent-Kung, url: /arithmetic/brent-kung.html, desc: "Area-efficient prefix" }
+  - { name: Carry Lookahead, url: /arithmetic/carry-lookahead.html, desc: "Foundation concept" }
+  - { name: Carry Select, url: /arithmetic/carry-select.html, desc: "Hybrid approach" }
+  - { name: Ripple Carry, url: /arithmetic/ripple-carry.html, desc: "Baseline comparison" }
+
+prev: { title: Carry Select Adder, url: /arithmetic/carry-select.html }
+next: { title: Brent-Kung Adder, url: /arithmetic/brent-kung.html }
+---
+
+<!-- Parallel Prefix Computation -->
+<section class="section" id="prefix">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Parallel Prefix Computation</h2>
+    <a href="#prefix" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>The Kogge-Stone adder is based on <strong>parallel prefix computation</strong>. Like all prefix adders, it computes Generate (G) and Propagate (P) signals, then combines them using a prefix operator to compute all carries in parallel.</p>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Initial P and G</h5>
+      <p>For each bit position i, compute the initial generate and propagate signals from the input operands.</p>
+      <div class="formula">G<sub>i</sub> = A<sub>i</sub> · B<sub>i</sub></div>
+      <div class="formula">P<sub>i</sub> = A<sub>i</sub> ⊕ B<sub>i</sub></div>
+    </div>
+    <div class="concept-card">
+      <h5>Prefix Operator (•)</h5>
+      <p>The associative prefix operator combines (G,P) pairs from different bit ranges to produce group generate and propagate.</p>
+      <div class="formula">(G<sub>i:k</sub>, P<sub>i:k</sub>) = (G<sub>i:j</sub>, P<sub>i:j</sub>) • (G<sub>j-1:k</sub>, P<sub>j-1:k</sub>)</div>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Group Generate</p>
+    <p class="bool-expr">
+      <span class="out">G<sub>i:k</sub></span> = <span class="var">G<sub>i:j</sub></span> <span class="op">+</span> (<span class="var">P<sub>i:j</sub></span> <span class="op">·</span> <span class="var">G<sub>j-1:k</sub></span>)
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Group Propagate</p>
+    <p class="bool-expr">
+      <span class="out">P<sub>i:k</sub></span> = <span class="var">P<sub>i:j</sub></span> <span class="op">·</span> <span class="var">P<sub>j-1:k</sub></span>
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Final Carry and Sum</p>
+    <p class="bool-expr">
+      <span class="out">C<sub>i</sub></span> = <span class="var">G<sub>i-1:0</sub></span> <span class="op">+</span> (<span class="var">P<sub>i-1:0</sub></span> <span class="op">·</span> <span class="var">C<sub>0</sub></span>)
+    </p>
+    <p class="bool-expr" style="margin-top: 0.5rem;">
+      <span class="out">Sum<sub>i</sub></span> = <span class="var">P<sub>i</sub></span> <span class="op">⊕</span> <span class="var">C<sub>i</sub></span>
+    </p>
+  </div>
+
+  <div class="callout callout-tip">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+    <p><strong>Key insight:</strong> The prefix operator is associative, allowing parallel computation. Kogge-Stone maximizes parallelism by computing all prefix sums at every level, trading area for speed.</p>
+  </div>
+</section>
+
+<!-- Structure -->
+<section class="section" id="structure">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+    </div>
+    <h2 class="section-title">Structure</h2>
+    <a href="#structure" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>Kogge-Stone uses a <strong>dense prefix tree</strong> with maximum parallelism. At each level k, every position i computes a prefix spanning 2<sup>k</sup> bits by combining adjacent groups.</p>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Level</th>
+          <th>Span</th>
+          <th>Cells at level</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>1</td><td>N</td><td>Initial P, G computation (PG cells)</td></tr>
+        <tr><td>1</td><td>2</td><td>N-1</td><td>Combine adjacent pairs</td></tr>
+        <tr><td>2</td><td>4</td><td>N-2</td><td>Combine groups of 4</td></tr>
+        <tr><td>3</td><td>8</td><td>N-4</td><td>Combine groups of 8</td></tr>
+        <tr><td>⋮</td><td>⋮</td><td>⋮</td><td>⋮</td></tr>
+        <tr><td>log₂N</td><td>N</td><td>1</td><td>Final prefix complete</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Wiring complexity:</strong> The dense structure requires O(N log N) wires with long wire spans. This can cause routing congestion and increased power consumption in physical implementations.</p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert 8-bit Kogge-Stone prefix tree diagram here.<br/>Show: All N columns with PG cells at level 0,<br/>dense prefix cells at each level with diagonal wiring,<br/>and final sum generation at the bottom.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">kogge_stone_8bit.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 8-bit Kogge-Stone Parallel Prefix Adder</span>
+<span class="kw">module</span> kogge_stone_8bit (
+    <span class="kw">input</span>  [7:0] <span class="port">a</span>, <span class="port">b</span>,
+    <span class="kw">input</span>        <span class="port">cin</span>,
+    <span class="kw">output</span> [7:0] <span class="port">sum</span>,
+    <span class="kw">output</span>       <span class="port">cout</span>
+);
+
+    <span class="kw">wire</span> [7:0] p0, g0;         <span class="cmt">// Level 0: initial P, G</span>
+    <span class="kw">wire</span> [7:0] p1, g1;         <span class="cmt">// Level 1: span 2</span>
+    <span class="kw">wire</span> [7:0] p2, g2;         <span class="cmt">// Level 2: span 4</span>
+    <span class="kw">wire</span> [7:0] p3, g3;         <span class="cmt">// Level 3: span 8 (final)</span>
+    <span class="kw">wire</span> [8:0] c;              <span class="cmt">// Carries</span>
+
+    <span class="cmt">// Level 0: Generate initial P and G</span>
+    <span class="kw">assign</span> p0 = <span class="port">a</span> ^ <span class="port">b</span>;
+    <span class="kw">assign</span> g0 = <span class="port">a</span> & <span class="port">b</span>;
+
+    <span class="cmt">// Level 1: Combine adjacent pairs (span 2)</span>
+    <span class="kw">assign</span> g1[0] = g0[0];
+    <span class="kw">assign</span> p1[0] = p0[0];
+    <span class="kw">genvar</span> i;
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 1; i < 8; i = i + 1) <span class="kw">begin</span> : L1
+            <span class="kw">assign</span> g1[i] = g0[i] | (p0[i] & g0[i-1]);
+            <span class="kw">assign</span> p1[i] = p0[i] & p0[i-1];
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+
+    <span class="cmt">// Level 2: Combine span-4 groups</span>
+    <span class="kw">assign</span> {g2[1:0], p2[1:0]} = {g1[1:0], p1[1:0]};
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 2; i < 8; i = i + 1) <span class="kw">begin</span> : L2
+            <span class="kw">assign</span> g2[i] = g1[i] | (p1[i] & g1[i-2]);
+            <span class="kw">assign</span> p2[i] = p1[i] & p1[i-2];
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+
+    <span class="cmt">// Level 3: Combine span-8 groups (final)</span>
+    <span class="kw">assign</span> {g3[3:0], p3[3:0]} = {g2[3:0], p2[3:0]};
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 4; i < 8; i = i + 1) <span class="kw">begin</span> : L3
+            <span class="kw">assign</span> g3[i] = g2[i] | (p2[i] & g2[i-4]);
+            <span class="kw">assign</span> p3[i] = p2[i] & p2[i-4];
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+
+    <span class="cmt">// Final carry computation</span>
+    <span class="kw">assign</span> c[0] = <span class="port">cin</span>;
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 0; i < 8; i = i + 1) <span class="kw">begin</span> : CARRY
+            <span class="kw">assign</span> c[i+1] = g3[i] | (p3[i] & c[0]);
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+
+    <span class="cmt">// Sum computation</span>
+    <span class="kw">assign</span> <span class="port">sum</span> = p0 ^ c[7:0];
+    <span class="kw">assign</span> <span class="port">cout</span> = c[8];
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">kogge_stone_8bit.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">-- 8-bit Kogge-Stone Parallel Prefix Adder</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> kogge_stone_8bit <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>, <span class="port">b</span> : <span class="kw">in</span>  std_logic_vector(7 <span class="kw">downto</span> 0);
+        <span class="port">cin</span>   : <span class="kw">in</span>  std_logic;
+        <span class="port">sum</span>   : <span class="kw">out</span> std_logic_vector(7 <span class="kw">downto</span> 0);
+        <span class="port">cout</span>  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> kogge_stone_8bit;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> kogge_stone_8bit <span class="kw">is</span>
+    <span class="kw">signal</span> p0, g0, p1, g1, p2, g2, p3, g3 : std_logic_vector(7 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> c : std_logic_vector(8 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="cmt">-- Level 0: Initial P and G</span>
+    p0 <= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>;
+    g0 <= <span class="port">a</span> <span class="kw">and</span> <span class="port">b</span>;
+
+    <span class="cmt">-- Level 1: Span 2</span>
+    g1(0) <= g0(0);
+    p1(0) <= p0(0);
+    L1: <span class="kw">for</span> i <span class="kw">in</span> 1 <span class="kw">to</span> 7 <span class="kw">generate</span>
+        g1(i) <= g0(i) <span class="kw">or</span> (p0(i) <span class="kw">and</span> g0(i-1));
+        p1(i) <= p0(i) <span class="kw">and</span> p0(i-1);
+    <span class="kw">end generate</span>;
+
+    <span class="cmt">-- Level 2: Span 4</span>
+    g2(1 <span class="kw">downto</span> 0) <= g1(1 <span class="kw">downto</span> 0);
+    p2(1 <span class="kw">downto</span> 0) <= p1(1 <span class="kw">downto</span> 0);
+    L2: <span class="kw">for</span> i <span class="kw">in</span> 2 <span class="kw">to</span> 7 <span class="kw">generate</span>
+        g2(i) <= g1(i) <span class="kw">or</span> (p1(i) <span class="kw">and</span> g1(i-2));
+        p2(i) <= p1(i) <span class="kw">and</span> p1(i-2);
+    <span class="kw">end generate</span>;
+
+    <span class="cmt">-- Level 3: Span 8 (final)</span>
+    g3(3 <span class="kw">downto</span> 0) <= g2(3 <span class="kw">downto</span> 0);
+    p3(3 <span class="kw">downto</span> 0) <= p2(3 <span class="kw">downto</span> 0);
+    L3: <span class="kw">for</span> i <span class="kw">in</span> 4 <span class="kw">to</span> 7 <span class="kw">generate</span>
+        g3(i) <= g2(i) <span class="kw">or</span> (p2(i) <span class="kw">and</span> g2(i-4));
+        p3(i) <= p2(i) <span class="kw">and</span> p2(i-4);
+    <span class="kw">end generate</span>;
+
+    <span class="cmt">-- Final carries and sum</span>
+    c(0) <= <span class="port">cin</span>;
+    CARRY: <span class="kw">for</span> i <span class="kw">in</span> 0 <span class="kw">to</span> 7 <span class="kw">generate</span>
+        c(i+1) <= g3(i) <span class="kw">or</span> (p3(i) <span class="kw">and</span> c(0));
+    <span class="kw">end generate</span>;
+
+    <span class="port">sum</span> <= p0 <span class="kw">xor</span> c(7 <span class="kw">downto</span> 0);
+    <span class="port">cout</span> <= c(8);
+<span class="kw">end</span> rtl;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section class="section" id="comparison">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </div>
+    <h2 class="section-title">Comparison with Other Adders</h2>
+    <a href="#comparison" class="section-anchor">#</a>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Adder Type</th>
+          <th>Logic Depth</th>
+          <th>Cell Count</th>
+          <th>Wiring</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="highlight-row"><td><strong>Kogge-Stone</strong></td><td>log₂N + 1</td><td>N·log₂N - N + 1</td><td>Dense</td><td>Max speed</td></tr>
+        <tr><td>Brent-Kung</td><td>2·log₂N - 2</td><td>2N - 2 - log₂N</td><td>Sparse</td><td>Area-limited</td></tr>
+        <tr><td>Carry Lookahead</td><td>O(log N)</td><td>O(N log N)</td><td>Moderate</td><td>General use</td></tr>
+        <tr><td>Carry Select</td><td>√N + log₂N</td><td>~2N</td><td>Moderate</td><td>Balanced</td></tr>
+        <tr><td>Ripple Carry</td><td>O(N)</td><td>N</td><td>Minimal</td><td>Low power</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <p><strong>Power consideration:</strong> Kogge-Stone's high switching activity and dense wiring can result in significant dynamic power. For power-constrained designs, consider Brent-Kung or hybrid architectures.</p>
+  </div>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>Why is Kogge-Stone the fastest?</strong> — It achieves minimum logic depth (log₂N) by computing all prefix sums at every level, maximizing parallelism at the cost of area.</li>
+    <li><strong>What's the main disadvantage?</strong> — Dense wiring (O(N log N) wires) leads to routing congestion, increased capacitance, and higher power consumption.</li>
+    <li><strong>How does it compare to Brent-Kung?</strong> — Brent-Kung trades speed (2× depth) for area efficiency (O(N) wires vs O(N log N)).</li>
+    <li><strong>What is the prefix operator?</strong> — An associative operation combining (G,P) pairs: G<sub>out</sub> = G<sub>high</sub> + P<sub>high</sub>·G<sub>low</sub>, P<sub>out</sub> = P<sub>high</sub>·P<sub>low</sub>.</li>
+    <li><strong>Where is Kogge-Stone used?</strong> — High-performance CPUs, FPUs, and DSPs where latency is critical and area/power can be traded.</li>
+    <li><strong>Can you pipeline a Kogge-Stone adder?</strong> — Yes, registers can be inserted between prefix levels for higher throughput at the cost of latency.</li>
+  </ul>
+</section>

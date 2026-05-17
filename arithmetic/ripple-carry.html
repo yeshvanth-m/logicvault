@@ -1,0 +1,313 @@
+---
+layout: arithmetic
+title: Ripple Carry Adder
+sidebar: ripple
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: red, text: Slow for large N }
+
+subtitle: >
+  The simplest multi-bit adder architecture, constructed by cascading N full adders. Each full adder's carry-out connects to the next stage's carry-in, causing the carry to "ripple" through all stages. Simple but slow — the critical path grows linearly with bit width.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: structure, title: Structure }
+  - { id: timing, title: Timing Analysis }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: RTL Implementation }
+  - { id: comparison, title: Comparison }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A[N-1:0], B[N-1:0], Cin" }
+  - { label: Outputs, value: "Sum[N-1:0], Cout" }
+  - { label: Gate count, value: "~9N gates" }
+  - { label: Logic depth, value: "O(N) — 2N levels" }
+  - { label: Area, value: Minimal }
+  - { label: Use case, value: "Low-speed, area-critical" }
+
+related:
+  - { name: Full Adder, url: /arithmetic/full-adder.html, desc: Building block }
+  - { name: Carry Lookahead, url: /arithmetic/carry-lookahead.html, desc: Faster alternative }
+  - { name: Carry Select, url: /arithmetic/carry-select.html, desc: Hybrid approach }
+  - { name: Kogge-Stone, url: /arithmetic/kogge-stone.html, desc: Parallel prefix }
+
+prev: { title: Full Adder, url: /arithmetic/full-adder.html }
+next: { title: Carry Lookahead Adder, url: /arithmetic/carry-lookahead.html }
+---
+
+<!-- Structure -->
+<section class="section" id="structure">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+    </div>
+    <h2 class="section-title">Structure</h2>
+    <a href="#structure" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>An N-bit ripple carry adder consists of N full adders connected in series:</p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">For each bit position i (0 to N-1)</p>
+    <p class="bool-expr">
+      <span class="out">Sum[i]</span> = <span class="var">A[i]</span> <span class="op">⊕</span> <span class="var">B[i]</span> <span class="op">⊕</span> <span class="var">C[i]</span>
+    </p>
+    <p class="bool-expr" style="margin-top: 0.5rem;">
+      <span class="out">C[i+1]</span> = (<span class="var">A[i]</span> <span class="op">·</span> <span class="var">B[i]</span>) <span class="op">+</span> (<span class="var">C[i]</span> <span class="op">·</span> (<span class="var">A[i]</span> <span class="op">⊕</span> <span class="var">B[i]</span>))
+    </p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Carry chain connection</p>
+    <p class="bool-expr">
+      <span class="var">C[0]</span> = <span class="var">Cin</span> &nbsp;→&nbsp; 
+      <span class="var">C[1]</span> &nbsp;→&nbsp; 
+      <span class="var">C[2]</span> &nbsp;→&nbsp; ... &nbsp;→&nbsp; 
+      <span class="var">C[N]</span> = <span class="out">Cout</span>
+    </p>
+  </div>
+
+  <div class="callout callout-info">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Key concept:</strong> The carry must propagate through ALL stages sequentially. The final sum bit S[N-1] cannot be computed until C[N-1] arrives from the previous stage.</p>
+  </div>
+</section>
+
+<!-- Timing Analysis -->
+<section class="section" id="timing">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    </div>
+    <h2 class="section-title">Timing Analysis</h2>
+    <a href="#timing" class="section-anchor">#</a>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Critical Path Delay</h4>
+    <div class="analysis-item">
+      <span class="label">First full adder (Cin to C1)</span>
+      <span class="value">2 gate delays</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Each subsequent carry propagation</span>
+      <span class="value">2 gate delays</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Final sum computation</span>
+      <span class="value">1 gate delay (XOR)</span>
+    </div>
+    <div class="analysis-item" style="background: rgba(10,124,82,0.1); margin: 0.5rem -1.25rem -1.25rem; padding: 0.75rem 1.25rem; border-radius: 0 0 var(--radius) var(--radius);">
+      <span class="label"><strong>Total for N-bit RCA</strong></span>
+      <span class="value">2N + 1 gate delays</span>
+    </div>
+  </div>
+
+  <div class="prose">
+    <p><strong>Worst-case scenario:</strong> Adding numbers like 11111111 + 00000001. The carry must propagate through every single bit position.</p>
+  </div>
+
+  <table class="perf-table">
+    <thead>
+      <tr><th>Bit Width</th><th>Gate Delays</th><th>Approx. Delay @ 1ns/gate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>4-bit</td><td>9</td><td>9 ns</td></tr>
+      <tr><td>8-bit</td><td>17</td><td>17 ns</td></tr>
+      <tr><td>16-bit</td><td>33</td><td>33 ns</td></tr>
+      <tr><td>32-bit</td><td>65</td><td>65 ns</td></tr>
+      <tr class="highlight"><td>64-bit</td><td>129</td><td>129 ns</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn" style="margin-top: 1rem;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <p><strong>Performance issue:</strong> A 64-bit RCA at 1GHz would need 129ns, but the clock period is only 1ns! This is why faster adder architectures (CLA, Kogge-Stone) are essential for high-performance processors.</p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert 4-bit ripple carry adder schematic here.<br/>Show FA0 → FA1 → FA2 → FA3 with carry chain.<br/>Label: A[3:0], B[3:0], Cin, Sum[3:0], Cout</p>
+    </div>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    <button class="ctab" onclick="switchCode(this,'sv')">Structural</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">ripple_carry_adder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Parameterized Ripple Carry Adder</span>
+<span class="kw">module</span> ripple_carry_adder #(
+    <span class="kw">parameter</span> N = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [N-1:0] <span class="port">a</span>,
+    <span class="kw">input</span>  [N-1:0] <span class="port">b</span>,
+    <span class="kw">input</span>          <span class="port">cin</span>,
+    <span class="kw">output</span> [N-1:0] <span class="port">sum</span>,
+    <span class="kw">output</span>         <span class="port">cout</span>
+);
+
+    <span class="kw">wire</span> [N:0] carry;
+    
+    <span class="kw">assign</span> carry[0] = <span class="port">cin</span>;
+    <span class="kw">assign</span> <span class="port">cout</span> = carry[N];
+
+    <span class="kw">genvar</span> i;
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 0; i < N; i = i + 1) <span class="kw">begin</span> : fa_gen
+            full_adder fa (
+                .a    (<span class="port">a</span>[i]),
+                .b    (<span class="port">b</span>[i]),
+                .cin  (carry[i]),
+                .sum  (<span class="port">sum</span>[i]),
+                .cout (carry[i+1])
+            );
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">ripple_carry_adder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> ripple_carry_adder <span class="kw">is</span>
+    <span class="kw">generic</span> (N : integer := 8);
+    <span class="kw">port</span> (
+        <span class="port">a</span>    : <span class="kw">in</span>  std_logic_vector(N-1 <span class="kw">downto</span> 0);
+        <span class="port">b</span>    : <span class="kw">in</span>  std_logic_vector(N-1 <span class="kw">downto</span> 0);
+        <span class="port">cin</span>  : <span class="kw">in</span>  std_logic;
+        <span class="port">sum</span>  : <span class="kw">out</span> std_logic_vector(N-1 <span class="kw">downto</span> 0);
+        <span class="port">cout</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> ripple_carry_adder;
+
+<span class="kw">architecture</span> structural <span class="kw">of</span> ripple_carry_adder <span class="kw">is</span>
+    <span class="kw">signal</span> carry : std_logic_vector(N <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    carry(0) <= <span class="port">cin</span>;
+    <span class="port">cout</span> <= carry(N);
+    
+    gen_fa: <span class="kw">for</span> i <span class="kw">in</span> 0 <span class="kw">to</span> N-1 <span class="kw">generate</span>
+        fa: <span class="kw">entity</span> work.full_adder
+            <span class="kw">port map</span> (<span class="port">a</span>(i), <span class="port">b</span>(i), carry(i), <span class="port">sum</span>(i), carry(i+1));
+    <span class="kw">end generate</span>;
+<span class="kw">end</span> structural;</pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-sv">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">rca_4bit_structural.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 4-bit RCA - Explicit structural instantiation</span>
+<span class="kw">module</span> rca_4bit (
+    <span class="kw">input</span>  [3:0] <span class="port">a</span>, <span class="port">b</span>,
+    <span class="kw">input</span>        <span class="port">cin</span>,
+    <span class="kw">output</span> [3:0] <span class="port">sum</span>,
+    <span class="kw">output</span>       <span class="port">cout</span>
+);
+    <span class="kw">wire</span> c1, c2, c3;
+
+    full_adder fa0 (.a(<span class="port">a</span>[0]), .b(<span class="port">b</span>[0]), .cin(<span class="port">cin</span>), .sum(<span class="port">sum</span>[0]), .cout(c1));
+    full_adder fa1 (.a(<span class="port">a</span>[1]), .b(<span class="port">b</span>[1]), .cin(c1),  .sum(<span class="port">sum</span>[1]), .cout(c2));
+    full_adder fa2 (.a(<span class="port">a</span>[2]), .b(<span class="port">b</span>[2]), .cin(c2),  .sum(<span class="port">sum</span>[2]), .cout(c3));
+    full_adder fa3 (.a(<span class="port">a</span>[3]), .b(<span class="port">b</span>[3]), .cin(c3),  .sum(<span class="port">sum</span>[3]), .cout(<span class="port">cout</span>));
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison -->
+<section class="section" id="comparison">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"/></svg>
+    </div>
+    <h2 class="section-title">Adder Architecture Comparison</h2>
+    <a href="#comparison" class="section-anchor">#</a>
+  </div>
+
+  <table class="perf-table">
+    <thead>
+      <tr><th>Architecture</th><th>Delay</th><th>Area</th><th>Best For</th></tr>
+    </thead>
+    <tbody>
+      <tr class="highlight"><td>Ripple Carry</td><td>O(N)</td><td>O(N)</td><td>Small N, low power</td></tr>
+      <tr><td>Carry Lookahead</td><td>O(log N)</td><td>O(N log N)</td><td>General purpose</td></tr>
+      <tr><td>Carry Select</td><td>O(√N)</td><td>O(N)</td><td>Medium performance</td></tr>
+      <tr><td>Kogge-Stone</td><td>O(log N)</td><td>O(N log N)</td><td>Highest speed</td></tr>
+      <tr><td>Brent-Kung</td><td>O(log N)</td><td>O(N)</td><td>Speed/area balance</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>Why is it called "ripple" carry?</strong> — The carry signal ripples through each stage sequentially, like a wave propagating through the adder chain.</li>
+    <li><strong>What's the critical path?</strong> — From Cin through all N carry stages to the final sum bit. Delay = 2N + 1 gate delays.</li>
+    <li><strong>When would you use RCA over CLA?</strong> — When area/power is critical and speed isn't (e.g., IoT devices, battery-powered systems, or when N ≤ 8).</li>
+    <li><strong>Can you pipeline an RCA?</strong> — Yes, but it defeats the purpose. Better to use faster architectures for high-throughput needs.</li>
+    <li><strong>What's the worst-case input?</strong> — All 1s + 1 (e.g., 11111111 + 00000001), forcing carry to propagate through every bit.</li>
+  </ul>
+</section>

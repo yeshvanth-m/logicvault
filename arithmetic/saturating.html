@@ -1,0 +1,463 @@
+---
+layout: arithmetic
+title: "Saturating Arithmetic"
+sidebar: saturating
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: DSP/Graphics }
+  - { color: red, text: Overflow Handling }
+subtitle: "Clamps results to maximum or minimum representable value on overflow instead of wrapping around. Essential for DSP, image processing, and audio where wraparound causes severe artifacts. Prevents underflow/overflow distortion."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "comparison", title: "Saturating vs Wrapping" }
+  - { id: "architecture", title: "Architecture" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "signed-unsigned", title: "Signed vs Unsigned" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Clamp on overflow" }
+  - { label: "Unsigned Max", value: "2ⁿ - 1 (all ones)" }
+  - { label: "Unsigned Min", value: "0" }
+  - { label: "Signed Max", value: "2ⁿ⁻¹ - 1" }
+  - { label: "Signed Min", value: "-2ⁿ⁻¹" }
+  - { label: "8-bit Signed", value: "-128 to +127" }
+  - { label: "8-bit Unsigned", value: "0 to 255" }
+related:
+  - { url: "/arithmetic/overflow.html", name: "Overflow Detection", desc: "Detect overflow" }
+  - { url: "/arithmetic/alu.html", name: "ALU", desc: "Arithmetic operations" }
+  - { url: "/arithmetic/sign-extend.html", name: "Sign Extension", desc: "Width conversion" }
+  - { url: "/arithmetic/carry-lookahead.html", name: "CLA Adder", desc: "Fast addition" }
+prev: { url: "/arithmetic/popcount.html", title: "Popcount" }
+next: { url: "/arithmetic/sign-extend.html", title: "Sign Extension" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>Saturating Arithmetic</strong> clamps results to the maximum or minimum representable 
+    value when overflow or underflow occurs, instead of allowing wraparound (modular arithmetic). 
+    This prevents catastrophic errors in DSP and graphics applications where wraparound causes 
+    severe artifacts.
+  </p>
+  <p>
+    Consider 8-bit unsigned addition: 200 + 100 = 300, which exceeds 255. With wraparound, 
+    the result is 300 mod 256 = 44 (completely wrong). With saturation, the result clamps 
+    to 255 (close to correct).
+  </p>
+  <p>
+    Saturation is critical for audio processing (prevents clicks/pops), image processing 
+    (prevents color inversion), and control systems (prevents actuator damage from extreme values).
+  </p>
+</section>
+
+<section class="content-section" id="comparison">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Saturating vs Wrapping
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>True Result</th>
+          <th>Wrapping (8-bit)</th>
+          <th class="out-col">Saturating (8-bit)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4" style="text-align:center; font-weight:bold; background: var(--card-bg);">Unsigned (0-255)</td></tr>
+        <tr><td>200 + 100</td><td>300</td><td>44 ❌</td><td class="val-1">255 ✓</td></tr>
+        <tr><td>250 + 20</td><td>270</td><td>14 ❌</td><td class="val-1">255 ✓</td></tr>
+        <tr><td>10 - 50</td><td>-40</td><td>206 ❌</td><td class="val-1">0 ✓</td></tr>
+        <tr><td>0 - 1</td><td>-1</td><td>255 ❌</td><td class="val-1">0 ✓</td></tr>
+        <tr><td colspan="4" style="text-align:center; font-weight:bold; background: var(--card-bg);">Signed (-128 to +127)</td></tr>
+        <tr><td>100 + 50</td><td>150</td><td>-106 ❌</td><td class="val-1">127 ✓</td></tr>
+        <tr><td>120 + 30</td><td>150</td><td>-106 ❌</td><td class="val-1">127 ✓</td></tr>
+        <tr><td>-100 - 50</td><td>-150</td><td>106 ❌</td><td class="val-1">-128 ✓</td></tr>
+        <tr><td>-128 - 1</td><td>-129</td><td>127 ❌</td><td class="val-1">-128 ✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Visual Comparison</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+Unsigned 8-bit: Input range 0-255
+
+         WRAPPING                    SATURATING
+    ┌────────────────┐          ┌────────────────┐
+255 │    /\    /\    │      255 │────────────────│ ← Clamped
+    │   /  \  /  \   │          │      /         │
+    │  /    \/    \  │          │     /          │
+    │ /              │          │    /           │
+  0 │/               │        0 │───/            │ ← Clamped
+    └────────────────┘          └────────────────┘
+       Wraps around               Stays at limit
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="architecture">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Architecture
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Saturating Adder Block Diagram</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+    A ─────┐                    B ─────┐
+           │                           │
+           ▼                           ▼
+       ┌───────────────────────────────────┐
+       │           ADDER                   │
+       └───────────┬─────────────┬─────────┘
+                   │             │
+              Raw Sum         Overflow?
+                   │             │
+                   ▼             ▼
+              ┌───────────────────────┐
+              │    SATURATION MUX     │
+              │                       │
+              │  Overflow → MAX_VAL   │
+              │  Underflow → MIN_VAL  │
+              │  Normal → Raw Sum     │
+              └───────────┬───────────┘
+                          │
+                          ▼
+                    Saturated Result
+      </pre>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Saturation Logic</div>
+    <div class="bool-expr">
+      <span class="kw">Unsigned Addition:</span><br>
+      <span class="out">Result</span> = <span class="var">Carry_out</span> ? <span class="num">MAX</span> : <span class="var">Sum</span><br><br>
+      <span class="kw">Unsigned Subtraction:</span><br>
+      <span class="out">Result</span> = <span class="var">Borrow</span> ? <span class="num">0</span> : <span class="var">Diff</span><br><br>
+      <span class="kw">Signed:</span><br>
+      <span class="out">pos_overflow</span> = ~<span class="var">A[MSB]</span> &amp; ~<span class="var">B[MSB]</span> &amp; <span class="var">Sum[MSB]</span><br>
+      <span class="out">neg_overflow</span> = <span class="var">A[MSB]</span> &amp; <span class="var">B[MSB]</span> &amp; ~<span class="var">Sum[MSB]</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Unsigned Overflow</h5>
+      <p>Carry out = 1 means overflow. Saturate to MAX (all ones).</p>
+      <div class="formula">8-bit: 0xFF = 255</div>
+    </div>
+    <div class="concept-card">
+      <h5>Unsigned Underflow</h5>
+      <p>Borrow = 1 means underflow. Saturate to MIN (zero).</p>
+      <div class="formula">8-bit: 0x00 = 0</div>
+    </div>
+    <div class="concept-card">
+      <h5>Signed Positive Overflow</h5>
+      <p>Two positive numbers sum to negative. Saturate to MAX positive.</p>
+      <div class="formula">8-bit: 0x7F = +127</div>
+    </div>
+    <div class="concept-card">
+      <h5>Signed Negative Overflow</h5>
+      <p>Two negative numbers sum to positive. Saturate to MIN negative.</p>
+      <div class="formula">8-bit: 0x80 = -128</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">saturating_arith.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Unsigned Saturating Add</span>
+<span class="kw">module</span> sat_add_unsigned #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">sum</span> = {<span class="num">1'b0</span>, <span class="port">a</span>} + {<span class="num">1'b0</span>, <span class="port">b</span>};
+
+<span class="cmt">// Saturate to MAX if carry out</span>
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">sum</span>[<span class="port">WIDTH</span>] ? {<span class="port">WIDTH</span>{<span class="num">1'b1</span>}} : <span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Unsigned Saturating Subtract</span>
+<span class="kw">module</span> sat_sub_unsigned #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>
+);
+
+<span class="kw">wire</span> <span class="port">borrow</span> = (<span class="port">a</span> < <span class="port">b</span>);
+
+<span class="cmt">// Saturate to 0 if borrow (underflow)</span>
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">borrow</span> ? {<span class="port">WIDTH</span>{<span class="num">1'b0</span>}} : (<span class="port">a</span> - <span class="port">b</span>);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Signed Saturating Add</span>
+<span class="kw">module</span> sat_add_signed #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>
+);
+
+<span class="kw">localparam</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">MAX_POS</span> = {<span class="num">1'b0</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b1</span>}}};  <span class="cmt">// 0111...1</span>
+<span class="kw">localparam</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">MAX_NEG</span> = {<span class="num">1'b1</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b0</span>}}};  <span class="cmt">// 1000...0</span>
+
+<span class="kw">wire</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">sum</span> = {<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>], <span class="port">a</span>} + {<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>], <span class="port">b</span>};
+
+<span class="cmt">// Overflow detection</span>
+<span class="kw">wire</span> <span class="port">pos_overflow</span> = ~<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+<span class="kw">wire</span> <span class="port">neg_overflow</span> = <span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">pos_overflow</span> ? <span class="port">MAX_POS</span> :
+                 <span class="port">neg_overflow</span> ? <span class="port">MAX_NEG</span> :
+                 <span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Signed Saturating Subtract</span>
+<span class="kw">module</span> sat_sub_signed #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>
+);
+
+<span class="kw">localparam</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">MAX_POS</span> = {<span class="num">1'b0</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b1</span>}}};
+<span class="kw">localparam</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">MAX_NEG</span> = {<span class="num">1'b1</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b0</span>}}};
+
+<span class="kw">wire</span> <span class="kw">signed</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">diff</span> = {<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>], <span class="port">a</span>} - {<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>], <span class="port">b</span>};
+
+<span class="cmt">// Overflow: pos - neg = neg OR neg - pos = pos</span>
+<span class="kw">wire</span> <span class="port">pos_overflow</span> = ~<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">diff</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+<span class="kw">wire</span> <span class="port">neg_overflow</span> = <span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">diff</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">pos_overflow</span> ? <span class="port">MAX_POS</span> :
+                 <span class="port">neg_overflow</span> ? <span class="port">MAX_NEG</span> :
+                 <span class="port">diff</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Combined Saturating ALU</span>
+<span class="kw">module</span> sat_alu #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">16</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">input</span>                   <span class="port">is_signed</span>,
+    <span class="kw">input</span>                   <span class="port">is_sub</span>,
+    <span class="kw">output reg</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>,
+    <span class="kw">output reg</span>              <span class="port">saturated</span>   <span class="cmt">// Flag: saturation occurred</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">sat_add_u</span>, <span class="port">sat_sub_u</span>;
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">sat_add_s</span>, <span class="port">sat_sub_s</span>;
+
+sat_add_unsigned #(<span class="port">WIDTH</span>) u_add_u (.a(<span class="port">a</span>), .b(<span class="port">b</span>), .result(<span class="port">sat_add_u</span>));
+sat_sub_unsigned #(<span class="port">WIDTH</span>) u_sub_u (.a(<span class="port">a</span>), .b(<span class="port">b</span>), .result(<span class="port">sat_sub_u</span>));
+sat_add_signed   #(<span class="port">WIDTH</span>) u_add_s (.a(<span class="port">a</span>), .b(<span class="port">b</span>), .result(<span class="port">sat_add_s</span>));
+sat_sub_signed   #(<span class="port">WIDTH</span>) u_sub_s (.a(<span class="port">a</span>), .b(<span class="port">b</span>), .result(<span class="port">sat_sub_s</span>));
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> ({<span class="port">is_signed</span>, <span class="port">is_sub</span>})
+        <span class="num">2'b00</span>: <span class="port">result</span> = <span class="port">sat_add_u</span>;
+        <span class="num">2'b01</span>: <span class="port">result</span> = <span class="port">sat_sub_u</span>;
+        <span class="num">2'b10</span>: <span class="port">result</span> = <span class="port">sat_add_s</span>;
+        <span class="num">2'b11</span>: <span class="port">result</span> = <span class="port">sat_sub_s</span>;
+    <span class="kw">endcase</span>
+    
+    <span class="cmt">// Check if saturation occurred</span>
+    <span class="port">saturated</span> = (<span class="port">result</span> == {<span class="port">WIDTH</span>{<span class="num">1'b1</span>}}) || (<span class="port">result</span> == {<span class="port">WIDTH</span>{<span class="num">1'b0</span>}}) ||
+                (<span class="port">is_signed</span> && (<span class="port">result</span> == {<span class="num">1'b0</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b1</span>}}})) ||
+                (<span class="port">is_signed</span> && (<span class="port">result</span> == {<span class="num">1'b1</span>, {(<span class="port">WIDTH</span>-<span class="num">1</span>){<span class="num">1'b0</span>}}}));
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">saturating_arith.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="cmt">-- Unsigned Saturating Add</span>
+<span class="kw">entity</span> sat_add_unsigned <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a, b</span>   : <span class="kw">in</span>  unsigned(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">result</span> : <span class="kw">out</span> unsigned(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> sat_add_unsigned;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> sat_add_unsigned <span class="kw">is</span>
+    <span class="kw">constant</span> MAX_VAL : unsigned(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>) := (<span class="kw">others</span> => <span class="str">'1'</span>);
+    <span class="kw">signal</span> sum : unsigned(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    sum <= (<span class="str">'0'</span> & <span class="port">a</span>) + (<span class="str">'0'</span> & <span class="port">b</span>);
+    <span class="port">result</span> <= MAX_VAL <span class="kw">when</span> sum(<span class="port">WIDTH</span>) = <span class="str">'1'</span>
+              <span class="kw">else</span> sum(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Signed Saturating Add</span>
+<span class="kw">entity</span> sat_add_signed <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a, b</span>   : <span class="kw">in</span>  signed(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">result</span> : <span class="kw">out</span> signed(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> sat_add_signed;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> sat_add_signed <span class="kw">is</span>
+    <span class="kw">constant</span> MAX_POS : signed(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>) := 
+        <span class="str">'0'</span> & (<span class="port">WIDTH</span>-<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span> => <span class="str">'1'</span>);
+    <span class="kw">constant</span> MAX_NEG : signed(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>) := 
+        <span class="str">'1'</span> & (<span class="port">WIDTH</span>-<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span> => <span class="str">'0'</span>);
+    <span class="kw">signal</span> sum : signed(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> pos_ovf, neg_ovf : std_logic;
+<span class="kw">begin</span>
+    sum <= (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) & <span class="port">a</span>) + (<span class="port">b</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) & <span class="port">b</span>);
+    
+    pos_ovf <= <span class="str">'1'</span> <span class="kw">when</span> (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'0'</span>) <span class="kw">and</span> (<span class="port">b</span>(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'0'</span>) 
+                        <span class="kw">and</span> (sum(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'1'</span>) <span class="kw">else</span> <span class="str">'0'</span>;
+    neg_ovf <= <span class="str">'1'</span> <span class="kw">when</span> (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'1'</span>) <span class="kw">and</span> (<span class="port">b</span>(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'1'</span>) 
+                        <span class="kw">and</span> (sum(<span class="port">WIDTH</span>-<span class="num">1</span>)=<span class="str">'0'</span>) <span class="kw">else</span> <span class="str">'0'</span>;
+    
+    <span class="port">result</span> <= MAX_POS <span class="kw">when</span> pos_ovf = <span class="str">'1'</span> <span class="kw">else</span>
+              MAX_NEG <span class="kw">when</span> neg_ovf = <span class="str">'1'</span> <span class="kw">else</span>
+              sum(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="signed-unsigned">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Signed vs Unsigned
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Width</th>
+          <th>Min Value</th>
+          <th class="out-col">Max Value</th>
+          <th>Bit Pattern</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Unsigned</td><td>8</td><td>0</td><td class="val-1">255</td><td>0x00 - 0xFF</td></tr>
+        <tr><td>Unsigned</td><td>16</td><td>0</td><td class="val-1">65535</td><td>0x0000 - 0xFFFF</td></tr>
+        <tr><td>Signed</td><td>8</td><td>-128</td><td class="val-1">127</td><td>0x80 - 0x7F</td></tr>
+        <tr><td>Signed</td><td>16</td><td>-32768</td><td class="val-1">32767</td><td>0x8000 - 0x7FFF</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Q-format Fixed Point</h5>
+      <p>Q15 = signed 16-bit with 15 fractional bits. Range: -1.0 to +0.99997.</p>
+      <div class="formula">Used in DSP</div>
+    </div>
+    <div class="concept-card">
+      <h5>Asymmetric Range</h5>
+      <p>Signed has one more negative than positive value. -128 exists, +128 doesn't.</p>
+      <div class="formula">2's complement</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Image Processing</h5>
+      <p>Pixel values 0-255. Saturation prevents white→black wraparound.</p>
+      <div class="formula">No color inversion</div>
+    </div>
+    <div class="concept-card">
+      <h5>Audio DSP</h5>
+      <p>16-bit PCM samples. Saturation prevents loud pops from overflow.</p>
+      <div class="formula">Clean clipping</div>
+    </div>
+    <div class="concept-card">
+      <h5>Motor Control</h5>
+      <p>PWM duty cycle 0-100%. Saturation prevents dangerous values.</p>
+      <div class="formula">Safety critical</div>
+    </div>
+    <div class="concept-card">
+      <h5>SIMD Instructions</h5>
+      <p>x86 PADDSB/PADDUSB, ARM VQADD for packed saturating add.</p>
+      <div class="formula">SSE, NEON, AVX</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Saturation clamps to MAX/MIN on overflow instead of wrapping (modular arithmetic).</li>
+    <li>Unsigned overflow: carry out = 1. Unsigned underflow: borrow = 1.</li>
+    <li>Signed overflow: two positives sum to negative, or two negatives sum to positive.</li>
+    <li>Why DSP? Wraparound causes severe artifacts (white→black, loud pop in audio).</li>
+    <li>8-bit unsigned: saturate to 0 or 255. Signed: saturate to -128 or +127.</li>
+    <li>x86 SIMD: PADDSB (signed), PADDUSB (unsigned) for packed saturating add.</li>
+    <li>Common interview: "Design saturating adder" - key is overflow detection + MUX.</li>
+  </ul>
+</section>

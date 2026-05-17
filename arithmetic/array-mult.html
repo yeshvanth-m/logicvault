@@ -1,0 +1,359 @@
+---
+layout: arithmetic
+title: "Array Multiplier"
+sidebar: array-mult
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: Regular Structure }
+subtitle: "A combinational multiplier with a regular array structure of AND gates and full adders. Simple to design and implement but has O(N²) area and O(N) delay. Ideal for learning and small operands."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "algorithm", title: "Algorithm" }
+  - { id: "structure", title: "Structure" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "analysis", title: "Area & Timing" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "A[N-1:0], B[N-1:0]" }
+  - { label: "Output", value: "P[2N-1:0] (Product)" }
+  - { label: "Operation", value: "P = A × B" }
+  - { label: "AND Gates", value: "N²" }
+  - { label: "Full Adders", value: "N² - N" }
+  - { label: "Logic Depth", value: "O(N)" }
+  - { label: "Area", value: "O(N²)" }
+related:
+  - { url: "/arithmetic/booth.html", name: "Booth Multiplier", desc: "Radix-4 encoding for fewer partial products" }
+  - { url: "/arithmetic/wallace.html", name: "Wallace Tree", desc: "Parallel reduction of partial products" }
+  - { url: "/arithmetic/full-adder.html", name: "Full Adder", desc: "Building block for partial product addition" }
+  - { url: "/arithmetic/ripple-carry.html", name: "Ripple Carry Adder", desc: "Final stage vector merging" }
+prev: { url: "/arithmetic/full-subtractor.html", title: "Full Subtractor" }
+next: { url: "/arithmetic/booth.html", title: "Booth Multiplier" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    The <strong>Array Multiplier</strong> implements binary multiplication using the traditional 
+    shift-and-add algorithm in hardware. It generates all partial products in parallel using AND 
+    gates, then sums them using an array of full adders arranged in a regular, rectangular structure.
+  </p>
+  <p>
+    For an N×N multiplication, the multiplier forms N partial products. Each partial product is 
+    the multiplicand ANDed with a single bit of the multiplier, shifted by the bit position. 
+    These partial products are summed row by row using full adders to produce the final 2N-bit result.
+  </p>
+</section>
+
+<section class="content-section" id="algorithm">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Multiplication Algorithm
+  </h3>
+  
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Partial Products</h5>
+      <p>Each bit of multiplier B generates a partial product:</p>
+      <div class="formula">PP<sub>i</sub> = A × B[i] × 2<sup>i</sup></div>
+    </div>
+    <div class="concept-card">
+      <h5>Final Product</h5>
+      <p>Sum of all shifted partial products:</p>
+      <div class="formula">P = Σ PP<sub>i</sub> for i=0 to N-1</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Example: 4-bit × 4-bit (A=1011 × B=1101)</h4>
+    <div class="derivation-table">
+      <pre>
+          1 0 1 1     (A = 11)
+        × 1 1 0 1     (B = 13)
+        ---------
+          1 0 1 1     PP₀ = A × B[0] = A × 1
+        0 0 0 0 ·     PP₁ = A × B[1] = A × 0
+      1 0 1 1 · ·     PP₂ = A × B[2] = A × 1
+    1 0 1 1 · · ·     PP₃ = A × B[3] = A × 1
+    -------------
+  1 0 0 0 1 1 1 1     P = 143 (8 bits)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="structure">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Array Structure
+  </h3>
+  
+  <p>
+    The array multiplier arranges full adders in an N×N grid. Each row handles one partial product, 
+    with carries propagating down and to the left:
+  </p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>4×4 Array</th>
+          <th>8×8 Array</th>
+          <th>N×N Array</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AND Gates</td>
+          <td>16</td>
+          <td>64</td>
+          <td>N²</td>
+        </tr>
+        <tr>
+          <td>Full Adders</td>
+          <td>12</td>
+          <td>56</td>
+          <td>N² - N</td>
+        </tr>
+        <tr>
+          <td>Half Adders</td>
+          <td>0</td>
+          <td>0</td>
+          <td>0 (can optimize)</td>
+        </tr>
+        <tr>
+          <td>Critical Path</td>
+          <td>7 FA</td>
+          <td>15 FA</td>
+          <td>2N - 1 FA</td>
+        </tr>
+        <tr>
+          <td>Output Bits</td>
+          <td>8</td>
+          <td>16</td>
+          <td>2N</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card">
+    <h5>Carry Propagation</h5>
+    <p>
+      In the basic array structure, carries ripple diagonally through the array. The critical path 
+      goes through the rightmost column and bottom row, passing through approximately 2N-1 full adders.
+    </p>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 4×4 Array Multiplier Structure</p>
+      <p>AND gates generate partial products</p>
+      <p>FA cells arranged in regular array</p>
+      <p>Carries flow diagonally down-left</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">array_mult.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">module</span> array_mult #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>  [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span> [<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">product</span>
+);
+
+<span class="cmt">// Partial products</span>
+<span class="kw">wire</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] pp [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="cmt">// Generate partial products (AND gates)</span>
+<span class="kw">genvar</span> i, j;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < <span class="port">N</span>; i = i + <span class="num">1</span>) <span class="kw">begin</span> : pp_row
+        <span class="kw">for</span> (j = <span class="num">0</span>; j < <span class="port">N</span>; j = j + <span class="num">1</span>) <span class="kw">begin</span> : pp_col
+            <span class="kw">assign</span> pp[i][j] = <span class="port">a</span>[j] & <span class="port">b</span>[i];
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="cmt">// Sum and carry arrays</span>
+<span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] sum [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>];
+<span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] carry [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="cmt">// First row - just partial products</span>
+<span class="kw">assign</span> sum[<span class="num">0</span>] = {<span class="num">1'b0</span>, pp[<span class="num">0</span>]};
+<span class="kw">assign</span> carry[<span class="num">0</span>] = <span class="num">0</span>;
+<span class="kw">assign</span> <span class="port">product</span>[<span class="num">0</span>] = sum[<span class="num">0</span>][<span class="num">0</span>];
+
+<span class="cmt">// Array of full adders</span>
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="num">1</span>; i < <span class="port">N</span>; i = i + <span class="num">1</span>) <span class="kw">begin</span> : row
+        <span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] pp_shifted = {<span class="num">1'b0</span>, pp[i]};
+        <span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] prev_sum = {carry[i-<span class="num">1</span>][<span class="port">N</span>-<span class="num">1</span>], sum[i-<span class="num">1</span>][<span class="port">N</span>:<span class="num">1</span>]};
+        
+        <span class="kw">assign</span> {carry[i], sum[i]} = pp_shifted + prev_sum + carry[i-<span class="num">1</span>][<span class="port">N</span>];
+        <span class="kw">assign</span> <span class="port">product</span>[i] = sum[i][<span class="num">0</span>];
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="cmt">// Upper bits of product</span>
+<span class="kw">assign</span> <span class="port">product</span>[<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span>:<span class="port">N</span>] = sum[<span class="port">N</span>-<span class="num">1</span>][<span class="port">N</span>:<span class="num">1</span>];
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">array_mult.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> array_mult <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">N</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a</span>       : <span class="kw">in</span>  std_logic_vector(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">b</span>       : <span class="kw">in</span>  std_logic_vector(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">product</span> : <span class="kw">out</span> std_logic_vector(<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> array_mult;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> array_mult <span class="kw">is</span>
+    <span class="kw">type</span> pp_array <span class="kw">is array</span>(<span class="num">0</span> <span class="kw">to</span> <span class="port">N</span>-<span class="num">1</span>) <span class="kw">of</span> 
+         unsigned(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> pp : pp_array;
+<span class="kw">begin</span>
+
+    <span class="cmt">-- Generate partial products</span>
+    gen_pp: <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">N</span>-<span class="num">1</span> <span class="kw">generate</span>
+        gen_bit: <span class="kw">for</span> j <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">N</span>-<span class="num">1</span> <span class="kw">generate</span>
+            pp(i)(j) <= <span class="port">a</span>(j) <span class="kw">and</span> <span class="port">b</span>(i);
+        <span class="kw">end generate</span>;
+    <span class="kw">end generate</span>;
+
+    <span class="cmt">-- Behavioral multiplication</span>
+    <span class="port">product</span> <= std_logic_vector(
+        unsigned(<span class="port">a</span>) * unsigned(<span class="port">b</span>)
+    );
+
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="analysis">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17l-5-10-4 8-3-4"/></svg></span>
+    Area & Timing Analysis
+  </h3>
+
+  <div class="analysis-box">
+    <h4>Complexity Analysis</h4>
+    <div class="analysis-item">
+      <span class="label">Gate Count</span>
+      <span class="value">O(N²)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Critical Path Delay</span>
+      <span class="value">O(N) full adder delays</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Power Consumption</span>
+      <span class="value">O(N²) — all gates active</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Regularity</span>
+      <span class="value">Highly regular — easy layout</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Multiplier Type</th>
+          <th>Area</th>
+          <th>Delay</th>
+          <th>Best For</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="highlight">Array</td>
+          <td>O(N²)</td>
+          <td>O(N)</td>
+          <td>Simple designs, small N</td>
+        </tr>
+        <tr>
+          <td>Booth</td>
+          <td>O(N²/2)</td>
+          <td>O(N)</td>
+          <td>Signed multiplication</td>
+        </tr>
+        <tr>
+          <td>Wallace Tree</td>
+          <td>O(N²)</td>
+          <td>O(log N)</td>
+          <td>High-speed, large N</td>
+        </tr>
+        <tr>
+          <td>Dadda</td>
+          <td>O(N²) smaller</td>
+          <td>O(log N)</td>
+          <td>Area-efficient fast mult</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Array multiplier has O(N²) area and O(N) delay — simple but slow for large operands.</li>
+    <li>Critical path goes through 2N-1 full adders (diagonal + bottom row).</li>
+    <li>Regular structure makes it easy to layout but not area-efficient.</li>
+    <li>Can be pipelined by inserting registers between rows for higher throughput.</li>
+    <li>Better than repeated addition but worse than tree-based multipliers for large N.</li>
+    <li>Synthesis tools often replace behavioral multiply (*) with optimized structures.</li>
+  </ul>
+</section>

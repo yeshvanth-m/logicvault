@@ -1,0 +1,474 @@
+---
+layout: edc
+title: "Parity Generator"
+sidebar: parity-gen
+group: edc
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Error Detection }
+  - { color: purple, text: XOR-based }
+subtitle: "Generates a parity bit for error detection by computing the XOR of all data bits. Even parity ensures total number of 1s (including parity) is even; odd parity ensures it's odd. Simple single-bit error detection."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "parity-types", title: "Parity Types" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Generate parity bit from data" }
+  - { label: "Logic", value: "XOR of all input bits" }
+  - { label: "Even Parity", value: "P = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁" }
+  - { label: "Odd Parity", value: "P = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁ ⊕ 1" }
+  - { label: "Error Coverage", value: "Single-bit errors only" }
+  - { label: "Gate Count", value: "(n-1) XOR gates for n bits" }
+  - { label: "Common ICs", value: "74180, 74280" }
+related:
+  - { url: "/edc/parity-check.html", name: "Parity Checker", desc: "Verify parity" }
+  - { url: "/edc/hamming.html", name: "Hamming Code", desc: "Error correction" }
+  - { url: "/gates/xor.html", name: "XOR Gate", desc: "Core building block" }
+  - { url: "/edc/crc.html", name: "CRC", desc: "Polynomial checking" }
+prev: { url: "/codec/seven-seg.html", title: "7-Segment Decoder" }
+next: { url: "/edc/parity-check.html", title: "Parity Checker" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Parity Generator</strong> is a combinational circuit that computes a single parity bit 
+    from a group of data bits. The parity bit is appended to the data for transmission or storage, 
+    enabling the receiver to detect single-bit errors.
+  </p>
+  <p>
+    The circuit is fundamentally built using XOR gates. For <strong>even parity</strong>, the parity 
+    bit is set so that the total count of 1s in (data + parity) is even. For <strong>odd parity</strong>, 
+    the count is made odd. This simple scheme cannot correct errors or detect multiple errors.
+  </p>
+</section>
+
+<section class="content-section" id="parity-types">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Parity Types
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Even Parity</h5>
+      <p>Parity bit makes total number of 1s even. Most common in computer systems.</p>
+      <div class="formula">P = D₀ ⊕ D₁ ⊕ D₂ ⊕ ... ⊕ Dₙ₋₁</div>
+    </div>
+    <div class="concept-card">
+      <h5>Odd Parity</h5>
+      <p>Parity bit makes total number of 1s odd. Used in some serial protocols.</p>
+      <div class="formula">P = D₀ ⊕ D₁ ⊕ D₂ ⊕ ... ⊕ Dₙ₋₁ ⊕ 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Horizontal Parity</h5>
+      <p>One parity bit per data word. Transmitted alongside each byte.</p>
+      <div class="formula">Row-wise parity</div>
+    </div>
+    <div class="concept-card">
+      <h5>Vertical Parity</h5>
+      <p>Parity computed across corresponding bits of multiple words.</p>
+      <div class="formula">Column-wise parity</div>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Example: Even Parity Generation</h4>
+    <div class="data-row">
+      <span>Data:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span>→ Count of 1s = 4 (even)</span>
+    </div>
+    <div class="data-row">
+      <span>With Parity:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span>→ P=0 keeps count even</span>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Example: Odd Parity Generation</h4>
+    <div class="data-row">
+      <span>Data:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span>→ Count of 1s = 4 (even)</span>
+    </div>
+    <div class="data-row">
+      <span>With Parity:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">1</span>
+      <span>→ P=1 makes count odd</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <p>4-bit even parity generator:</p>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>D₃</th>
+          <th>D₂</th>
+          <th>D₁</th>
+          <th>D₀</th>
+          <th>1s</th>
+          <th class="out-col">P (even)</th>
+          <th class="out-col">P (odd)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>0</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>1</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>3</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>4</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Even Parity Generator (n-bit)</div>
+    <div class="bool-expr">
+      <span class="out">P_even</span> = <span class="var">D₀</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> ... <span class="op">⊕</span> <span class="var">Dₙ₋₁</span>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Odd Parity Generator (n-bit)</div>
+    <div class="bool-expr">
+      <span class="out">P_odd</span> = <span class="var">D₀</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> ... <span class="op">⊕</span> <span class="var">Dₙ₋₁</span> <span class="op">⊕</span> <span class="var">1</span>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">4-bit Even Parity</div>
+    <div class="bool-expr">
+      <span class="out">P</span> = <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₀</span>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Why XOR Works for Parity</h4>
+    <div class="derivation-table">
+      XOR outputs 1 when odd number of inputs are 1
+      XOR outputs 0 when even number of inputs are 1
+
+      So XOR of all bits gives:
+        - 1 if odd count of 1s  → need P=1 to make even total
+        - 0 if even count of 1s → need P=0 to keep even total
+
+      Result: P_even = XOR(all data bits) ✓
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 4-bit Even Parity Generator</p>
+      <pre style="font-family: var(--mono); font-size: 0.85rem;">
+D₃ ───┐
+      XOR───┐
+D₂ ───┘     │
+            XOR───┐
+D₁ ───┐     │     │
+      XOR───┘     XOR─── P
+D₀ ───┘           │
+                  │
+     (Tree structure for minimum delay)
+      </pre>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Gate Complexity</h4>
+    <div class="analysis-item">
+      <span class="label">XOR Gates Required</span>
+      <span class="value">n - 1 gates for n bits</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Linear Chain Delay</span>
+      <span class="value">(n - 1) × t_XOR</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Tree Structure Delay</span>
+      <span class="value">⌈log₂(n)⌉ × t_XOR</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">4-bit Tree Delay</span>
+      <span class="value">2 × t_XOR</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">parity_gen.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Parameterized Parity Generator</span>
+<span class="kw">module</span> parity_gen #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>,
+    <span class="kw">parameter</span> <span class="port">ODD</span>   = <span class="num">0</span>   <span class="cmt">// 0=even, 1=odd</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">data</span>,
+    <span class="kw">output</span>             <span class="port">parity</span>
+);
+
+<span class="cmt">// XOR reduction operator</span>
+<span class="kw">assign</span> <span class="port">parity</span> = ^<span class="port">data</span> ^ <span class="port">ODD</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 8-bit Even Parity Generator (explicit)</span>
+<span class="kw">module</span> parity_gen_8bit (
+    <span class="kw">input</span>  [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data</span>,
+    <span class="kw">output</span>       <span class="port">parity</span>
+);
+
+<span class="cmt">// Tree structure for minimum delay</span>
+<span class="kw">wire</span> <span class="port">p01</span>, <span class="port">p23</span>, <span class="port">p45</span>, <span class="port">p67</span>;
+<span class="kw">wire</span> <span class="port">p0123</span>, <span class="port">p4567</span>;
+
+<span class="cmt">// Level 1</span>
+<span class="kw">assign</span> <span class="port">p01</span> = <span class="port">data</span>[<span class="num">0</span>] ^ <span class="port">data</span>[<span class="num">1</span>];
+<span class="kw">assign</span> <span class="port">p23</span> = <span class="port">data</span>[<span class="num">2</span>] ^ <span class="port">data</span>[<span class="num">3</span>];
+<span class="kw">assign</span> <span class="port">p45</span> = <span class="port">data</span>[<span class="num">4</span>] ^ <span class="port">data</span>[<span class="num">5</span>];
+<span class="kw">assign</span> <span class="port">p67</span> = <span class="port">data</span>[<span class="num">6</span>] ^ <span class="port">data</span>[<span class="num">7</span>];
+
+<span class="cmt">// Level 2</span>
+<span class="kw">assign</span> <span class="port">p0123</span> = <span class="port">p01</span> ^ <span class="port">p23</span>;
+<span class="kw">assign</span> <span class="port">p4567</span> = <span class="port">p45</span> ^ <span class="port">p67</span>;
+
+<span class="cmt">// Level 3</span>
+<span class="kw">assign</span> <span class="port">parity</span> = <span class="port">p0123</span> ^ <span class="port">p4567</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Combined generator with data output</span>
+<span class="kw">module</span> parity_gen_with_data #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>:<span class="num">0</span>]   <span class="port">data_out</span>  <span class="cmt">// data + parity</span>
+);
+
+<span class="kw">wire</span> <span class="port">parity</span>;
+
+parity_gen #(.<span class="port">WIDTH</span>(<span class="port">WIDTH</span>)) gen (
+    .<span class="port">data</span>(<span class="port">data_in</span>),
+    .<span class="port">parity</span>(<span class="port">parity</span>)
+);
+
+<span class="kw">assign</span> <span class="port">data_out</span> = {<span class="port">parity</span>, <span class="port">data_in</span>};
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">parity_gen.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> parity_gen <span class="kw">is</span>
+    <span class="kw">generic</span> (
+        <span class="port">WIDTH</span> : natural := <span class="num">8</span>;
+        <span class="port">ODD</span>   : std_logic := <span class="str">'0'</span>
+    );
+    <span class="kw">port</span> (
+        <span class="port">data</span>   : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">parity</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> parity_gen;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> parity_gen <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">data</span>)
+        <span class="kw">variable</span> p : std_logic;
+    <span class="kw">begin</span>
+        p := <span class="port">ODD</span>;
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">loop</span>
+            p := p <span class="kw">xor</span> <span class="port">data</span>(i);
+        <span class="kw">end loop</span>;
+        <span class="port">parity</span> <= p;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Memory Systems</h5>
+      <p>Parity bits stored with each memory word. DRAM often uses 9 bits (8 data + 1 parity).</p>
+      <div class="formula">Simple error detection</div>
+    </div>
+    <div class="concept-card">
+      <h5>Serial Communication</h5>
+      <p>UART frames include optional parity bit. RS-232, RS-485 protocols.</p>
+      <div class="formula">Even/Odd/None parity</div>
+    </div>
+    <div class="concept-card">
+      <h5>Bus Transfers</h5>
+      <p>Parity lanes on PCI, PCI Express for data integrity.</p>
+      <div class="formula">Per-byte parity</div>
+    </div>
+    <div class="concept-card">
+      <h5>RAID Storage</h5>
+      <p>XOR-based parity used in RAID 5/6 for disk failure recovery.</p>
+      <div class="formula">Block-level XOR</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Parity generator is XOR of all data bits. Even parity: P = ⊕D[i]. Odd parity: P = ⊕D[i] ⊕ 1.</li>
+    <li>Detects all single-bit errors. Cannot detect 2-bit errors (they cancel out). Cannot correct errors.</li>
+    <li>For n-bit data: need (n-1) XOR gates in linear chain, or log₂(n) levels in tree structure.</li>
+    <li>Tree structure reduces delay from O(n) to O(log n). Important for high-speed systems.</li>
+    <li>Verilog reduction operator: ^data computes XOR of all bits. Clean, synthesizable.</li>
+    <li>74180/74280 are standard parity generator/checker ICs with 8-bit inputs.</li>
+  </ul>
+</section>

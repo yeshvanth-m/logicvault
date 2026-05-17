@@ -1,0 +1,187 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{{ page.title }} — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .tt-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  table.truth-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.82rem; }
+  .truth-table thead th { background: var(--surface); color: var(--text-dim); font-weight: 500; padding: 10px 16px; text-align: center; border-bottom: 1px solid var(--border); }
+  .truth-table thead th.out-col { color: var(--green); }
+  .truth-table tbody td { padding: 8px 16px; text-align: center; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+  .truth-table tbody tr:last-child td { border-bottom: none; }
+  .truth-table tbody tr:hover td { background: var(--surface2); }
+  .truth-table tbody td.val-1 { color: var(--green); font-weight: 500; }
+  .truth-table tbody td.val-0 { color: var(--text-faint); }
+
+  .bool-box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 0 var(--radius) var(--radius) 0; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 0.92rem; margin-bottom: 0.75rem; }
+  .bool-label { font-size: 0.65rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .bool-expr { color: var(--text); line-height: 1.8; }
+  .bool-expr .var { color: var(--blue); }
+  .bool-expr .op { color: var(--amber); }
+  .bool-expr .out { color: var(--green); font-weight: 600; }
+
+  .diagram-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-faint); position: relative; overflow: hidden; }
+  .diagram-box::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 28px 28px; opacity: .5; }
+  .diagram-placeholder { position: relative; z-index: 1; text-align: center; }
+  .diagram-placeholder p { font-family: var(--mono); font-size: 0.78rem; color: var(--text-faint); line-height: 1.6; }
+
+  .code-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .code-header { display: flex; align-items: center; padding: 8px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); gap: 8px; }
+  .code-lang { font-family: var(--mono); font-size: 0.68rem; color: var(--green); letter-spacing: .05em; background: #edf7f3; border: 1px solid #9ecebb; padding: 2px 7px; border-radius: 4px; }
+  .code-filename { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+  .code-copy { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--text-dim); font-family: var(--mono); font-size: 0.68rem; padding: 3px 10px; border-radius: 4px; cursor: pointer; }
+  pre.code-body { padding: 1.1rem 1.25rem; overflow-x: auto; font-family: var(--mono); font-size: 0.8rem; line-height: 1.75; color: var(--text); margin: 0; }
+  .kw { color: #5e35b1; } .cmt { color: #9aa3b2; font-style: italic; } .port { color: #1a5fb0; } .num { color: #c56200; } .str { color: #2e7d32; }
+
+  .code-tabs { display: flex; gap: 4px; margin-bottom: -1px; }
+  .ctab { font-family: var(--mono); font-size: 0.72rem; padding: 6px 14px; cursor: pointer; color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); border-bottom: none; border-radius: 5px 5px 0 0; }
+  .ctab.active { background: var(--surface); color: var(--green); border-bottom: 1px solid var(--surface); }
+  .code-panel { display: none; }
+  .code-panel.active { display: block; }
+  .code-panel .code-wrap { border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg); }
+
+  .interview-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .interview-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.85rem; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 0.9rem; }
+  .interview-list li::before { content: '?'; font-family: var(--mono); font-size: 0.7rem; color: var(--amber); background: #fdf3e3; border: 1px solid #d4a96a; border-radius: 4px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .concept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .concept-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .concept-card h5 { color: var(--green); font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .concept-card p { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin: 0; }
+  .concept-card .formula { font-family: var(--mono); background: var(--surface2); padding: 0.5rem; border-radius: var(--radius); margin-top: 0.5rem; font-size: 0.8rem; }
+
+  .derivation-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin: 1rem 0; overflow-x: auto; }
+  .derivation-box h4 { color: var(--green); font-size: 0.9rem; margin-bottom: 0.75rem; }
+  .derivation-table { font-family: var(--mono); font-size: 0.8rem; line-height: 2; }
+  .derivation-table .var { color: var(--blue); }
+  .derivation-table .op { color: var(--amber); }
+
+  .perf-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  .perf-table th, .perf-table td { padding: 0.6rem 0.75rem; text-align: center; border: 1px solid var(--border); }
+  .perf-table th { background: var(--surface2); font-weight: 600; color: var(--text-dim); }
+  .perf-table td { background: var(--surface); }
+  .perf-table .highlight { background: rgba(10, 124, 82, 0.1); color: var(--green); font-weight: 600; }
+
+  .analysis-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin: 1rem 0; }
+  .analysis-box h4 { color: var(--green); font-size: 0.9rem; margin-bottom: 0.75rem; }
+  .analysis-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .analysis-item:last-child { border-bottom: none; }
+  .analysis-item .label { color: var(--text-dim); }
+  .analysis-item .value { font-family: var(--mono); color: var(--green); font-weight: 600; }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      {% for item in page.toc %}
+      <li><a href="#{{ item.id }}">{{ item.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/codec/' | relative_url }}">Encoders / Decoders</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">{{ page.title }}</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      {% for badge in page.badges %}
+      <span class="badge badge-{{ badge.color }}">{{ badge.text }}</span>
+      {% endfor %}
+    </div>
+    <h1 class="page-title">{{ page.title }}</h1>
+    <p class="page-subtitle">{{ page.subtitle }}</p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      {% for fact in page.quick_facts %}
+      <div class="qf-card">
+        <p class="qf-label">{{ fact.label }}</p>
+        <p class="qf-value">{{ fact.value }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {{ content }}
+
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Circuits</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+    <div class="related-grid">
+      {% for rel in page.related %}
+      <a href="{{ rel.url | relative_url }}" class="related-card">
+        <span class="related-card-name">{{ rel.name }}</span>
+        <span class="related-card-cat">{{ rel.desc }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      {% if page.prev %}
+      <a href="{{ page.prev.url | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        {{ page.prev.title }}
+      </a>
+      {% endif %}
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      {% if page.next %}
+      <a href="{{ page.next.url | relative_url }}">
+        {{ page.next.title }}
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      {% endif %}
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+<script>
+function showTab(evt, panelId) {
+  const container = evt.target.closest('section') || evt.target.parentElement.parentElement;
+  container.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+  evt.target.classList.add('active');
+  container.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+function copyCode(btn) {
+  const code = btn.closest('.code-wrap').querySelector('.code-body').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>

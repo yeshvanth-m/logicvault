@@ -36,6 +36,7 @@
       <a href="{{ '/boolean/kmap.html' | relative_url }}" class="nav-item{% if page.sidebar == 'kmap' %} active{% endif %}">K-Map</a>
       <a href="{{ '/boolean/sop-pos.html' | relative_url }}" class="nav-item{% if page.sidebar == 'sop-pos' %} active{% endif %}">SOP / POS Forms</a>
       <a href="{{ '/boolean/qmc.html' | relative_url }}" class="nav-item{% if page.sidebar == 'qmc' %} active{% endif %}">Quine–McCluskey</a>
+      <a href="{{ '/boolean/espresso.html' | relative_url }}" class="nav-item{% if page.sidebar == 'espresso' %} active{% endif %}">Espresso</a>
       <a href="{{ '/boolean/hazards.html' | relative_url }}" class="nav-item{% if page.sidebar == 'hazards' %} active{% endif %}">Hazard Analysis</a>
     </div>
 
@@ -44,19 +45,26 @@
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
     <div class="nav-items{% if page.group == 'arithmetic' %} open{% endif %}">
-      <a href="{{ '/docs/arithmetic/half-adder/' | relative_url }}" class="nav-item{% if page.sidebar == 'half-adder' %} active{% endif %}">Half Adder</a>
+      <a href="{{ '/arithmetic/half-adder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'half-adder' %} active{% endif %}">Half Adder</a>
       <a href="{{ '/arithmetic/full-adder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'full-adder' %} active{% endif %}">Full Adder</a>
-      <a href="{{ '/docs/arithmetic/ripple-carry/' | relative_url }}" class="nav-item{% if page.sidebar == 'ripple' %} active{% endif %}">Ripple Carry Adder</a>
-      <a href="{{ '/docs/arithmetic/cla/' | relative_url }}" class="nav-item{% if page.sidebar == 'cla' %} active{% endif %}">Carry Lookahead Adder</a>
-      <a href="{{ '/docs/arithmetic/carry-select/' | relative_url }}" class="nav-item{% if page.sidebar == 'carry-select' %} active{% endif %}">Carry Select Adder</a>
-      <a href="{{ '/docs/arithmetic/kogge-stone/' | relative_url }}" class="nav-item{% if page.sidebar == 'kogge' %} active{% endif %}">Kogge-Stone</a>
-      <a href="{{ '/docs/arithmetic/brent-kung/' | relative_url }}" class="nav-item{% if page.sidebar == 'brent' %} active{% endif %}">Brent-Kung</a>
-      <a href="{{ '/docs/arithmetic/half-sub/' | relative_url }}" class="nav-item{% if page.sidebar == 'half-sub' %} active{% endif %}">Half Subtractor</a>
-      <a href="{{ '/docs/arithmetic/full-sub/' | relative_url }}" class="nav-item{% if page.sidebar == 'full-sub' %} active{% endif %}">Full Subtractor</a>
-      <a href="{{ '/docs/arithmetic/array-mult/' | relative_url }}" class="nav-item{% if page.sidebar == 'array-mult' %} active{% endif %}">Array Multiplier</a>
-      <a href="{{ '/docs/arithmetic/booth/' | relative_url }}" class="nav-item{% if page.sidebar == 'booth' %} active{% endif %}">Booth Multiplier</a>
-      <a href="{{ '/docs/arithmetic/wallace/' | relative_url }}" class="nav-item{% if page.sidebar == 'wallace' %} active{% endif %}">Wallace Tree</a>
-      <a href="{{ '/docs/arithmetic/comparator/' | relative_url }}" class="nav-item{% if page.sidebar == 'comparator' %} active{% endif %}">Comparators</a>
+      <a href="{{ '/arithmetic/ripple-carry.html' | relative_url }}" class="nav-item{% if page.sidebar == 'ripple' %} active{% endif %}">Ripple Carry Adder</a>
+      <a href="{{ '/arithmetic/carry-lookahead.html' | relative_url }}" class="nav-item{% if page.sidebar == 'cla' %} active{% endif %}">Carry Lookahead Adder</a>
+      <a href="{{ '/arithmetic/carry-select.html' | relative_url }}" class="nav-item{% if page.sidebar == 'csla' %} active{% endif %}">Carry Select Adder</a>
+      <a href="{{ '/arithmetic/kogge-stone.html' | relative_url }}" class="nav-item{% if page.sidebar == 'kogge' %} active{% endif %}">Kogge-Stone</a>
+      <a href="{{ '/arithmetic/brent-kung.html' | relative_url }}" class="nav-item{% if page.sidebar == 'brentkung' %} active{% endif %}">Brent-Kung</a>
+      <a href="{{ '/arithmetic/half-subtractor.html' | relative_url }}" class="nav-item{% if page.sidebar == 'halfsub' %} active{% endif %}">Half Subtractor</a>
+      <a href="{{ '/arithmetic/full-subtractor.html' | relative_url }}" class="nav-item{% if page.sidebar == 'fullsub' %} active{% endif %}">Full Subtractor</a>
+      <a href="{{ '/arithmetic/array-mult.html' | relative_url }}" class="nav-item{% if page.sidebar == 'array-mult' %} active{% endif %}">Array Multiplier</a>
+      <a href="{{ '/arithmetic/booth.html' | relative_url }}" class="nav-item{% if page.sidebar == 'booth' %} active{% endif %}">Booth Multiplier</a>
+      <a href="{{ '/arithmetic/wallace.html' | relative_url }}" class="nav-item{% if page.sidebar == 'wallace' %} active{% endif %}">Wallace Tree</a>
+      <a href="{{ '/arithmetic/comparator.html' | relative_url }}" class="nav-item{% if page.sidebar == 'comparator' %} active{% endif %}">Comparators</a>
+      <a href="{{ '/arithmetic/barrel-shifter.html' | relative_url }}" class="nav-item{% if page.sidebar == 'barrel' %} active{% endif %}">Barrel Shifter</a>
+      <a href="{{ '/arithmetic/alu.html' | relative_url }}" class="nav-item{% if page.sidebar == 'alu' %} active{% endif %}">ALU</a>
+      <a href="{{ '/arithmetic/clz.html' | relative_url }}" class="nav-item{% if page.sidebar == 'clz' %} active{% endif %}">CLZ</a>
+      <a href="{{ '/arithmetic/popcount.html' | relative_url }}" class="nav-item{% if page.sidebar == 'popcount' %} active{% endif %}">Popcount</a>
+      <a href="{{ '/arithmetic/saturating.html' | relative_url }}" class="nav-item{% if page.sidebar == 'saturating' %} active{% endif %}">Saturating Arithmetic</a>
+      <a href="{{ '/arithmetic/sign-extend.html' | relative_url }}" class="nav-item{% if page.sidebar == 'sign-extend' %} active{% endif %}">Sign Extension</a>
+      <a href="{{ '/arithmetic/overflow.html' | relative_url }}" class="nav-item{% if page.sidebar == 'overflow' %} active{% endif %}">Overflow Detection</a>
     </div>
 
     <button class="nav-group-toggle{% if page.group == 'routing' %} open{% endif %}" onclick="toggleGroup(this)">
@@ -64,11 +72,11 @@
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
     <div class="nav-items{% if page.group == 'routing' %} open{% endif %}">
-      <a href="{{ '/docs/routing/mux-2/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-2' %} active{% endif %}">2:1 MUX</a>
-      <a href="{{ '/docs/routing/mux-4/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-4' %} active{% endif %}">4:1 MUX</a>
-      <a href="{{ '/docs/routing/mux-8/' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-8' %} active{% endif %}">8:1 MUX</a>
-      <a href="{{ '/docs/routing/demux/' | relative_url }}" class="nav-item{% if page.sidebar == 'demux' %} active{% endif %}">DEMUX</a>
-      <a href="{{ '/docs/routing/tri-state/' | relative_url }}" class="nav-item{% if page.sidebar == 'tri-state' %} active{% endif %}">Tri-state Buffer</a>
+      <a href="{{ '/routing/mux2.html' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-2' %} active{% endif %}">2:1 MUX</a>
+      <a href="{{ '/routing/mux4.html' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-4' %} active{% endif %}">4:1 MUX</a>
+      <a href="{{ '/routing/mux8.html' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-8' %} active{% endif %}">8:1 MUX</a>
+      <a href="{{ '/routing/demux.html' | relative_url }}" class="nav-item{% if page.sidebar == 'demux' %} active{% endif %}">DEMUX</a>
+      <a href="{{ '/routing/tristate.html' | relative_url }}" class="nav-item{% if page.sidebar == 'tri-state' %} active{% endif %}">Tri-state Buffer</a>
     </div>
 
     <button class="nav-group-toggle{% if page.group == 'codec' %} open{% endif %}" onclick="toggleGroup(this)">
@@ -76,12 +84,12 @@
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
     <div class="nav-items{% if page.group == 'codec' %} open{% endif %}">
-      <a href="{{ '/docs/codec/binary-encoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-enc' %} active{% endif %}">Binary Encoder</a>
-      <a href="{{ '/docs/codec/priority-encoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'priority-enc' %} active{% endif %}">Priority Encoder</a>
-      <a href="{{ '/docs/codec/binary-decoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-dec' %} active{% endif %}">Binary Decoder</a>
-      <a href="{{ '/docs/codec/bcd-decoder/' | relative_url }}" class="nav-item{% if page.sidebar == 'bcd-dec' %} active{% endif %}">BCD Decoder</a>
-      <a href="{{ '/docs/codec/gray/' | relative_url }}" class="nav-item{% if page.sidebar == 'gray' %} active{% endif %}">Binary ↔ Gray</a>
-      <a href="{{ '/docs/codec/seven-seg/' | relative_url }}" class="nav-item{% if page.sidebar == 'seven-seg' %} active{% endif %}">7-Segment Decoder</a>
+      <a href="{{ '/codec/binary-encoder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-enc' %} active{% endif %}">Binary Encoder</a>
+      <a href="{{ '/codec/priority-encoder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'priority-enc' %} active{% endif %}">Priority Encoder</a>
+      <a href="{{ '/codec/binary-decoder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'binary-dec' %} active{% endif %}">Binary Decoder</a>
+      <a href="{{ '/codec/bcd-decoder.html' | relative_url }}" class="nav-item{% if page.sidebar == 'bcd-dec' %} active{% endif %}">BCD Decoder</a>
+      <a href="{{ '/codec/gray.html' | relative_url }}" class="nav-item{% if page.sidebar == 'gray' %} active{% endif %}">Binary ↔ Gray</a>
+      <a href="{{ '/codec/seven-seg.html' | relative_url }}" class="nav-item{% if page.sidebar == 'seven-seg' %} active{% endif %}">7-Segment Decoder</a>
     </div>
 
     <button class="nav-group-toggle{% if page.group == 'edc' %} open{% endif %}" onclick="toggleGroup(this)">
@@ -91,8 +99,8 @@
     <div class="nav-items{% if page.group == 'edc' %} open{% endif %}">
       <a href="{{ '/edc/parity-gen.html' | relative_url }}" class="nav-item{% if page.sidebar == 'parity-gen' %} active{% endif %}">Parity Generator</a>
       <a href="{{ '/edc/parity-check.html' | relative_url }}" class="nav-item{% if page.sidebar == 'parity-check' %} active{% endif %}">Parity Checker</a>
-      <a href="{{ '/docs/edc/hamming/' | relative_url }}" class="nav-item{% if page.sidebar == 'hamming' %} active{% endif %}">Hamming Code</a>
-      <a href="{{ '/docs/edc/crc/' | relative_url }}" class="nav-item{% if page.sidebar == 'crc' %} active{% endif %}">CRC</a>
+      <a href="{{ '/edc/hamming.html' | relative_url }}" class="nav-item{% if page.sidebar == 'hamming' %} active{% endif %}">Hamming Code</a>
+      <a href="{{ '/edc/crc.html' | relative_url }}" class="nav-item{% if page.sidebar == 'crc' %} active{% endif %}">CRC</a>
     </div>
   </div>
 

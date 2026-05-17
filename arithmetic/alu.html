@@ -1,0 +1,467 @@
+---
+layout: arithmetic
+title: "ALU (Arithmetic Logic Unit)"
+sidebar: alu
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Core CPU Block }
+  - { color: red, text: Multi-Function }
+subtitle: "The computational heart of a processor. Performs arithmetic (add, sub, multiply), logical (AND, OR, XOR), comparison, and shift operations based on opcode selection. Produces result and condition flags (zero, carry, overflow, negative)."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "operations", title: "Operations" }
+  - { id: "architecture", title: "Architecture" }
+  - { id: "flags", title: "Condition Flags" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "optimization", title: "Optimization" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "A, B (operands), opcode" }
+  - { label: "Output", value: "Result + flags" }
+  - { label: "Arithmetic", value: "ADD, SUB, MUL, DIV" }
+  - { label: "Logical", value: "AND, OR, XOR, NOT" }
+  - { label: "Shift", value: "SLL, SRL, SRA, ROL, ROR" }
+  - { label: "Compare", value: "EQ, NE, LT, GE (signed/unsigned)" }
+  - { label: "Flags", value: "Z, C, V, N (Zero, Carry, oVerflow, Negative)" }
+related:
+  - { url: "/arithmetic/barrel-shifter.html", name: "Barrel Shifter", desc: "Shift operations" }
+  - { url: "/arithmetic/carry-lookahead.html", name: "CLA Adder", desc: "Fast addition" }
+  - { url: "/arithmetic/comparator.html", name: "Comparator", desc: "Compare operations" }
+  - { url: "/arithmetic/overflow.html", name: "Overflow Detection", desc: "V flag generation" }
+prev: { url: "/arithmetic/barrel-shifter.html", title: "Barrel Shifter" }
+next: { url: "/arithmetic/clz.html", title: "CLZ" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    The <strong>Arithmetic Logic Unit (ALU)</strong> is the combinational circuit at the heart of 
+    every processor. It performs arithmetic operations (addition, subtraction), logical operations 
+    (AND, OR, XOR), shifts, and comparisons based on an opcode that selects the operation.
+  </p>
+  <p>
+    A typical ALU consists of parallel functional units: an adder/subtractor, a logic unit, and 
+    a barrel shifter. A multiplexer at the output selects the appropriate result based on the 
+    opcode. The ALU also generates condition flags (zero, carry, overflow, negative) that are 
+    used for conditional branching.
+  </p>
+</section>
+
+<section class="content-section" id="operations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Operations
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Operation</th>
+          <th>Opcode</th>
+          <th class="out-col">Result</th>
+          <th>Flags Affected</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="4">Arithmetic</td><td>ADD</td><td>0000</td><td class="val-1">A + B</td><td>Z, C, V, N</td></tr>
+        <tr><td>SUB</td><td>0001</td><td class="val-1">A - B</td><td>Z, C, V, N</td></tr>
+        <tr><td>ADC</td><td>0010</td><td class="val-1">A + B + Cin</td><td>Z, C, V, N</td></tr>
+        <tr><td>SBC</td><td>0011</td><td class="val-1">A - B - ~Cin</td><td>Z, C, V, N</td></tr>
+        <tr><td rowspan="4">Logical</td><td>AND</td><td>0100</td><td class="val-1">A & B</td><td>Z, N</td></tr>
+        <tr><td>OR</td><td>0101</td><td class="val-1">A | B</td><td>Z, N</td></tr>
+        <tr><td>XOR</td><td>0110</td><td class="val-1">A ^ B</td><td>Z, N</td></tr>
+        <tr><td>NOT</td><td>0111</td><td class="val-1">~A</td><td>Z, N</td></tr>
+        <tr><td rowspan="3">Shift</td><td>SLL</td><td>1000</td><td class="val-1">A &lt;&lt; B</td><td>Z, C, N</td></tr>
+        <tr><td>SRL</td><td>1001</td><td class="val-1">A &gt;&gt; B</td><td>Z, C, N</td></tr>
+        <tr><td>SRA</td><td>1010</td><td class="val-1">A &gt;&gt;&gt; B</td><td>Z, C, N</td></tr>
+        <tr><td rowspan="2">Compare</td><td>CMP</td><td>1011</td><td class="val-1">A - B (flags only)</td><td>Z, C, V, N</td></tr>
+        <tr><td>TST</td><td>1100</td><td class="val-1">A & B (flags only)</td><td>Z, N</td></tr>
+        <tr><td rowspan="2">Move</td><td>MOV</td><td>1101</td><td class="val-1">B (pass-through)</td><td>-</td></tr>
+        <tr><td>MVN</td><td>1110</td><td class="val-1">~B</td><td>Z, N</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="architecture">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Architecture
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 ALU Block Diagram</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+         A ─────────┬─────────┬─────────┐
+                    │         │         │
+         B ─────────┼─────────┼─────────┼──────┐
+                    ▼         ▼         ▼      ▼
+              ┌─────────┐ ┌───────┐ ┌───────┐ ┌───────┐
+              │  ADDER  │ │ LOGIC │ │SHIFTER│ │  CMP  │
+              │ ADD/SUB │ │AND/OR │ │SLL/SRL│ │ LT/EQ │
+              └────┬────┘ └───┬───┘ └───┬───┘ └───┬───┘
+                   │          │         │         │
+                   └────┬─────┴────┬────┴────┬────┘
+                        │          │         │
+                        ▼          ▼         ▼
+                   ┌──────────────────────────────┐
+                   │       OUTPUT MUX             │ ← opcode
+                   └──────────────┬───────────────┘
+                                  │
+                                  ▼
+                              Result ────────► Flags
+      </pre>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Adder/Subtractor</h5>
+      <p>Core arithmetic. SUB = ADD with B inverted + Cin=1. Uses CLA for speed.</p>
+      <div class="formula">A + B or A + ~B + 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Logic Unit</h5>
+      <p>Bitwise operations. AND, OR, XOR, NOT applied to each bit position.</p>
+      <div class="formula">Parallel bit operations</div>
+    </div>
+    <div class="concept-card">
+      <h5>Barrel Shifter</h5>
+      <p>Variable shift in single cycle. Supports logical and arithmetic shifts.</p>
+      <div class="formula">log₂(n) stages</div>
+    </div>
+    <div class="concept-card">
+      <h5>Output MUX</h5>
+      <p>Selects result from functional unit based on opcode.</p>
+      <div class="formula">4:1 or 8:1 MUX</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="flags">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Condition Flags
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Flag</th>
+          <th>Name</th>
+          <th>Condition</th>
+          <th class="out-col">Generation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Z</strong></td>
+          <td>Zero</td>
+          <td>Result is zero</td>
+          <td class="val-1">Z = ~|Result</td>
+        </tr>
+        <tr>
+          <td><strong>N</strong></td>
+          <td>Negative</td>
+          <td>Result MSB is 1</td>
+          <td class="val-1">N = Result[n-1]</td>
+        </tr>
+        <tr>
+          <td><strong>C</strong></td>
+          <td>Carry</td>
+          <td>Unsigned overflow</td>
+          <td class="val-1">C = Cout (from adder)</td>
+        </tr>
+        <tr>
+          <td><strong>V</strong></td>
+          <td>Overflow</td>
+          <td>Signed overflow</td>
+          <td class="val-1">V = Cin[n-1] ^ Cout[n-1]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Flag Equations</div>
+    <div class="bool-expr">
+      <span class="out">Zero</span> = (<span class="var">Result</span> == 0) = NOR of all result bits<br>
+      <span class="out">Negative</span> = <span class="var">Result[MSB]</span><br>
+      <span class="out">Carry</span> = <span class="var">Cout</span> from final adder stage<br>
+      <span class="out">Overflow</span> = <span class="var">Cin[MSB]</span> <span class="op">⊕</span> <span class="var">Cout[MSB]</span>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Condition Code Usage</h4>
+    <div class="analysis-item">
+      <span class="label">Unsigned &lt;</span>
+      <span class="value">C = 0 (borrow occurred)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Unsigned ≥</span>
+      <span class="value">C = 1 (no borrow)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Signed &lt;</span>
+      <span class="value">N ≠ V</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Signed ≥</span>
+      <span class="value">N = V</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Equal</span>
+      <span class="value">Z = 1</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Not Equal</span>
+      <span class="value">Z = 0</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">alu.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 32-bit ALU with Flags</span>
+<span class="kw">module</span> alu #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">32</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>]        <span class="port">op</span>,
+    <span class="kw">input</span>                   <span class="port">cin</span>,       <span class="cmt">// Carry in (for ADC/SBC)</span>
+    <span class="kw">output reg</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>,
+    <span class="kw">output</span>                  <span class="port">zero</span>,      <span class="cmt">// Z flag</span>
+    <span class="kw">output</span>                  <span class="port">negative</span>,  <span class="cmt">// N flag</span>
+    <span class="kw">output reg</span>              <span class="port">carry</span>,     <span class="cmt">// C flag</span>
+    <span class="kw">output</span>                  <span class="port">overflow</span>   <span class="cmt">// V flag</span>
+);
+
+<span class="cmt">// Operation codes</span>
+<span class="kw">localparam</span> <span class="port">OP_ADD</span> = <span class="num">4'b0000</span>;
+<span class="kw">localparam</span> <span class="port">OP_SUB</span> = <span class="num">4'b0001</span>;
+<span class="kw">localparam</span> <span class="port">OP_ADC</span> = <span class="num">4'b0010</span>;
+<span class="kw">localparam</span> <span class="port">OP_SBC</span> = <span class="num">4'b0011</span>;
+<span class="kw">localparam</span> <span class="port">OP_AND</span> = <span class="num">4'b0100</span>;
+<span class="kw">localparam</span> <span class="port">OP_OR</span>  = <span class="num">4'b0101</span>;
+<span class="kw">localparam</span> <span class="port">OP_XOR</span> = <span class="num">4'b0110</span>;
+<span class="kw">localparam</span> <span class="port">OP_NOT</span> = <span class="num">4'b0111</span>;
+<span class="kw">localparam</span> <span class="port">OP_SLL</span> = <span class="num">4'b1000</span>;
+<span class="kw">localparam</span> <span class="port">OP_SRL</span> = <span class="num">4'b1001</span>;
+<span class="kw">localparam</span> <span class="port">OP_SRA</span> = <span class="num">4'b1010</span>;
+<span class="kw">localparam</span> <span class="port">OP_CMP</span> = <span class="num">4'b1011</span>;
+<span class="kw">localparam</span> <span class="port">OP_MOV</span> = <span class="num">4'b1101</span>;
+
+<span class="cmt">// Internal signals</span>
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">add_result</span>;
+<span class="kw">wire</span> <span class="port">sub_mode</span>;
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b_operand</span>;
+<span class="kw">wire</span> <span class="port">carry_in</span>;
+
+<span class="cmt">// Subtraction uses 2's complement: A - B = A + ~B + 1</span>
+<span class="kw">assign</span> <span class="port">sub_mode</span> = (<span class="port">op</span> == <span class="port">OP_SUB</span>) || (<span class="port">op</span> == <span class="port">OP_SBC</span>) || (<span class="port">op</span> == <span class="port">OP_CMP</span>);
+<span class="kw">assign</span> <span class="port">b_operand</span> = <span class="port">sub_mode</span> ? ~<span class="port">b</span> : <span class="port">b</span>;
+<span class="kw">assign</span> <span class="port">carry_in</span> = (<span class="port">op</span> == <span class="port">OP_SUB</span> || <span class="port">op</span> == <span class="port">OP_CMP</span>) ? <span class="num">1'b1</span> :
+                   (<span class="port">op</span> == <span class="port">OP_ADC</span>) ? <span class="port">cin</span> :
+                   (<span class="port">op</span> == <span class="port">OP_SBC</span>) ? <span class="port">cin</span> : <span class="num">1'b0</span>;
+
+<span class="cmt">// Adder (used for ADD, SUB, ADC, SBC, CMP)</span>
+<span class="kw">assign</span> <span class="port">add_result</span> = {<span class="num">1'b0</span>, <span class="port">a</span>} + {<span class="num">1'b0</span>, <span class="port">b_operand</span>} + <span class="port">carry_in</span>;
+
+<span class="cmt">// Main ALU logic</span>
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">carry</span> = <span class="num">1'b0</span>;
+    <span class="kw">case</span> (<span class="port">op</span>)
+        <span class="port">OP_ADD</span>, <span class="port">OP_SUB</span>, <span class="port">OP_ADC</span>, <span class="port">OP_SBC</span>: <span class="kw">begin</span>
+            <span class="port">result</span> = <span class="port">add_result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+            <span class="port">carry</span> = <span class="port">add_result</span>[<span class="port">WIDTH</span>];
+        <span class="kw">end</span>
+        <span class="port">OP_AND</span>: <span class="port">result</span> = <span class="port">a</span> & <span class="port">b</span>;
+        <span class="port">OP_OR</span>:  <span class="port">result</span> = <span class="port">a</span> | <span class="port">b</span>;
+        <span class="port">OP_XOR</span>: <span class="port">result</span> = <span class="port">a</span> ^ <span class="port">b</span>;
+        <span class="port">OP_NOT</span>: <span class="port">result</span> = ~<span class="port">a</span>;
+        <span class="port">OP_SLL</span>: <span class="port">result</span> = <span class="port">a</span> << <span class="port">b</span>[<span class="num">4</span>:<span class="num">0</span>];
+        <span class="port">OP_SRL</span>: <span class="port">result</span> = <span class="port">a</span> >> <span class="port">b</span>[<span class="num">4</span>:<span class="num">0</span>];
+        <span class="port">OP_SRA</span>: <span class="port">result</span> = $signed(<span class="port">a</span>) >>> <span class="port">b</span>[<span class="num">4</span>:<span class="num">0</span>];
+        <span class="port">OP_CMP</span>: <span class="kw">begin</span>
+            <span class="port">result</span> = <span class="port">add_result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];  <span class="cmt">// For flags only</span>
+            <span class="port">carry</span> = <span class="port">add_result</span>[<span class="port">WIDTH</span>];
+        <span class="kw">end</span>
+        <span class="port">OP_MOV</span>: <span class="port">result</span> = <span class="port">b</span>;
+        <span class="kw">default</span>: <span class="port">result</span> = {<span class="port">WIDTH</span>{<span class="num">1'b0</span>}};
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="cmt">// Flag generation</span>
+<span class="kw">assign</span> <span class="port">zero</span> = (<span class="port">result</span> == {<span class="port">WIDTH</span>{<span class="num">1'b0</span>}});
+<span class="kw">assign</span> <span class="port">negative</span> = <span class="port">result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+
+<span class="cmt">// Overflow: sign of result differs from expected</span>
+<span class="cmt">// For ADD: overflow if signs of operands match but result differs</span>
+<span class="cmt">// V = (A[MSB] == B[MSB]) && (A[MSB] != Result[MSB])</span>
+<span class="kw">wire</span> <span class="port">add_overflow</span> = (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] == <span class="port">b_operand</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]) && 
+                     (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] != <span class="port">add_result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]);
+<span class="kw">assign</span> <span class="port">overflow</span> = (<span class="port">op</span> == <span class="port">OP_ADD</span> || <span class="port">op</span> == <span class="port">OP_SUB</span> || 
+                   <span class="port">op</span> == <span class="port">OP_ADC</span> || <span class="port">op</span> == <span class="port">OP_SBC</span> || 
+                   <span class="port">op</span> == <span class="port">OP_CMP</span>) ? <span class="port">add_overflow</span> : <span class="num">1'b0</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">alu.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> alu <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">32</span>);
+    <span class="kw">port</span> (
+        <span class="port">a, b</span>     : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">op</span>       : <span class="kw">in</span>  std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">result</span>   : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">zero</span>     : <span class="kw">out</span> std_logic;
+        <span class="port">negative</span> : <span class="kw">out</span> std_logic;
+        <span class="port">carry</span>    : <span class="kw">out</span> std_logic;
+        <span class="port">overflow</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> alu;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> alu <span class="kw">is</span>
+    <span class="kw">signal</span> res : std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> sum : std_logic_vector(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">a</span>, <span class="port">b</span>, <span class="port">op</span>)
+        <span class="kw">variable</span> tmp : unsigned(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">begin</span>
+        <span class="kw">case</span> <span class="port">op</span> <span class="kw">is</span>
+            <span class="kw">when</span> <span class="str">"0000"</span> =>  <span class="cmt">-- ADD</span>
+                tmp := (<span class="str">'0'</span> & unsigned(<span class="port">a</span>)) + unsigned(<span class="port">b</span>);
+                res <= std_logic_vector(tmp(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>));
+                <span class="port">carry</span> <= tmp(<span class="port">WIDTH</span>);
+            <span class="kw">when</span> <span class="str">"0001"</span> =>  <span class="cmt">-- SUB</span>
+                tmp := (<span class="str">'0'</span> & unsigned(<span class="port">a</span>)) - unsigned(<span class="port">b</span>);
+                res <= std_logic_vector(tmp(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>));
+            <span class="kw">when</span> <span class="str">"0100"</span> => res <= <span class="port">a</span> <span class="kw">and</span> <span class="port">b</span>;
+            <span class="kw">when</span> <span class="str">"0101"</span> => res <= <span class="port">a</span> <span class="kw">or</span> <span class="port">b</span>;
+            <span class="kw">when</span> <span class="str">"0110"</span> => res <= <span class="port">a</span> <span class="kw">xor</span> <span class="port">b</span>;
+            <span class="kw">when others</span> => res <= (<span class="kw">others</span> => <span class="str">'0'</span>);
+        <span class="kw">end case</span>;
+    <span class="kw">end process</span>;
+    
+    <span class="port">result</span> <= res;
+    <span class="port">zero</span> <= <span class="str">'1'</span> <span class="kw">when</span> res = (<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span> => <span class="str">'0'</span>) <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">negative</span> <= res(<span class="port">WIDTH</span>-<span class="num">1</span>);
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="optimization">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Optimization
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Unified Adder</h5>
+      <p>Single adder for ADD/SUB/CMP. SUB uses inverted B + Cin=1.</p>
+      <div class="formula">A - B = A + ~B + 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parallel Execution</h5>
+      <p>All functional units compute in parallel. MUX selects result.</p>
+      <div class="formula">Critical path: slowest unit</div>
+    </div>
+    <div class="concept-card">
+      <h5>Flag Bypass</h5>
+      <p>Forward flags to branch unit before result register write.</p>
+      <div class="formula">Reduces branch latency</div>
+    </div>
+    <div class="concept-card">
+      <h5>Fast Zero Detect</h5>
+      <p>Use tree of NOR gates for wide zero detection. O(log n) depth.</p>
+      <div class="formula">Parallel NOR reduction</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>CPU Execute Stage</h5>
+      <p>Core of every processor. Executes arithmetic and logic instructions.</p>
+      <div class="formula">RISC-V, ARM, x86</div>
+    </div>
+    <div class="concept-card">
+      <h5>GPU Shader Units</h5>
+      <p>Vector ALUs process multiple data elements in parallel (SIMD).</p>
+      <div class="formula">Nvidia CUDA cores</div>
+    </div>
+    <div class="concept-card">
+      <h5>DSP Processors</h5>
+      <p>Specialized ALUs with MAC (multiply-accumulate) operations.</p>
+      <div class="formula">Signal processing</div>
+    </div>
+    <div class="concept-card">
+      <h5>Cryptographic Accelerators</h5>
+      <p>Wide ALUs (256-512 bit) for big number arithmetic.</p>
+      <div class="formula">RSA, ECC operations</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>ALU = adder/subtractor + logic unit + shifter + output MUX. All compute in parallel.</li>
+    <li>SUB uses same adder as ADD: A - B = A + ~B + 1 (invert B, set carry-in to 1).</li>
+    <li>Flags: Z (zero = NOR all bits), N (negative = MSB), C (carry out), V (signed overflow).</li>
+    <li>Overflow: V = Cin[MSB] XOR Cout[MSB]. Or: same signs in, different sign out.</li>
+    <li>Signed comparison: use N XOR V. Unsigned comparison: use C flag.</li>
+    <li>CMP instruction = SUB but discard result, only update flags.</li>
+  </ul>
+</section>

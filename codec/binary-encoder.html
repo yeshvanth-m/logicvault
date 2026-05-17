@@ -1,0 +1,432 @@
+---
+layout: codec
+title: "Binary Encoder"
+sidebar: binary-enc
+group: codec
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Encoder }
+  - { color: purple, text: 2ⁿ-to-N }
+subtitle: "Converts 2ⁿ input lines to N-bit binary code. Only one input should be active at a time. Compresses one-hot encoding to binary representation."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "implementations", title: "Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "2ⁿ lines (one-hot)" }
+  - { label: "Outputs", value: "N bits (binary)" }
+  - { label: "4-to-2 Encoder", value: "4 inputs → 2 bits" }
+  - { label: "8-to-3 Encoder", value: "8 inputs → 3 bits" }
+  - { label: "Limitation", value: "Only 1 input active" }
+  - { label: "Solution", value: "Priority Encoder" }
+  - { label: "Common ICs", value: "74LS148 (8-to-3)" }
+related:
+  - { url: "/codec/priority-encoder.html", name: "Priority Encoder", desc: "Handles multiple active inputs" }
+  - { url: "/codec/binary-decoder.html", name: "Binary Decoder", desc: "Inverse operation" }
+  - { url: "/routing/mux8.html", name: "8:1 MUX", desc: "Uses encoded select" }
+  - { url: "/codec/bcd-decoder.html", name: "BCD Decoder", desc: "Decimal encoding" }
+prev: { url: "/routing/tristate.html", title: "Tri-state Buffer" }
+next: { url: "/codec/priority-encoder.html", title: "Priority Encoder" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Binary Encoder</strong> is a combinational circuit that converts 2ⁿ input lines into 
+    an N-bit binary code. It performs the inverse operation of a decoder. The encoder assumes 
+    that only one input line is active (HIGH) at any given time — a constraint known as 
+    <strong>one-hot encoding</strong>.
+  </p>
+  <p>
+    When multiple inputs are active simultaneously, the output becomes ambiguous. For systems 
+    where multiple inputs may be active, a <strong>Priority Encoder</strong> should be used instead, 
+    which encodes the highest-priority active input.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">4-to-2 Encoder</h4>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>I₃</th>
+          <th>I₂</th>
+          <th>I₁</th>
+          <th>I₀</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+          <th>Decimal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">8-to-3 Encoder</h4>
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>I₇</th>
+          <th>I₆</th>
+          <th>I₅</th>
+          <th>I₄</th>
+          <th>I₃</th>
+          <th>I₂</th>
+          <th>I₁</th>
+          <th>I₀</th>
+          <th class="out-col">Y₂</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <h4 style="color: var(--green); margin: 1rem 0 0.5rem;">4-to-2 Encoder</h4>
+  <div class="bool-box">
+    <div class="bool-label">Output Equations</div>
+    <div class="bool-expr">
+      <span class="out">Y₁</span> = <span class="var">I₂</span> <span class="op">+</span> <span class="var">I₃</span><br>
+      <span class="out">Y₀</span> = <span class="var">I₁</span> <span class="op">+</span> <span class="var">I₃</span>
+    </div>
+  </div>
+
+  <h4 style="color: var(--green); margin: 1.5rem 0 0.5rem;">8-to-3 Encoder</h4>
+  <div class="bool-box">
+    <div class="bool-label">Output Equations</div>
+    <div class="bool-expr">
+      <span class="out">Y₂</span> = <span class="var">I₄</span> <span class="op">+</span> <span class="var">I₅</span> <span class="op">+</span> <span class="var">I₆</span> <span class="op">+</span> <span class="var">I₇</span><br>
+      <span class="out">Y₁</span> = <span class="var">I₂</span> <span class="op">+</span> <span class="var">I₃</span> <span class="op">+</span> <span class="var">I₆</span> <span class="op">+</span> <span class="var">I₇</span><br>
+      <span class="out">Y₀</span> = <span class="var">I₁</span> <span class="op">+</span> <span class="var">I₃</span> <span class="op">+</span> <span class="var">I₅</span> <span class="op">+</span> <span class="var">I₇</span>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Pattern Recognition</h4>
+    <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+      Each output bit is 1 when the corresponding bit in the input's binary representation is 1:
+    </p>
+    <div class="analysis-item">
+      <span class="label">Y₂ (MSB)</span>
+      <span class="value">OR of inputs where bit 2 = 1 (4,5,6,7)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Y₁</span>
+      <span class="value">OR of inputs where bit 1 = 1 (2,3,6,7)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Y₀ (LSB)</span>
+      <span class="value">OR of inputs where bit 0 = 1 (1,3,5,7)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+    Implementations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>OR Gate Implementation</h5>
+      <p>Each output is OR of input lines where that bit position is 1.</p>
+      <div class="formula">Y₀ = I₁ + I₃ + I₅ + I₇</div>
+    </div>
+    <div class="concept-card">
+      <h5>Gate Count (8-to-3)</h5>
+      <p>Three 4-input OR gates. No AND gates needed for basic encoder.</p>
+      <div class="formula">3 × OR4 gates</div>
+    </div>
+    <div class="concept-card">
+      <h5>Valid Input Detection</h5>
+      <p>Add "valid" output to detect if any input is active.</p>
+      <div class="formula">V = I₀ + I₁ + ... + I₇</div>
+    </div>
+    <div class="concept-card">
+      <h5>Cascading</h5>
+      <p>Multiple encoders can be combined with priority logic.</p>
+      <div class="formula">16-to-4 from 2×(8-to-3)</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 8-to-3 Binary Encoder</p>
+      <p>I₀-I₇ inputs → Three OR gates → Y₂Y₁Y₀ outputs</p>
+      <p>Y₂ = OR(I₄,I₅,I₆,I₇)</p>
+      <p>Y₁ = OR(I₂,I₃,I₆,I₇)</p>
+      <p>Y₀ = OR(I₁,I₃,I₅,I₇)</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">encoder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 4-to-2 Binary Encoder</span>
+<span class="kw">module</span> encoder_4to2 (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">in</span>,
+    <span class="kw">output reg</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">out</span>,
+    <span class="kw">output</span>           <span class="port">valid</span>
+);
+
+<span class="kw">assign</span> <span class="port">valid</span> = |<span class="port">in</span>;  <span class="cmt">// Any input active?</span>
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">in</span>)
+        <span class="num">4'b0001</span>: <span class="port">out</span> = <span class="num">2'd0</span>;
+        <span class="num">4'b0010</span>: <span class="port">out</span> = <span class="num">2'd1</span>;
+        <span class="num">4'b0100</span>: <span class="port">out</span> = <span class="num">2'd2</span>;
+        <span class="num">4'b1000</span>: <span class="port">out</span> = <span class="num">2'd3</span>;
+        <span class="kw">default</span>: <span class="port">out</span> = <span class="num">2'bxx</span>; <span class="cmt">// Invalid/undefined</span>
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 8-to-3 Binary Encoder (OR-based)</span>
+<span class="kw">module</span> encoder_8to3 (
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">in</span>,
+    <span class="kw">output</span>     [<span class="num">2</span>:<span class="num">0</span>] <span class="port">out</span>,
+    <span class="kw">output</span>           <span class="port">valid</span>
+);
+
+<span class="cmt">// OR-based implementation</span>
+<span class="kw">assign</span> <span class="port">out</span>[<span class="num">2</span>] = <span class="port">in</span>[<span class="num">4</span>] | <span class="port">in</span>[<span class="num">5</span>] | <span class="port">in</span>[<span class="num">6</span>] | <span class="port">in</span>[<span class="num">7</span>];
+<span class="kw">assign</span> <span class="port">out</span>[<span class="num">1</span>] = <span class="port">in</span>[<span class="num">2</span>] | <span class="port">in</span>[<span class="num">3</span>] | <span class="port">in</span>[<span class="num">6</span>] | <span class="port">in</span>[<span class="num">7</span>];
+<span class="kw">assign</span> <span class="port">out</span>[<span class="num">0</span>] = <span class="port">in</span>[<span class="num">1</span>] | <span class="port">in</span>[<span class="num">3</span>] | <span class="port">in</span>[<span class="num">5</span>] | <span class="port">in</span>[<span class="num">7</span>];
+
+<span class="kw">assign</span> <span class="port">valid</span> = |<span class="port">in</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Parametrized Encoder (2^N to N)</span>
+<span class="kw">module</span> encoder #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">3</span>  <span class="cmt">// Output bits (8-to-3)</span>
+)(
+    <span class="kw">input</span>  [(<span class="num">1</span><<<span class="port">N</span>)-<span class="num">1</span>:<span class="num">0</span>] <span class="port">in</span>,
+    <span class="kw">output reg</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">out</span>,
+    <span class="kw">output</span>              <span class="port">valid</span>
+);
+
+<span class="kw">integer</span> <span class="port">i</span>;
+
+<span class="kw">assign</span> <span class="port">valid</span> = |<span class="port">in</span>;
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">out</span> = {<span class="port">N</span>{<span class="num">1'b0</span>}};
+    <span class="kw">for</span> (<span class="port">i</span> = <span class="num">0</span>; <span class="port">i</span> < (<span class="num">1</span><<<span class="port">N</span>); <span class="port">i</span> = <span class="port">i</span> + <span class="num">1</span>) <span class="kw">begin</span>
+        <span class="kw">if</span> (<span class="port">in</span>[<span class="port">i</span>])
+            <span class="port">out</span> = <span class="port">i</span>[<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>];
+    <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">encoder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="cmt">-- 8-to-3 Binary Encoder</span>
+<span class="kw">entity</span> encoder_8to3 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">input_lines</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">output_code</span> : <span class="kw">out</span> std_logic_vector(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">valid</span>       : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> encoder_8to3;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> encoder_8to3 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="cmt">-- OR-based equations</span>
+    <span class="port">output_code</span>(<span class="num">2</span>) <= <span class="port">input_lines</span>(<span class="num">4</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">5</span>) <span class="kw">or</span> 
+                       <span class="port">input_lines</span>(<span class="num">6</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">7</span>);
+    <span class="port">output_code</span>(<span class="num">1</span>) <= <span class="port">input_lines</span>(<span class="num">2</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">3</span>) <span class="kw">or</span> 
+                       <span class="port">input_lines</span>(<span class="num">6</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">7</span>);
+    <span class="port">output_code</span>(<span class="num">0</span>) <= <span class="port">input_lines</span>(<span class="num">1</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">3</span>) <span class="kw">or</span> 
+                       <span class="port">input_lines</span>(<span class="num">5</span>) <span class="kw">or</span> <span class="port">input_lines</span>(<span class="num">7</span>);
+    
+    <span class="port">valid</span> <= <span class="kw">or</span> <span class="port">input_lines</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Keyboard Encoding</h5>
+      <p>Convert key-press (one-hot) to key code. Typically uses priority encoder.</p>
+      <div class="formula">64 keys → 6-bit code</div>
+    </div>
+    <div class="concept-card">
+      <h5>Address Encoding</h5>
+      <p>Chip select lines to binary address in memory systems.</p>
+      <div class="formula">Bank select → bank number</div>
+    </div>
+    <div class="concept-card">
+      <h5>Interrupt Controller</h5>
+      <p>Multiple interrupt lines encoded to interrupt vector.</p>
+      <div class="formula">IRQ lines → IRQ number</div>
+    </div>
+    <div class="concept-card">
+      <h5>Data Compression</h5>
+      <p>Convert thermometer code to binary for data compression.</p>
+      <div class="formula">One-hot → compact binary</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Binary encoder converts 2ⁿ inputs to N-bit output. It's the inverse of a decoder.</li>
+    <li>One-hot constraint: Only one input should be active. Multiple active → undefined output.</li>
+    <li>For multiple active inputs, use a Priority Encoder (encodes highest-priority input).</li>
+    <li>Implementation: Each output bit is OR of inputs where that bit position is 1 in binary.</li>
+    <li>Valid signal: OR all inputs to detect if any input is active (useful for no-input case).</li>
+    <li>Practical use: Keyboard scanners, interrupt controllers, address generation.</li>
+  </ul>
+</section>

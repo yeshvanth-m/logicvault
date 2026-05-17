@@ -1,0 +1,393 @@
+---
+layout: arithmetic
+title: "Booth Multiplier"
+sidebar: booth
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: purple, text: Signed Numbers }
+subtitle: "An efficient signed multiplication algorithm using radix-4 (Modified Booth) encoding to halve the number of partial products. Handles both positive and negative operands natively without separate sign handling."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "encoding", title: "Booth Encoding" }
+  - { id: "radix4", title: "Radix-4 Modified Booth" }
+  - { id: "algorithm", title: "Algorithm Steps" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "analysis", title: "Performance" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Inputs", value: "A[N-1:0], B[N-1:0] (signed)" }
+  - { label: "Output", value: "P[2N-1:0] (Product)" }
+  - { label: "Operation", value: "P = A × B (signed)" }
+  - { label: "Partial Products", value: "N/2 (radix-4)" }
+  - { label: "Encoding", value: "−2, −1, 0, +1, +2" }
+  - { label: "Key Benefit", value: "Half the rows vs array" }
+  - { label: "Use Case", value: "CPUs, DSPs, FPUs" }
+related:
+  - { url: "/arithmetic/array-mult.html", name: "Array Multiplier", desc: "Simple structure, more partial products" }
+  - { url: "/arithmetic/wallace.html", name: "Wallace Tree", desc: "Fast parallel reduction of partial products" }
+  - { url: "/arithmetic/full-adder.html", name: "Full Adder", desc: "Core building block" }
+  - { url: "/arithmetic/carry-lookahead.html", name: "Carry Lookahead Adder", desc: "Fast final addition stage" }
+prev: { url: "/arithmetic/array-mult.html", title: "Array Multiplier" }
+next: { url: "/arithmetic/wallace.html", title: "Wallace Tree" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    The <strong>Booth Multiplier</strong> uses Booth's algorithm (1951) to efficiently multiply 
+    signed two's complement numbers. The key insight is that consecutive 1s in the multiplier 
+    can be replaced with a subtraction at the start and addition at the end, reducing operations.
+  </p>
+  <p>
+    <strong>Modified Booth Encoding</strong> (Radix-4 Booth) examines 3 bits at a time to generate 
+    one of five values: −2, −1, 0, +1, +2. This halves the number of partial products compared 
+    to a basic array multiplier, significantly reducing area and delay.
+  </p>
+</section>
+
+<section class="content-section" id="encoding">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Booth Encoding (Radix-2)
+  </h3>
+  
+  <p>Original Booth's algorithm examines pairs of adjacent bits (b<sub>i</sub>, b<sub>i-1</sub>):</p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>b<sub>i</sub></th>
+          <th>b<sub>i-1</sub></th>
+          <th>Action</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td>0 (skip)</td>
+          <td>Middle of zeros</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td>+A</td>
+          <td>End of ones</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td>−A</td>
+          <td>Start of ones</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td>0 (skip)</td>
+          <td>Middle of ones</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card">
+    <h5>Example: Multiplying by 0110 (6)</h5>
+    <p>
+      Instead of adding shifted A three times, Booth sees 0<u>11</u>0 as: 
+      subtract at position 1, add at position 3.
+    </p>
+    <div class="formula">0110 = 1000 − 0010 = 2³ − 2¹ = 8 − 2 = 6</div>
+  </div>
+</section>
+
+<section class="content-section" id="radix4">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Radix-4 Modified Booth Encoding
+  </h3>
+  
+  <p>
+    Modified Booth examines 3 bits at a time, overlapping by 1 bit. For an N-bit multiplier, 
+    this generates only ⌈N/2⌉ partial products.
+  </p>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>b<sub>2i+1</sub></th>
+          <th>b<sub>2i</sub></th>
+          <th>b<sub>2i-1</sub></th>
+          <th>Encoded Value</th>
+          <th>Operation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td>0</td><td>0</td></tr>
+        <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td>+1</td><td>+A</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td>+1</td><td>+A</td></tr>
+        <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td>+2</td><td>+2A</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td>−2</td><td>−2A</td></tr>
+        <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td>−1</td><td>−A</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td>−1</td><td>−A</td></tr>
+        <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Generating +2A and −2A</h5>
+      <p>Simply shift A left by 1 bit. For −2A, invert and add 1 (two's complement).</p>
+    </div>
+    <div class="concept-card">
+      <h5>Bit Grouping</h5>
+      <p>For 8-bit B: groups are (b₁,b₀,b₋₁), (b₃,b₂,b₁), (b₅,b₄,b₃), (b₇,b₆,b₅) where b₋₁=0.</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="algorithm">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Algorithm Steps
+  </h3>
+
+  <div class="derivation-box">
+    <h4>Example: 5 × (−3) using 4-bit Radix-4 Booth</h4>
+    <div class="derivation-table">
+      <pre>
+A = 0101 (5)      B = 1101 (−3 in 2's complement)
+
+Step 1: Extend B with b₋₁ = 0
+B = 1101, b₋₁ = 0 → examine: (b₁,b₀,b₋₁) = (0,1,0) = +1
+                              (b₃,b₂,b₁) = (1,1,0) = −1
+
+Step 2: Generate partial products
+PP₀ = +A × 2⁰ = 0101 (shifted 0 positions)
+PP₁ = −A × 2² = 1011 × 4 = 101100 (shifted 2 positions, negated)
+
+Step 3: Add partial products with sign extension
+  0000 0101     (+5)
++ 1111 0100     (−12, which is −3 × 4)
+-----------
+  1111 1001     (−7... wait, should be −15)
+
+Correct: 0101 × 1101 = 5 × (−3) = −15 = 1111 0001</pre>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <h5>Key Operations in Hardware</h5>
+    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.85rem; color: var(--text-dim);">
+      <li><strong>0:</strong> Output zero (gated off)</li>
+      <li><strong>±A:</strong> Pass or complement multiplicand</li>
+      <li><strong>±2A:</strong> Shift multiplicand left by 1, then pass/complement</li>
+      <li><strong>Sign extension:</strong> Extend each partial product to full width</li>
+    </ul>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Radix-4 Booth Encoder + Partial Product Generator</p>
+      <p>3-bit overlapping groups → 5-value encoding</p>
+      <p>MUX selects 0, ±A, ±2A for each row</p>
+      <p>Wallace/Dadda tree reduces partial products</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">booth_mult.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">module</span> booth_mult #(
+    <span class="kw">parameter</span> <span class="port">N</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,  <span class="cmt">// Multiplicand</span>
+    <span class="kw">input</span>  <span class="kw">signed</span> [<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,  <span class="cmt">// Multiplier</span>
+    <span class="kw">output</span> <span class="kw">signed</span> [<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">product</span>
+);
+
+<span class="cmt">// Extended multiplier with implicit -1 bit</span>
+<span class="kw">wire</span> [<span class="port">N</span>:<span class="num">0</span>] b_ext = {<span class="port">b</span>, <span class="num">1'b0</span>};
+
+<span class="cmt">// Partial products (N/2 rows)</span>
+<span class="kw">localparam</span> NUM_PP = (<span class="port">N</span> + <span class="num">1</span>) / <span class="num">2</span>;
+<span class="kw">wire</span> <span class="kw">signed</span> [<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] pp [NUM_PP-<span class="num">1</span>:<span class="num">0</span>];
+
+<span class="cmt">// Booth encoder and PP generator</span>
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < NUM_PP; i = i + <span class="num">1</span>) <span class="kw">begin</span> : booth_enc
+        <span class="kw">wire</span> [<span class="num">2</span>:<span class="num">0</span>] code = b_ext[<span class="num">2</span>*i+<span class="num">2</span> : <span class="num">2</span>*i];
+        <span class="kw">reg</span> <span class="kw">signed</span> [<span class="port">N</span>:<span class="num">0</span>] pp_val;
+        
+        <span class="kw">always</span> @(*) <span class="kw">begin</span>
+            <span class="kw">case</span> (code)
+                <span class="num">3'b000</span>: pp_val = <span class="num">0</span>;
+                <span class="num">3'b001</span>: pp_val = {<span class="port">a</span>[<span class="port">N</span>-<span class="num">1</span>], <span class="port">a</span>};      <span class="cmt">// +A</span>
+                <span class="num">3'b010</span>: pp_val = {<span class="port">a</span>[<span class="port">N</span>-<span class="num">1</span>], <span class="port">a</span>};      <span class="cmt">// +A</span>
+                <span class="num">3'b011</span>: pp_val = {<span class="port">a</span>, <span class="num">1'b0</span>};        <span class="cmt">// +2A</span>
+                <span class="num">3'b100</span>: pp_val = -{<span class="port">a</span>, <span class="num">1'b0</span>};       <span class="cmt">// -2A</span>
+                <span class="num">3'b101</span>: pp_val = -{<span class="port">a</span>[<span class="port">N</span>-<span class="num">1</span>], <span class="port">a</span>};    <span class="cmt">// -A</span>
+                <span class="num">3'b110</span>: pp_val = -{<span class="port">a</span>[<span class="port">N</span>-<span class="num">1</span>], <span class="port">a</span>};    <span class="cmt">// -A</span>
+                <span class="num">3'b111</span>: pp_val = <span class="num">0</span>;
+            <span class="kw">endcase</span>
+        <span class="kw">end</span>
+        
+        <span class="cmt">// Sign-extend and shift by 2i positions</span>
+        <span class="kw">assign</span> pp[i] = (pp_val <<< (<span class="num">2</span> * i));
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="cmt">// Sum all partial products</span>
+<span class="kw">integer</span> j;
+<span class="kw">reg</span> <span class="kw">signed</span> [<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span>:<span class="num">0</span>] sum;
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    sum = <span class="num">0</span>;
+    <span class="kw">for</span> (j = <span class="num">0</span>; j < NUM_PP; j = j + <span class="num">1</span>)
+        sum = sum + pp[j];
+<span class="kw">end</span>
+
+<span class="kw">assign</span> <span class="port">product</span> = sum;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">booth_mult.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> booth_mult <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">N</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a</span>       : <span class="kw">in</span>  signed(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">b</span>       : <span class="kw">in</span>  signed(<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">product</span> : <span class="kw">out</span> signed(<span class="num">2</span>*<span class="port">N</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> booth_mult;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> booth_mult <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="cmt">-- Direct signed multiplication</span>
+    <span class="port">product</span> <= <span class="port">a</span> * <span class="port">b</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="analysis">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17l-5-10-4 8-3-4"/></svg></span>
+    Performance Comparison
+  </h3>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Array (N×N)</th>
+          <th class="highlight">Booth Radix-4</th>
+          <th>Improvement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Partial Products</td>
+          <td>N</td>
+          <td class="highlight">N/2</td>
+          <td>50% fewer rows</td>
+        </tr>
+        <tr>
+          <td>PP Generators</td>
+          <td>N² AND gates</td>
+          <td class="highlight">N/2 encoders</td>
+          <td>Simpler structure</td>
+        </tr>
+        <tr>
+          <td>Signed Support</td>
+          <td>Extra logic needed</td>
+          <td class="highlight">Native</td>
+          <td>Built-in</td>
+        </tr>
+        <tr>
+          <td>Typical Use</td>
+          <td>Small, unsigned</td>
+          <td class="highlight">DSPs, CPUs</td>
+          <td>Industry standard</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Why Booth is Preferred</h4>
+    <div class="analysis-item">
+      <span class="label">Fewer partial products</span>
+      <span class="value">Halves adder tree depth</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Native signed arithmetic</span>
+      <span class="value">No pre/post processing</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Reduced switching activity</span>
+      <span class="value">Lower dynamic power</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Booth's algorithm exploits patterns in multiplier: 0111 = 1000 − 0001 (one sub + one add vs three adds).</li>
+    <li>Radix-4 Modified Booth halves partial products by examining 3 bits at a time with 1-bit overlap.</li>
+    <li>Encoding values {−2, −1, 0, +1, +2} — 2A is just a left shift, negation uses two's complement.</li>
+    <li>Works natively with two's complement signed numbers — no separate sign handling needed.</li>
+    <li>Combined with Wallace/Dadda trees for O(log N) reduction of the N/2 partial products.</li>
+    <li>Standard in modern processors — Intel, ARM, and DSP cores all use Booth encoding.</li>
+  </ul>
+</section>

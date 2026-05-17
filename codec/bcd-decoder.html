@@ -1,0 +1,441 @@
+---
+layout: codec
+title: "BCD Decoder"
+sidebar: bcd-dec
+group: codec
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Decoder }
+  - { color: purple, text: 4-to-10 }
+subtitle: "Converts 4-bit Binary-Coded Decimal (BCD) input to 10 decimal output lines. Only valid for inputs 0-9; inputs 10-15 produce undefined or error outputs. Used in decimal counting and display systems."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "bcd-encoding", title: "BCD Encoding" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Input", value: "4-bit BCD (0-9)" }
+  - { label: "Outputs", value: "10 lines (decimal 0-9)" }
+  - { label: "Invalid Inputs", value: "10-15 (1010-1111)" }
+  - { label: "Active Output", value: "Yᵢ = 1 when input = i" }
+  - { label: "Gate Type", value: "4-input AND gates" }
+  - { label: "Common ICs", value: "74LS42, 74LS145" }
+  - { label: "Related", value: "7447 (BCD to 7-seg)" }
+related:
+  - { url: "/codec/binary-decoder.html", name: "Binary Decoder", desc: "General N-to-2ⁿ" }
+  - { url: "/codec/seven-seg.html", name: "7-Segment", desc: "Display decoder" }
+  - { url: "/codec/binary-encoder.html", name: "Binary Encoder", desc: "Inverse operation" }
+  - { url: "/codec/gray.html", name: "Binary ↔ Gray", desc: "Code conversion" }
+prev: { url: "/codec/binary-decoder.html", title: "Binary Decoder" }
+next: { url: "/codec/gray.html", title: "Binary ↔ Gray" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>BCD Decoder</strong> (Binary-Coded Decimal to Decimal Decoder) converts a 4-bit 
+    BCD input into 10 output lines, one for each decimal digit (0-9). It's a specialized form 
+    of a 4-to-16 decoder that only produces valid outputs for the BCD range (0000 to 1001).
+  </p>
+  <p>
+    BCD is widely used in applications where decimal numbers need to be displayed or processed 
+    digit-by-digit, such as digital clocks, calculators, and instrumentation. Each decimal digit 
+    is represented by its 4-bit binary equivalent.
+  </p>
+</section>
+
+<section class="content-section" id="bcd-encoding">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    BCD Encoding
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>What is BCD?</h5>
+      <p>Each decimal digit (0-9) encoded as 4-bit binary. NOT the same as binary.</p>
+      <div class="formula">Decimal 25 = 0010 0101 BCD</div>
+    </div>
+    <div class="concept-card">
+      <h5>Why BCD?</h5>
+      <p>Easy decimal display, human-readable, no binary-to-decimal conversion.</p>
+      <div class="formula">Used in meters, clocks</div>
+    </div>
+    <div class="concept-card">
+      <h5>BCD vs Binary</h5>
+      <p>BCD uses more bits but simplifies decimal I/O.</p>
+      <div class="formula">99 = 1001 1001 (BCD) vs 1100011 (bin)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Invalid Codes</h5>
+      <p>1010-1111 are not valid BCD. 6 unused states.</p>
+      <div class="formula">Don't care or error detect</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Decimal</th>
+          <th>BCD (D₃D₂D₁D₀)</th>
+          <th>Binary</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>0000</td><td>0000</td><td>Valid</td></tr>
+        <tr><td>1</td><td>0001</td><td>0001</td><td>Valid</td></tr>
+        <tr><td>2</td><td>0010</td><td>0010</td><td>Valid</td></tr>
+        <tr><td>3</td><td>0011</td><td>0011</td><td>Valid</td></tr>
+        <tr><td>4</td><td>0100</td><td>0100</td><td>Valid</td></tr>
+        <tr><td>5</td><td>0101</td><td>0101</td><td>Valid</td></tr>
+        <tr><td>6</td><td>0110</td><td>0110</td><td>Valid</td></tr>
+        <tr><td>7</td><td>0111</td><td>0111</td><td>Valid</td></tr>
+        <tr><td>8</td><td>1000</td><td>1000</td><td>Valid</td></tr>
+        <tr><td>9</td><td>1001</td><td>1001</td><td>Valid</td></tr>
+        <tr style="color: var(--amber);"><td>10</td><td>1010</td><td>1010</td><td>Invalid</td></tr>
+        <tr style="color: var(--amber);"><td>11-15</td><td>1011-1111</td><td>-</td><td>Invalid</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>D₃</th>
+          <th>D₂</th>
+          <th>D₁</th>
+          <th>D₀</th>
+          <th class="out-col">Y₉</th>
+          <th class="out-col">Y₈</th>
+          <th class="out-col">Y₇</th>
+          <th class="out-col">Y₆</th>
+          <th class="out-col">Y₅</th>
+          <th class="out-col">Y₄</th>
+          <th class="out-col">Y₃</th>
+          <th class="out-col">Y₂</th>
+          <th class="out-col">Y₁</th>
+          <th class="out-col">Y₀</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Invalid Input Handling</h4>
+    <div class="analysis-item">
+      <span class="label">Option 1: All zeros</span>
+      <span class="value">No output active for 10-15</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Option 2: Don't care</span>
+      <span class="value">Use for logic minimization</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Option 3: Error flag</span>
+      <span class="value">Separate output indicates invalid BCD</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">BCD Decoder Outputs (Active-High)</div>
+    <div class="bool-expr">
+      <span class="out">Y₀</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D̅₀</span><br>
+      <span class="out">Y₁</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D₀</span><br>
+      <span class="out">Y₂</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D₁</span> <span class="op">·</span> <span class="var">D̅₀</span><br>
+      <span class="out">Y₃</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D₁</span> <span class="op">·</span> <span class="var">D₀</span><br>
+      <span class="out">Y₄</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D̅₀</span><br>
+      <span class="out">Y₅</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D₀</span><br>
+      <span class="out">Y₆</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D₂</span> <span class="op">·</span> <span class="var">D₁</span> <span class="op">·</span> <span class="var">D̅₀</span><br>
+      <span class="out">Y₇</span> = <span class="var">D̅₃</span> <span class="op">·</span> <span class="var">D₂</span> <span class="op">·</span> <span class="var">D₁</span> <span class="op">·</span> <span class="var">D₀</span><br>
+      <span class="out">Y₈</span> = <span class="var">D₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D̅₀</span><br>
+      <span class="out">Y₉</span> = <span class="var">D₃</span> <span class="op">·</span> <span class="var">D̅₂</span> <span class="op">·</span> <span class="var">D̅₁</span> <span class="op">·</span> <span class="var">D₀</span>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Invalid BCD Detector</div>
+    <div class="bool-expr">
+      <span class="out">INVALID</span> = <span class="var">D₃</span> <span class="op">·</span> <span class="var">D₂</span> <span class="op">+</span> <span class="var">D₃</span> <span class="op">·</span> <span class="var">D₁</span><br>
+      (D₃D₂ = 1 or D₃D₁ = 1 → invalid BCD)
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Simplified Y₈, Y₉</h5>
+      <p>Since D₃=1 only for 8,9 (in valid BCD), D₂D₁ must be 00.</p>
+      <div class="formula">Y₈ = D₃·D̅₀, Y₉ = D₃·D₀</div>
+    </div>
+    <div class="concept-card">
+      <h5>Gate Count</h5>
+      <p>10 four-input AND gates + 4 inverters. Less than 4-to-16 decoder.</p>
+      <div class="formula">~10 gates</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 BCD-to-Decimal Decoder (74LS42)</p>
+      <p>D₃D₂D₁D₀ → 10 AND gates → Y₀...Y₉</p>
+      <p>Each AND: 4 inputs (direct or inverted)</p>
+      <p>74LS42: Active-low outputs</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">bcd_decoder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// BCD to Decimal Decoder</span>
+<span class="kw">module</span> bcd_decoder (
+    <span class="kw">input</span>      [<span class="num">3</span>:<span class="num">0</span>] <span class="port">bcd</span>,
+    <span class="kw">output reg</span> [<span class="num">9</span>:<span class="num">0</span>] <span class="port">decimal</span>,
+    <span class="kw">output</span>           <span class="port">invalid</span>
+);
+
+<span class="cmt">// Invalid BCD detection (>9)</span>
+<span class="kw">assign</span> <span class="port">invalid</span> = (<span class="port">bcd</span>[<span class="num">3</span>] & <span class="port">bcd</span>[<span class="num">2</span>]) | (<span class="port">bcd</span>[<span class="num">3</span>] & <span class="port">bcd</span>[<span class="num">1</span>]);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">decimal</span> = <span class="num">10'b0</span>;
+    <span class="kw">case</span> (<span class="port">bcd</span>)
+        <span class="num">4'd0</span>: <span class="port">decimal</span> = <span class="num">10'b0000000001</span>;
+        <span class="num">4'd1</span>: <span class="port">decimal</span> = <span class="num">10'b0000000010</span>;
+        <span class="num">4'd2</span>: <span class="port">decimal</span> = <span class="num">10'b0000000100</span>;
+        <span class="num">4'd3</span>: <span class="port">decimal</span> = <span class="num">10'b0000001000</span>;
+        <span class="num">4'd4</span>: <span class="port">decimal</span> = <span class="num">10'b0000010000</span>;
+        <span class="num">4'd5</span>: <span class="port">decimal</span> = <span class="num">10'b0000100000</span>;
+        <span class="num">4'd6</span>: <span class="port">decimal</span> = <span class="num">10'b0001000000</span>;
+        <span class="num">4'd7</span>: <span class="port">decimal</span> = <span class="num">10'b0010000000</span>;
+        <span class="num">4'd8</span>: <span class="port">decimal</span> = <span class="num">10'b0100000000</span>;
+        <span class="num">4'd9</span>: <span class="port">decimal</span> = <span class="num">10'b1000000000</span>;
+        <span class="kw">default</span>: <span class="port">decimal</span> = <span class="num">10'b0</span>; <span class="cmt">// Invalid BCD</span>
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Alternative: Shift-based one-hot decoder</span>
+<span class="kw">module</span> bcd_decoder_shift (
+    <span class="kw">input</span>  [<span class="num">3</span>:<span class="num">0</span>] <span class="port">bcd</span>,
+    <span class="kw">output</span> [<span class="num">9</span>:<span class="num">0</span>] <span class="port">decimal</span>,
+    <span class="kw">output</span>       <span class="port">invalid</span>
+);
+
+<span class="kw">assign</span> <span class="port">invalid</span> = (<span class="port">bcd</span> > <span class="num">4'd9</span>);
+<span class="kw">assign</span> <span class="port">decimal</span> = <span class="port">invalid</span> ? <span class="num">10'b0</span> : (<span class="num">10'b1</span> << <span class="port">bcd</span>);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Multi-digit BCD decoder</span>
+<span class="kw">module</span> bcd_2digit_decoder (
+    <span class="kw">input</span>  [<span class="num">7</span>:<span class="num">0</span>] <span class="port">bcd</span>,     <span class="cmt">// 2-digit BCD (00-99)</span>
+    <span class="kw">output</span> [<span class="num">9</span>:<span class="num">0</span>] <span class="port">tens</span>,    <span class="cmt">// Tens digit decoded</span>
+    <span class="kw">output</span> [<span class="num">9</span>:<span class="num">0</span>] <span class="port">units</span>,   <span class="cmt">// Units digit decoded</span>
+    <span class="kw">output</span>       <span class="port">invalid</span>
+);
+
+<span class="kw">wire</span> <span class="port">inv_tens</span>, <span class="port">inv_units</span>;
+
+bcd_decoder dec_tens (
+    .<span class="port">bcd</span>(<span class="port">bcd</span>[<span class="num">7</span>:<span class="num">4</span>]),
+    .<span class="port">decimal</span>(<span class="port">tens</span>),
+    .<span class="port">invalid</span>(<span class="port">inv_tens</span>)
+);
+
+bcd_decoder dec_units (
+    .<span class="port">bcd</span>(<span class="port">bcd</span>[<span class="num">3</span>:<span class="num">0</span>]),
+    .<span class="port">decimal</span>(<span class="port">units</span>),
+    .<span class="port">invalid</span>(<span class="port">inv_units</span>)
+);
+
+<span class="kw">assign</span> <span class="port">invalid</span> = <span class="port">inv_tens</span> | <span class="port">inv_units</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">bcd_decoder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> bcd_decoder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">bcd</span>     : <span class="kw">in</span>  std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">decimal</span> : <span class="kw">out</span> std_logic_vector(<span class="num">9</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">invalid</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> bcd_decoder;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> bcd_decoder <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="port">invalid</span> <= <span class="str">'1'</span> <span class="kw">when</span> unsigned(<span class="port">bcd</span>) > <span class="num">9</span> <span class="kw">else</span> <span class="str">'0'</span>;
+    
+    <span class="kw">process</span>(<span class="port">bcd</span>)
+    <span class="kw">begin</span>
+        <span class="port">decimal</span> <= (<span class="kw">others</span> => <span class="str">'0'</span>);
+        <span class="kw">if</span> unsigned(<span class="port">bcd</span>) <= <span class="num">9</span> <span class="kw">then</span>
+            <span class="port">decimal</span>(to_integer(unsigned(<span class="port">bcd</span>))) <= <span class="str">'1'</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Decimal Counters</h5>
+      <p>BCD counter output decoded for display or control. 7490 + 7442.</p>
+      <div class="formula">0-9 counting display</div>
+    </div>
+    <div class="concept-card">
+      <h5>Keyboard Encoding</h5>
+      <p>Numeric keypad to BCD, then to decimal outputs for processing.</p>
+      <div class="formula">Key press → digit</div>
+    </div>
+    <div class="concept-card">
+      <h5>Multiplexed Display</h5>
+      <p>Select which digit to display in multi-digit LED/LCD.</p>
+      <div class="formula">Digit select + 7-seg</div>
+    </div>
+    <div class="concept-card">
+      <h5>Decimal Addressing</h5>
+      <p>Select 1-of-10 devices based on BCD address.</p>
+      <div class="formula">Decimal device select</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Common ICs</h4>
+    <div class="analysis-item">
+      <span class="label">74LS42</span>
+      <span class="value">BCD-to-decimal decoder, active-low outputs</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">74LS145</span>
+      <span class="value">BCD-to-decimal decoder/driver (open collector)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">CD4028</span>
+      <span class="value">CMOS BCD-to-decimal decoder</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>BCD: Each decimal digit (0-9) encoded as 4 bits. Decimal 42 = 0100 0010 in BCD.</li>
+    <li>BCD decoder: 4-to-10 decoder. Subset of 4-to-16, only 10 outputs for valid BCD.</li>
+    <li>Invalid codes: 1010-1111 are not valid BCD. Detect with D₃·D₂ + D₃·D₁.</li>
+    <li>BCD advantages: Easy decimal display, no binary-decimal conversion needed.</li>
+    <li>BCD disadvantages: Wastes 6 states per digit, less efficient than binary.</li>
+    <li>Common cascade: BCD counter (7490) → BCD decoder (7442) → display driver.</li>
+  </ul>
+</section>

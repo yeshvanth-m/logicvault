@@ -1,0 +1,433 @@
+---
+layout: arithmetic
+title: "Barrel Shifter"
+sidebar: barrel
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Shift/Rotate }
+  - { color: purple, text: O(log n) Depth }
+subtitle: "Shifts or rotates an n-bit input by any amount (0 to n-1) in a single cycle using log₂(n) stages of multiplexers. Core building block in ALUs, floating-point units, and cryptographic hardware."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "operations", title: "Shift Operations" }
+  - { id: "architecture", title: "Architecture" }
+  - { id: "example", title: "Worked Example" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "variations", title: "Variations" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Shift/rotate by variable amount" }
+  - { label: "Stages", value: "log₂(n) MUX levels" }
+  - { label: "8-bit Shifter", value: "3 stages (shift 1,2,4)" }
+  - { label: "32-bit Shifter", value: "5 stages (shift 1,2,4,8,16)" }
+  - { label: "MUX per Stage", value: "n 2:1 MUXes" }
+  - { label: "Total MUXes", value: "n × log₂(n)" }
+  - { label: "Critical Path", value: "log₂(n) × t_mux" }
+related:
+  - { url: "/arithmetic/alu.html", name: "ALU", desc: "Uses barrel shifter" }
+  - { url: "/routing/mux2.html", name: "2:1 MUX", desc: "Building block" }
+  - { url: "/arithmetic/clz.html", name: "CLZ", desc: "Normalization shift" }
+  - { url: "/arithmetic/popcount.html", name: "Popcount", desc: "Bit manipulation" }
+prev: { url: "/arithmetic/comparator.html", title: "Comparator" }
+next: { url: "/arithmetic/alu.html", title: "ALU" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Barrel Shifter</strong> is a combinational circuit that can shift or rotate an n-bit 
+    input by any number of positions (0 to n-1) in a single clock cycle. Unlike sequential shift 
+    registers that shift one bit per cycle, a barrel shifter uses a logarithmic arrangement of 
+    multiplexers to achieve constant-time shifting.
+  </p>
+  <p>
+    The key insight is that any shift amount can be decomposed into powers of 2. For example, 
+    shifting by 5 positions equals shifting by 4 + 1. An 8-bit barrel shifter uses 3 stages 
+    that can shift by 1, 2, and 4 positions respectively, controlled by the 3 bits of the shift amount.
+  </p>
+</section>
+
+<section class="content-section" id="operations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Shift Operations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Logical Left Shift (SLL)</h5>
+      <p>Shift bits left, fill right with zeros. Equivalent to multiply by 2ⁿ.</p>
+      <div class="formula">10110100 &lt;&lt; 2 = 11010000</div>
+    </div>
+    <div class="concept-card">
+      <h5>Logical Right Shift (SRL)</h5>
+      <p>Shift bits right, fill left with zeros. Unsigned divide by 2ⁿ.</p>
+      <div class="formula">10110100 &gt;&gt; 2 = 00101101</div>
+    </div>
+    <div class="concept-card">
+      <h5>Arithmetic Right Shift (SRA)</h5>
+      <p>Shift right, replicate sign bit. Signed divide by 2ⁿ.</p>
+      <div class="formula">10110100 &gt;&gt;&gt; 2 = 11101101</div>
+    </div>
+    <div class="concept-card">
+      <h5>Rotate Left (ROL)</h5>
+      <p>Bits shifted out left wrap around to right.</p>
+      <div class="formula">10110100 ROL 2 = 11010010</div>
+    </div>
+    <div class="concept-card">
+      <h5>Rotate Right (ROR)</h5>
+      <p>Bits shifted out right wrap around to left.</p>
+      <div class="formula">10110100 ROR 2 = 00101101</div>
+    </div>
+    <div class="concept-card">
+      <h5>Funnel Shift</h5>
+      <p>Shift 2n bits, extract n-bit result. Used for misaligned loads.</p>
+      <div class="formula">{A,B} shifted, extract middle</div>
+    </div>
+  </div>
+
+  <div class="tt-wrap" style="margin-top: 1rem;">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Input</th>
+          <th>Op</th>
+          <th>Amt</th>
+          <th class="out-col">Output</th>
+          <th>Fill</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>10110100</td><td>SLL</td><td>3</td><td class="val-1">10100000</td><td>Zeros</td></tr>
+        <tr><td>10110100</td><td>SRL</td><td>3</td><td class="val-1">00010110</td><td>Zeros</td></tr>
+        <tr><td>10110100</td><td>SRA</td><td>3</td><td class="val-1">11110110</td><td>Sign bit</td></tr>
+        <tr><td>10110100</td><td>ROL</td><td>3</td><td class="val-1">10100101</td><td>Wrapped</td></tr>
+        <tr><td>10110100</td><td>ROR</td><td>3</td><td class="val-1">10010110</td><td>Wrapped</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="architecture">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Architecture
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 8-bit Barrel Shifter (Left Shift)</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+Input:     D₇  D₆  D₅  D₄  D₃  D₂  D₁  D₀
+           │   │   │   │   │   │   │   │
+           ▼   ▼   ▼   ▼   ▼   ▼   ▼   ▼
+Stage 0:  [MUX][MUX][MUX][MUX][MUX][MUX][MUX][MUX] ← S[0]: shift by 1?
+           │   │   │   │   │   │   │   │
+Stage 1:  [MUX][MUX][MUX][MUX][MUX][MUX][MUX][MUX] ← S[1]: shift by 2?
+           │   │   │   │   │   │   │   │
+Stage 2:  [MUX][MUX][MUX][MUX][MUX][MUX][MUX][MUX] ← S[2]: shift by 4?
+           │   │   │   │   │   │   │   │
+           ▼   ▼   ▼   ▼   ▼   ▼   ▼   ▼
+Output:    Y₇  Y₆  Y₅  Y₄  Y₃  Y₂  Y₁  Y₀
+
+Each MUX selects: original position OR shifted position
+      </pre>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Stage Logic (Left Shift by 2ⁱ)</div>
+    <div class="bool-expr">
+      <span class="out">Y[j]</span> = <span class="var">S[i]</span> ? <span class="var">D[j-2ⁱ]</span> : <span class="var">D[j]</span><br><br>
+      For j &lt; 2ⁱ: fill with 0 (logical) or wrap (rotate)
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Complexity Analysis</h4>
+    <div class="analysis-item">
+      <span class="label">Stages</span>
+      <span class="value">log₂(n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">MUXes per Stage</span>
+      <span class="value">n</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Total 2:1 MUXes</span>
+      <span class="value">n × log₂(n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">32-bit Shifter</span>
+      <span class="value">32 × 5 = 160 MUXes</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Delay</span>
+      <span class="value">log₂(n) × t_mux</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="example">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Worked Example
+  </h3>
+
+  <div class="derivation-box">
+    <h4>8-bit Left Shift by 5 (binary: 101)</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+Input:    A B C D E F G H     (shift amount = 5 = 101₂)
+
+Stage 0 (S[0]=1, shift by 1):
+          B C D E F G H 0     ← shifted left by 1
+
+Stage 1 (S[1]=0, shift by 0):
+          B C D E F G H 0     ← no change
+
+Stage 2 (S[2]=1, shift by 4):
+          F G H 0 0 0 0 0     ← shifted left by 4
+
+Output:   F G H 0 0 0 0 0     = input << 5 ✓
+      </pre>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>8-bit Rotate Right by 3 (binary: 011)</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+Input:    A B C D E F G H     (rotate amount = 3 = 011₂)
+
+Stage 0 (S[0]=1, rotate by 1):
+          H A B C D E F G     ← bit H wraps to MSB
+
+Stage 1 (S[1]=1, rotate by 2):
+          F G H A B C D E     ← 2 more bits wrap
+
+Stage 2 (S[2]=0, rotate by 0):
+          F G H A B C D E     ← no change
+
+Output:   F G H A B C D E     = input ROR 3 ✓
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">barrel_shifter.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 32-bit Barrel Shifter - All Operations</span>
+<span class="kw">module</span> barrel_shifter (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">input</span>      [<span class="num">4</span>:<span class="num">0</span>]  <span class="port">shamt</span>,     <span class="cmt">// Shift amount (0-31)</span>
+    <span class="kw">input</span>      [<span class="num">1</span>:<span class="num">0</span>]  <span class="port">op</span>,        <span class="cmt">// 00=SLL, 01=SRL, 10=SRA, 11=ROR</span>
+    <span class="kw">output reg</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_out</span>
+);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">op</span>)
+        <span class="num">2'b00</span>: <span class="port">data_out</span> = <span class="port">data_in</span> << <span class="port">shamt</span>;                       <span class="cmt">// SLL</span>
+        <span class="num">2'b01</span>: <span class="port">data_out</span> = <span class="port">data_in</span> >> <span class="port">shamt</span>;                       <span class="cmt">// SRL</span>
+        <span class="num">2'b10</span>: <span class="port">data_out</span> = $signed(<span class="port">data_in</span>) >>> <span class="port">shamt</span>;           <span class="cmt">// SRA</span>
+        <span class="num">2'b11</span>: <span class="port">data_out</span> = (<span class="port">data_in</span> >> <span class="port">shamt</span>) | 
+                          (<span class="port">data_in</span> << (<span class="num">32</span> - <span class="port">shamt</span>));          <span class="cmt">// ROR</span>
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Explicit Stage-by-Stage Implementation (8-bit)</span>
+<span class="kw">module</span> barrel_shifter_8bit (
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">input</span>      [<span class="num">2</span>:<span class="num">0</span>] <span class="port">shamt</span>,
+    <span class="kw">input</span>            <span class="port">left</span>,      <span class="cmt">// 1=left, 0=right</span>
+    <span class="kw">input</span>            <span class="port">arith</span>,     <span class="cmt">// 1=arithmetic (for right)</span>
+    <span class="kw">output</span>     [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_out</span>
+);
+
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">stage0</span>, <span class="port">stage1</span>, <span class="port">stage2</span>;
+<span class="kw">wire</span> <span class="port">fill</span> = <span class="port">arith</span> & <span class="port">data_in</span>[<span class="num">7</span>];  <span class="cmt">// Sign bit for arithmetic</span>
+
+<span class="cmt">// Reverse input for right shifts</span>
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">din</span> = <span class="port">left</span> ? <span class="port">data_in</span> : 
+                        {<span class="port">data_in</span>[<span class="num">0</span>],<span class="port">data_in</span>[<span class="num">1</span>],<span class="port">data_in</span>[<span class="num">2</span>],<span class="port">data_in</span>[<span class="num">3</span>],
+                         <span class="port">data_in</span>[<span class="num">4</span>],<span class="port">data_in</span>[<span class="num">5</span>],<span class="port">data_in</span>[<span class="num">6</span>],<span class="port">data_in</span>[<span class="num">7</span>]};
+
+<span class="cmt">// Stage 0: Shift by 1</span>
+<span class="kw">assign</span> <span class="port">stage0</span> = <span class="port">shamt</span>[<span class="num">0</span>] ? {<span class="port">din</span>[<span class="num">6</span>:<span class="num">0</span>], <span class="num">1'b0</span>} : <span class="port">din</span>;
+
+<span class="cmt">// Stage 1: Shift by 2</span>
+<span class="kw">assign</span> <span class="port">stage1</span> = <span class="port">shamt</span>[<span class="num">1</span>] ? {<span class="port">stage0</span>[<span class="num">5</span>:<span class="num">0</span>], <span class="num">2'b00</span>} : <span class="port">stage0</span>;
+
+<span class="cmt">// Stage 2: Shift by 4</span>
+<span class="kw">assign</span> <span class="port">stage2</span> = <span class="port">shamt</span>[<span class="num">2</span>] ? {<span class="port">stage1</span>[<span class="num">3</span>:<span class="num">0</span>], <span class="num">4'b0000</span>} : <span class="port">stage1</span>;
+
+<span class="cmt">// Reverse output for right shifts</span>
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">reversed</span> = {<span class="port">stage2</span>[<span class="num">0</span>],<span class="port">stage2</span>[<span class="num">1</span>],<span class="port">stage2</span>[<span class="num">2</span>],<span class="port">stage2</span>[<span class="num">3</span>],
+                        <span class="port">stage2</span>[<span class="num">4</span>],<span class="port">stage2</span>[<span class="num">5</span>],<span class="port">stage2</span>[<span class="num">6</span>],<span class="port">stage2</span>[<span class="num">7</span>]};
+
+<span class="cmt">// Final output with sign extension for arithmetic right shift</span>
+<span class="kw">wire</span> [<span class="num">7</span>:<span class="num">0</span>] <span class="port">mask</span> = (<span class="num">8'hFF</span> << (<span class="num">8</span> - <span class="port">shamt</span>));
+<span class="kw">assign</span> <span class="port">data_out</span> = <span class="port">left</span> ? <span class="port">stage2</span> : 
+                   (<span class="port">arith</span> ? (<span class="port">reversed</span> | (<span class="port">fill</span> ? <span class="port">mask</span> : <span class="num">8'h00</span>)) : <span class="port">reversed</span>);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Funnel Shifter (for misaligned loads)</span>
+<span class="kw">module</span> funnel_shifter (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">high</span>,     <span class="cmt">// Upper 32 bits</span>
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">low</span>,      <span class="cmt">// Lower 32 bits</span>
+    <span class="kw">input</span>      [<span class="num">4</span>:<span class="num">0</span>]  <span class="port">shamt</span>,    <span class="cmt">// Shift amount</span>
+    <span class="kw">output</span>     [<span class="num">31</span>:<span class="num">0</span>] <span class="port">result</span>
+);
+
+<span class="kw">wire</span> [<span class="num">63</span>:<span class="num">0</span>] <span class="port">combined</span> = {<span class="port">high</span>, <span class="port">low</span>};
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">combined</span>[<span class="num">31</span> + <span class="port">shamt</span> -: <span class="num">32</span>];
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">barrel_shifter.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> barrel_shifter <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">32</span>);
+    <span class="kw">port</span> (
+        <span class="port">data_in</span>  : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">shamt</span>    : <span class="kw">in</span>  natural <span class="kw">range</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>-<span class="num">1</span>;
+        <span class="port">op</span>       : <span class="kw">in</span>  std_logic_vector(<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">data_out</span> : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> barrel_shifter;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> barrel_shifter <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">data_in</span>, <span class="port">shamt</span>, <span class="port">op</span>)
+    <span class="kw">begin</span>
+        <span class="kw">case</span> <span class="port">op</span> <span class="kw">is</span>
+            <span class="kw">when</span> <span class="str">"00"</span> =>  <span class="cmt">-- SLL</span>
+                <span class="port">data_out</span> <= std_logic_vector(
+                    shift_left(unsigned(<span class="port">data_in</span>), <span class="port">shamt</span>));
+            <span class="kw">when</span> <span class="str">"01"</span> =>  <span class="cmt">-- SRL</span>
+                <span class="port">data_out</span> <= std_logic_vector(
+                    shift_right(unsigned(<span class="port">data_in</span>), <span class="port">shamt</span>));
+            <span class="kw">when</span> <span class="str">"10"</span> =>  <span class="cmt">-- SRA</span>
+                <span class="port">data_out</span> <= std_logic_vector(
+                    shift_right(signed(<span class="port">data_in</span>), <span class="port">shamt</span>));
+            <span class="kw">when others</span> =>  <span class="cmt">-- ROR</span>
+                <span class="port">data_out</span> <= std_logic_vector(
+                    rotate_right(unsigned(<span class="port">data_in</span>), <span class="port">shamt</span>));
+        <span class="kw">end case</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="variations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Variations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Bidirectional Shifter</h5>
+      <p>Reverse input bits, shift left, reverse output for right shift.</p>
+      <div class="formula">Shares shift logic</div>
+    </div>
+    <div class="concept-card">
+      <h5>Cross-bar Shifter</h5>
+      <p>Single stage with n n:1 MUXes. Fastest but O(n²) area.</p>
+      <div class="formula">1 MUX delay, huge area</div>
+    </div>
+    <div class="concept-card">
+      <h5>Logarithmic Shifter</h5>
+      <p>Standard barrel shifter with log₂(n) stages. Best area-delay trade-off.</p>
+      <div class="formula">O(n log n) area</div>
+    </div>
+    <div class="concept-card">
+      <h5>Funnel Shifter</h5>
+      <p>Takes 2n input bits, shifts, outputs middle n bits. Misaligned memory access.</p>
+      <div class="formula">Double-word shift</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>ALU Operations</h5>
+      <p>SLL, SRL, SRA instructions in RISC-V, ARM, x86.</p>
+      <div class="formula">Core CPU component</div>
+    </div>
+    <div class="concept-card">
+      <h5>Floating-Point</h5>
+      <p>Normalization requires variable shifts. Exponent alignment in FP add.</p>
+      <div class="formula">Mantissa alignment</div>
+    </div>
+    <div class="concept-card">
+      <h5>Cryptography</h5>
+      <p>AES, SHA use rotations. Fast rotation critical for performance.</p>
+      <div class="formula">ROL/ROR operations</div>
+    </div>
+    <div class="concept-card">
+      <h5>Bit Field Extract</h5>
+      <p>Shift + mask to extract/insert bit fields in registers.</p>
+      <div class="formula">BFEXT, BFINS</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Barrel shifter uses log₂(n) stages, each stage shifts by power of 2 (1, 2, 4, 8...).</li>
+    <li>Any shift amount decomposed into powers of 2. Shift by 5 = shift by 4 + shift by 1.</li>
+    <li>n-bit shifter needs n × log₂(n) 2:1 MUXes. 32-bit needs 160 MUXes.</li>
+    <li>Right shift: reverse input, left shift, reverse output. Or use separate right-shift logic.</li>
+    <li>Arithmetic vs logical right shift: fill with sign bit (MSB) vs fill with zeros.</li>
+    <li>Funnel shifter for misaligned loads: concatenate two words, shift, extract middle word.</li>
+  </ul>
+</section>

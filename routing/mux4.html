@@ -1,0 +1,374 @@
+---
+layout: routing
+title: "4:1 Multiplexer"
+sidebar: mux-4
+group: routing
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Data Routing }
+  - { color: purple, text: Common }
+subtitle: "A data selector that routes one of four inputs to the output using two select lines. Widely used in ALUs, register files, and data path design. Can implement any 3-variable Boolean function."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Expression" }
+  - { id: "implementations", title: "Implementations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "function-gen", title: "Function Generator" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Data Inputs", value: "I₀, I₁, I₂, I₃ (4 inputs)" }
+  - { label: "Select Lines", value: "S₁, S₀ (2 bits)" }
+  - { label: "Output", value: "Y" }
+  - { label: "Selection", value: "Y = I[S₁S₀]" }
+  - { label: "Gate Count", value: "4 AND-3 + 1 OR-4 + 2 NOT" }
+  - { label: "Logic Depth", value: "3 gate delays" }
+  - { label: "Alternate Build", value: "3× 2:1 MUX" }
+related:
+  - { url: "/routing/mux2.html", name: "2:1 MUX", desc: "Basic two-input selector" }
+  - { url: "/routing/mux8.html", name: "8:1 MUX", desc: "Eight-input multiplexer" }
+  - { url: "/routing/demux.html", name: "1:4 DEMUX", desc: "Inverse — one to four" }
+  - { url: "/gates/and.html", name: "AND Gate", desc: "Enable logic for each input" }
+prev: { url: "/routing/mux2.html", title: "2:1 Multiplexer" }
+next: { url: "/routing/mux8.html", title: "8:1 Multiplexer" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>4:1 Multiplexer</strong> selects one of four data inputs (I₀ through I₃) and 
+    routes it to a single output Y. The selection is controlled by two select lines S₁ and S₀, 
+    which together form a 2-bit binary address specifying which input to pass.
+  </p>
+  <p>
+    The 4:1 MUX is ubiquitous in digital design: it appears in ALU operand selection, register 
+    file read ports, bus arbitration, and as a programmable function generator. With four inputs, 
+    it can implement any Boolean function of up to three variables.
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>S₁</th>
+          <th>S₀</th>
+          <th class="out-col">Y</th>
+          <th>Selected Input</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-0">0</td>
+          <td class="val-1">I₀</td>
+          <td>Input 0</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td>
+          <td class="val-1">1</td>
+          <td class="val-1">I₁</td>
+          <td>Input 1</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-0">0</td>
+          <td class="val-1">I₂</td>
+          <td>Input 2</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td>
+          <td class="val-1">1</td>
+          <td class="val-1">I₃</td>
+          <td>Input 3</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-card" style="margin-top: 1rem;">
+    <h5>Select Encoding</h5>
+    <p>The select lines form a binary index: S₁S₀ = 00 selects I₀, 01 selects I₁, 10 selects I₂, 11 selects I₃.</p>
+    <div class="formula">Y = I[2×S₁ + S₀]</div>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Boolean Expression
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">4:1 MUX Equation</div>
+    <div class="bool-expr">
+      <span class="out">Y</span> = <span class="var">S̄₁</span><span class="op">·</span><span class="var">S̄₀</span><span class="op">·</span><span class="var">I₀</span> <span class="op">+</span> <span class="var">S̄₁</span><span class="op">·</span><span class="var">S₀</span><span class="op">·</span><span class="var">I₁</span> <span class="op">+</span> <span class="var">S₁</span><span class="op">·</span><span class="var">S̄₀</span><span class="op">·</span><span class="var">I₂</span> <span class="op">+</span> <span class="var">S₁</span><span class="op">·</span><span class="var">S₀</span><span class="op">·</span><span class="var">I₃</span>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>General Form</h5>
+      <div class="formula">Y = Σ(mᵢ · Iᵢ) for i = 0 to 3<br>where mᵢ = minterm of select lines</div>
+    </div>
+    <div class="concept-card">
+      <h5>Indexed Notation</h5>
+      <div class="formula">Y = I[S]<br>where S is 2-bit select value</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="implementations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+    Implementation Methods
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Direct Gate Implementation</h5>
+      <p>Four 3-input AND gates (one per input) feeding a 4-input OR gate.</p>
+      <div class="formula">4 × AND-3 + 1 × OR-4 + 2 × NOT</div>
+    </div>
+    <div class="concept-card">
+      <h5>Using 2:1 MUXes (Tree)</h5>
+      <p>Three 2:1 MUXes in a two-level tree structure.</p>
+      <div class="formula">Level 1: 2 MUXes (S₀)<br>Level 2: 1 MUX (S₁)</div>
+    </div>
+    <div class="concept-card">
+      <h5>Decoder + AND-OR</h5>
+      <p>2:4 decoder enables one AND gate, outputs OR together.</p>
+      <div class="formula">1 × 2:4 decoder + 4 × AND-2 + OR-4</div>
+    </div>
+    <div class="concept-card">
+      <h5>CMOS Transmission Gates</h5>
+      <p>Four transmission gates with decoded enables.</p>
+      <div class="formula">Most efficient in silicon</div>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Building 4:1 from 2:1 MUXes</h4>
+    <div class="derivation-table">
+      <pre>
+                    ┌───────┐
+        I₀ ────────┤       │
+                   │ MUX-A ├──────┐
+        I₁ ────────┤  S₀   │      │     ┌───────┐
+                    └───────┘      │────┤       │
+                                        │ MUX-C ├──── Y
+                    ┌───────┐      │────┤  S₁   │
+        I₂ ────────┤       │      │     └───────┘
+                   │ MUX-B ├──────┘
+        I₃ ────────┤  S₀   │
+                    └───────┘
+
+Level 1: MUX-A selects I₀/I₁, MUX-B selects I₂/I₃ (using S₀)
+Level 2: MUX-C selects between MUX-A and MUX-B outputs (using S₁)</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 4:1 MUX Gate-Level Structure</p>
+      <p>Four 3-input AND gates (decoder + input)</p>
+      <p>One 4-input OR gate combines outputs</p>
+      <p>Trapezoid symbol with 2 select lines</p>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">mux4.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 4:1 MUX - Behavioral (case statement)</span>
+<span class="kw">module</span> mux4_case #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span>,
+    <span class="kw">input</span>  [<span class="num">1</span>:<span class="num">0</span>]         <span class="port">sel</span>,
+    <span class="kw">output</span> <span class="kw">reg</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="kw">case</span> (<span class="port">sel</span>)
+        <span class="num">2'b00</span>: <span class="port">y</span> = <span class="port">i0</span>;
+        <span class="num">2'b01</span>: <span class="port">y</span> = <span class="port">i1</span>;
+        <span class="num">2'b10</span>: <span class="port">y</span> = <span class="port">i2</span>;
+        <span class="num">2'b11</span>: <span class="port">y</span> = <span class="port">i3</span>;
+    <span class="kw">endcase</span>
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 4:1 MUX - Using array indexing</span>
+<span class="kw">module</span> mux4_index #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i</span> [<span class="num">0</span>:<span class="num">3</span>],  <span class="cmt">// Input array</span>
+    <span class="kw">input</span>  [<span class="num">1</span>:<span class="num">0</span>]         <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">i</span>[<span class="port">sel</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 4:1 MUX - Built from 2:1 MUXes</span>
+<span class="kw">module</span> mux4_tree #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span>,
+    <span class="kw">input</span>  [<span class="num">1</span>:<span class="num">0</span>]         <span class="port">sel</span>,
+    <span class="kw">output</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">y</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] mux_lo, mux_hi;
+
+<span class="cmt">// Level 1: Select within pairs</span>
+<span class="kw">assign</span> mux_lo = <span class="port">sel</span>[<span class="num">0</span>] ? <span class="port">i1</span> : <span class="port">i0</span>;
+<span class="kw">assign</span> mux_hi = <span class="port">sel</span>[<span class="num">0</span>] ? <span class="port">i3</span> : <span class="port">i2</span>;
+
+<span class="cmt">// Level 2: Select between pairs</span>
+<span class="kw">assign</span> <span class="port">y</span> = <span class="port">sel</span>[<span class="num">1</span>] ? mux_hi : mux_lo;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">mux4.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> mux4 <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : <span class="kw">integer</span> := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span> : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">sel</span>              : <span class="kw">in</span>  std_logic_vector(<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">y</span>                : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> mux4;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> mux4 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">with</span> <span class="port">sel</span> <span class="kw">select</span>
+        <span class="port">y</span> <= <span class="port">i0</span> <span class="kw">when</span> <span class="str">"00"</span>,
+             <span class="port">i1</span> <span class="kw">when</span> <span class="str">"01"</span>,
+             <span class="port">i2</span> <span class="kw">when</span> <span class="str">"10"</span>,
+             <span class="port">i3</span> <span class="kw">when</span> <span class="kw">others</span>;
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Using process with case</span>
+<span class="kw">architecture</span> proc_case <span class="kw">of</span> mux4 <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">i0</span>, <span class="port">i1</span>, <span class="port">i2</span>, <span class="port">i3</span>, <span class="port">sel</span>)
+    <span class="kw">begin</span>
+        <span class="kw">case</span> <span class="port">sel</span> <span class="kw">is</span>
+            <span class="kw">when</span> <span class="str">"00"</span> => <span class="port">y</span> <= <span class="port">i0</span>;
+            <span class="kw">when</span> <span class="str">"01"</span> => <span class="port">y</span> <= <span class="port">i1</span>;
+            <span class="kw">when</span> <span class="str">"10"</span> => <span class="port">y</span> <= <span class="port">i2</span>;
+            <span class="kw">when</span> <span class="kw">others</span> => <span class="port">y</span> <= <span class="port">i3</span>;
+        <span class="kw">end case</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> proc_case;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="function-gen">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Function Generator
+  </h3>
+
+  <p>
+    A 4:1 MUX can implement any Boolean function of 3 variables by using two variables 
+    as select lines and connecting the inputs to appropriate values of the third variable.
+  </p>
+
+  <div class="derivation-box">
+    <h4>Implementing F(A,B,C) = Σm(1,2,4,7) using 4:1 MUX</h4>
+    <div class="derivation-table">
+      <pre>
+Use A, B as select lines (S₁=A, S₀=B):
+
+  A B | C=0  C=1 | F = ?
+  ----+----------+-------
+  0 0 |  0    1  | F = C     → I₀ = C
+  0 1 |  1    0  | F = C̄     → I₁ = C̄
+  1 0 |  1    0  | F = C̄     → I₂ = C̄
+  1 1 |  0    1  | F = C     → I₃ = C
+
+Result: Connect I₀=C, I₁=C̄, I₂=C̄, I₃=C
+        Select S₁=A, S₀=B
+        Output Y = F(A,B,C)</pre>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Input Patterns</h5>
+      <p>For each select combination, determine if F depends on C:</p>
+      <div class="formula">00: F=0 → I₀=0<br>00: F=1 → I₀=1<br>00: F=C → I₀=C<br>00: F=C̄ → I₀=C̄</div>
+    </div>
+    <div class="concept-card">
+      <h5>FPGA LUT</h5>
+      <p>FPGA lookup tables (LUTs) are essentially programmable MUXes.</p>
+      <div class="formula">4-input LUT = 16:1 MUX<br>Implements any 4-var function</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>4:1 MUX: Y = S̄₁S̄₀I₀ + S̄₁S₀I₁ + S₁S̄₀I₂ + S₁S₀I₃. Uses 2 select lines for 4 inputs.</li>
+    <li>Can implement any 3-variable function by using 2 vars as select, 3rd var on inputs.</li>
+    <li>Build from 2:1 MUXes: 3 total — 2 at first level (S₀), 1 at second level (S₁).</li>
+    <li>74LS153 is dual 4:1 MUX IC; 74LS157 is quad 2:1 MUX IC.</li>
+    <li>In FPGA, LUTs are n-input MUXes where n is typically 4-6 inputs.</li>
+    <li>For timing-critical paths, tree structure has lower delay than flat AND-OR.</li>
+  </ul>
+</section>

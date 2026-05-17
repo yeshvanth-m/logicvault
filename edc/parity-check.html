@@ -1,0 +1,601 @@
+---
+layout: edc
+title: "Parity Checker"
+sidebar: parity-check
+group: edc
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Error Detection }
+  - { color: red, text: XOR-based }
+subtitle: "Verifies parity of received data by XOR-ing all bits including the parity bit. A non-zero result indicates error detection. Used at the receiving end to validate data integrity after transmission or retrieval."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "detection-principle", title: "Detection Principle" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "boolean", title: "Boolean Equations" }
+  - { id: "circuit", title: "Circuit Diagram" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "limitations", title: "Limitations" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Verify parity of data + parity bit" }
+  - { label: "Logic", value: "XOR of all bits including P" }
+  - { label: "Even Parity Check", value: "E = D₀ ⊕ D₁ ⊕ ... ⊕ P" }
+  - { label: "Error Signal", value: "E=1 means error detected" }
+  - { label: "No Error (even)", value: "E=0, total 1s is even" }
+  - { label: "Gate Count", value: "n XOR gates for (n) bits + P" }
+  - { label: "Common ICs", value: "74180, 74280" }
+related:
+  - { url: "/edc/parity-gen.html", name: "Parity Generator", desc: "Generate parity" }
+  - { url: "/edc/hamming.html", name: "Hamming Code", desc: "Error correction" }
+  - { url: "/gates/xor.html", name: "XOR Gate", desc: "Core building block" }
+  - { url: "/edc/crc.html", name: "CRC", desc: "Polynomial checking" }
+prev: { url: "/edc/parity-gen.html", title: "Parity Generator" }
+next: { url: "/edc/hamming.html", title: "Hamming Code" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    A <strong>Parity Checker</strong> is a combinational circuit that verifies whether received data 
+    (including its parity bit) has been corrupted during transmission or storage. It computes the 
+    XOR of all bits—if the result is 0 (for even parity), no error is detected; if 1, an error is flagged.
+  </p>
+  <p>
+    The checker circuit is nearly identical to the generator—both use XOR reduction. The key 
+    difference is interpretation: the generator creates a parity bit; the checker validates it. 
+    The checker can also be used as a 9-input odd function generator.
+  </p>
+</section>
+
+<section class="content-section" id="detection-principle">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Detection Principle
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Even Parity Check</h5>
+      <p>XOR all received bits. If 0, even number of 1s—no error. If 1, error detected.</p>
+      <div class="formula">E = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁ ⊕ P</div>
+    </div>
+    <div class="concept-card">
+      <h5>Odd Parity Check</h5>
+      <p>XOR all received bits. If 1, odd number of 1s—no error. If 0, error detected.</p>
+      <div class="formula">E = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁ ⊕ P ⊕ 1</div>
+    </div>
+    <div class="concept-card">
+      <h5>Error Signal</h5>
+      <p>Output of checker indicates error status. Often called "syndrome" bit.</p>
+      <div class="formula">E=1: Error detected</div>
+    </div>
+    <div class="concept-card">
+      <h5>Symmetric Operation</h5>
+      <p>Same circuit works for any bit position error—checker is position-agnostic.</p>
+      <div class="formula">XOR is associative</div>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Example: No Error (Even Parity)</h4>
+    <div class="data-row">
+      <span>Received:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span>→ XOR = 0 ✓</span>
+    </div>
+    <div class="data-row">
+      <span>Check:</span>
+      <span>1⊕0⊕1⊕1⊕0⊕0⊕1⊕0 = 0</span>
+      <span style="color: var(--green); margin-left: 1rem;">No error</span>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Example: Single-Bit Error Detected</h4>
+    <div class="data-row">
+      <span>Sent:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+    </div>
+    <div class="data-row">
+      <span>Received:</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit error">0</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span>← bit 2 flipped</span>
+    </div>
+    <div class="data-row">
+      <span>Check:</span>
+      <span>1⊕0⊕0⊕1⊕0⊕0⊕1⊕0 = 1</span>
+      <span style="color: #c53030; margin-left: 1rem;">Error detected!</span>
+    </div>
+  </div>
+
+  <div class="error-example">
+    <h4>Example: Two-Bit Error (Undetected)</h4>
+    <div class="data-row">
+      <span>Received:</span>
+      <span class="bit error">0</span>
+      <span class="bit">0</span>
+      <span class="bit error">0</span>
+      <span class="bit">1</span>
+      <span class="bit">0</span>
+      <span class="bit">0</span>
+      <span class="bit">1</span>
+      <span class="bit parity">0</span>
+      <span>← bits 0,2 flipped</span>
+    </div>
+    <div class="data-row">
+      <span>Check:</span>
+      <span>0⊕0⊕0⊕1⊕0⊕0⊕1⊕0 = 0</span>
+      <span style="color: #c53030; margin-left: 1rem;">No error (false negative!)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+    Truth Table
+  </h3>
+
+  <p>3-bit data + parity checker (even parity):</p>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>D₂</th>
+          <th>D₁</th>
+          <th>D₀</th>
+          <th>P</th>
+          <th>1s</th>
+          <th class="out-col">E (error)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>0</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>1</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>1</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td>
+          <td>2</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td>
+          <td>3</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td>
+          <td>3</td><td class="val-1">1</td><td>✗ Error</td>
+        </tr>
+        <tr>
+          <td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td>
+          <td>4</td><td class="val-0">0</td><td>✓ Valid</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section" id="boolean">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Boolean Equations
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Even Parity Checker (n-bit data + P)</div>
+    <div class="bool-expr">
+      <span class="out">Error</span> = <span class="var">D₀</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> ... <span class="op">⊕</span> <span class="var">Dₙ₋₁</span> <span class="op">⊕</span> <span class="var">P</span>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Odd Parity Checker (n-bit data + P)</div>
+    <div class="bool-expr">
+      <span class="out">Error</span> = <span class="var">D₀</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> ... <span class="op">⊕</span> <span class="var">Dₙ₋₁</span> <span class="op">⊕</span> <span class="var">P</span> <span class="op">⊕</span> <span class="var">1</span>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">4-bit Data + Parity Check</div>
+    <div class="bool-expr">
+      <span class="out">E</span> = <span class="var">D₃</span> <span class="op">⊕</span> <span class="var">D₂</span> <span class="op">⊕</span> <span class="var">D₁</span> <span class="op">⊕</span> <span class="var">D₀</span> <span class="op">⊕</span> <span class="var">P</span>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Checker = Generator + 1 XOR</h4>
+    <div class="derivation-table">
+      Generator: P = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁
+      Checker:   E = D₀ ⊕ D₁ ⊕ ... ⊕ Dₙ₋₁ ⊕ P_received
+
+      If no error: P_received = P_computed
+      E = P_computed ⊕ P_received = 0 (no error)
+
+      If single-bit error anywhere:
+      E = P_computed ⊕ P_received ≠ 0 → E = 1 (error detected)
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="circuit">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Circuit Diagram
+  </h3>
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 4-bit Even Parity Checker</p>
+      <pre style="font-family: var(--mono); font-size: 0.85rem;">
+D₃ ───┐
+      XOR───┐
+D₂ ───┘     │
+            XOR───┐
+D₁ ───┐     │     │
+      XOR───┘     XOR─── Error
+D₀ ───┘           │
+                  │
+P  ───────────────┘
+
+Error = 0: No parity error
+Error = 1: Parity error detected
+      </pre>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Checker Properties</h4>
+    <div class="analysis-item">
+      <span class="label">XOR Gates Required</span>
+      <span class="value">n gates for (n) data + parity</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Critical Path</span>
+      <span class="value">⌈log₂(n+1)⌉ levels (tree)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">8-bit + P Delay</span>
+      <span class="value">4 × t_XOR (tree structure)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Dual Function</span>
+      <span class="value">Can be odd-function generator</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">parity_check.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Parameterized Parity Checker</span>
+<span class="kw">module</span> parity_check #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>,
+    <span class="kw">parameter</span> <span class="port">ODD</span>   = <span class="num">0</span>   <span class="cmt">// 0=even, 1=odd parity expected</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">data</span>,
+    <span class="kw">input</span>              <span class="port">parity_in</span>,
+    <span class="kw">output</span>             <span class="port">error</span>
+);
+
+<span class="cmt">// XOR all bits including received parity</span>
+<span class="kw">assign</span> <span class="port">error</span> = ^<span class="port">data</span> ^ <span class="port">parity_in</span> ^ <span class="port">ODD</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Combined data + parity check (LSB is parity)</span>
+<span class="kw">module</span> parity_check_combined #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">9</span>  <span class="cmt">// 8 data + 1 parity</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">data_with_parity</span>,
+    <span class="kw">output</span>             <span class="port">error</span>
+);
+
+<span class="cmt">// XOR reduction of entire word</span>
+<span class="kw">assign</span> <span class="port">error</span> = ^<span class="port">data_with_parity</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Full system: Generator + Channel + Checker</span>
+<span class="kw">module</span> parity_system #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">tx_data</span>,
+    <span class="kw">input</span>  [<span class="port">WIDTH</span>:<span class="num">0</span>]   <span class="port">rx_data</span>,  <span class="cmt">// Received data + parity</span>
+    <span class="kw">output</span> [<span class="port">WIDTH</span>:<span class="num">0</span>]   <span class="port">tx_out</span>,   <span class="cmt">// Transmitted data + parity</span>
+    <span class="kw">output</span>             <span class="port">rx_error</span>
+);
+
+<span class="kw">wire</span> <span class="port">tx_parity</span>;
+
+<span class="cmt">// Transmit side: generate parity</span>
+<span class="kw">assign</span> <span class="port">tx_parity</span> = ^<span class="port">tx_data</span>;
+<span class="kw">assign</span> <span class="port">tx_out</span> = {<span class="port">tx_parity</span>, <span class="port">tx_data</span>};
+
+<span class="cmt">// Receive side: check parity</span>
+<span class="kw">assign</span> <span class="port">rx_error</span> = ^<span class="port">rx_data</span>;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Memory interface with parity</span>
+<span class="kw">module</span> memory_with_parity #(
+    <span class="kw">parameter</span> <span class="port">DATA_WIDTH</span> = <span class="num">8</span>,
+    <span class="kw">parameter</span> <span class="port">ADDR_WIDTH</span> = <span class="num">10</span>
+)(
+    <span class="kw">input</span>                        <span class="port">clk</span>,
+    <span class="kw">input</span>                        <span class="port">we</span>,
+    <span class="kw">input</span>  [<span class="port">ADDR_WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>]     <span class="port">addr</span>,
+    <span class="kw">input</span>  [<span class="port">DATA_WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>]     <span class="port">data_in</span>,
+    <span class="kw">output</span> [<span class="port">DATA_WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>]     <span class="port">data_out</span>,
+    <span class="kw">output</span>                       <span class="port">parity_error</span>
+);
+
+<span class="cmt">// Memory stores data + parity</span>
+<span class="kw">reg</span> [<span class="port">DATA_WIDTH</span>:<span class="num">0</span>] <span class="port">mem</span> [<span class="num">0</span>:(<span class="num">1</span><<<span class="port">ADDR_WIDTH</span>)-<span class="num">1</span>];
+<span class="kw">reg</span> [<span class="port">DATA_WIDTH</span>:<span class="num">0</span>] <span class="port">read_data</span>;
+
+<span class="cmt">// Write with parity generation</span>
+<span class="kw">always</span> @(<span class="kw">posedge</span> <span class="port">clk</span>) <span class="kw">begin</span>
+    <span class="kw">if</span> (<span class="port">we</span>)
+        <span class="port">mem</span>[<span class="port">addr</span>] <= {^<span class="port">data_in</span>, <span class="port">data_in</span>};
+    <span class="port">read_data</span> <= <span class="port">mem</span>[<span class="port">addr</span>];
+<span class="kw">end</span>
+
+<span class="cmt">// Output data and check parity</span>
+<span class="kw">assign</span> <span class="port">data_out</span> = <span class="port">read_data</span>[<span class="port">DATA_WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+<span class="kw">assign</span> <span class="port">parity_error</span> = ^<span class="port">read_data</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">parity_check.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> parity_check <span class="kw">is</span>
+    <span class="kw">generic</span> (
+        <span class="port">WIDTH</span> : natural := <span class="num">8</span>;
+        <span class="port">ODD</span>   : std_logic := <span class="str">'0'</span>
+    );
+    <span class="kw">port</span> (
+        <span class="port">data</span>      : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">parity_in</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">error</span>     : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> parity_check;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> parity_check <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">data</span>, <span class="port">parity_in</span>)
+        <span class="kw">variable</span> check : std_logic;
+    <span class="kw">begin</span>
+        check := <span class="port">ODD</span> <span class="kw">xor</span> <span class="port">parity_in</span>;
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">loop</span>
+            check := check <span class="kw">xor</span> <span class="port">data</span>(i);
+        <span class="kw">end loop</span>;
+        <span class="port">error</span> <= check;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="limitations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Limitations
+  </h3>
+
+  <div class="tt-wrap" style="margin: 1rem 0;">
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Error Type</th>
+          <th>Detection</th>
+          <th>Correction</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single-bit</td>
+          <td class="highlight">100%</td>
+          <td>No</td>
+          <td>Always detected</td>
+        </tr>
+        <tr>
+          <td>2-bit</td>
+          <td>0%</td>
+          <td>No</td>
+          <td>Errors cancel out</td>
+        </tr>
+        <tr>
+          <td>3-bit</td>
+          <td class="highlight">100%</td>
+          <td>No</td>
+          <td>Odd errors detected</td>
+        </tr>
+        <tr>
+          <td>Any odd</td>
+          <td class="highlight">100%</td>
+          <td>No</td>
+          <td>Always detected</td>
+        </tr>
+        <tr>
+          <td>Any even</td>
+          <td>0%</td>
+          <td>No</td>
+          <td>Never detected</td>
+        </tr>
+        <tr>
+          <td>Burst</td>
+          <td>50%</td>
+          <td>No</td>
+          <td>Statistical average</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>No Error Location</h5>
+      <p>Parity only detects presence of error, not which bit is wrong.</p>
+      <div class="formula">Cannot correct</div>
+    </div>
+    <div class="concept-card">
+      <h5>Even Errors Missed</h5>
+      <p>Two errors cancel each other's effect on parity calculation.</p>
+      <div class="formula">Silent data corruption</div>
+    </div>
+    <div class="concept-card">
+      <h5>Solutions</h5>
+      <p>Use Hamming code for SECDED, or CRC for burst error detection.</p>
+      <div class="formula">More redundancy needed</div>
+    </div>
+    <div class="concept-card">
+      <h5>When Sufficient</h5>
+      <p>Low noise channels, memory with low error rates, retransmission possible.</p>
+      <div class="formula">Cost vs. coverage</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>UART Communication</h5>
+      <p>Serial frames include parity bit. Receiver checks each byte.</p>
+      <div class="formula">8N1, 8E1, 8O1 modes</div>
+    </div>
+    <div class="concept-card">
+      <h5>Memory Systems</h5>
+      <p>Each word stored with parity. Read operation triggers check.</p>
+      <div class="formula">DRAM, SRAM parity</div>
+    </div>
+    <div class="concept-card">
+      <h5>Bus Protocols</h5>
+      <p>PCI bus uses parity per 32-bit transfer. Target checks received data.</p>
+      <div class="formula">PERR# signal</div>
+    </div>
+    <div class="concept-card">
+      <h5>Magnetic Storage</h5>
+      <p>Historically used in tape drives. Simple, low-overhead checking.</p>
+      <div class="formula">9-track tape</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Parity checker is XOR of all bits including parity. Error=1 means odd number of errors detected.</li>
+    <li>Detects all odd-bit errors. Cannot detect even-bit errors—they cancel out. Cannot correct any errors.</li>
+    <li>Checker circuit is same as generator with one extra XOR input for the received parity bit.</li>
+    <li>For error correction, need Hamming code (minimum Hamming distance = 3 for SECDED).</li>
+    <li>Verilog: ^data_with_parity gives 0 for valid even-parity data, 1 for error.</li>
+    <li>2-D parity (horizontal + vertical) can detect 2-bit errors and correct 1-bit errors.</li>
+  </ul>
+</section>

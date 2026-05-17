@@ -1,0 +1,470 @@
+---
+layout: arithmetic
+title: "Popcount (Population Count)"
+sidebar: popcount
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: Bit Counting }
+  - { color: purple, text: O(log n) Depth }
+subtitle: "Counts the number of '1' bits in an n-bit input (Hamming weight). Used in cryptography, error correction, SIMD operations, and database bitmap indexes. Tree-based implementation achieves O(log n) depth."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "truth-table", title: "Truth Table" }
+  - { id: "architecture", title: "Architecture" }
+  - { id: "example", title: "Worked Example" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "variations", title: "Variations" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Function", value: "Count number of 1 bits" }
+  - { label: "Input", value: "n-bit value" }
+  - { label: "Output", value: "log₂(n)+1 bit count (0 to n)" }
+  - { label: "popcount(0)", value: "0" }
+  - { label: "popcount(0xFF)", value: "8" }
+  - { label: "Also Called", value: "Hamming Weight, Sideways Sum" }
+  - { label: "Depth", value: "O(log n) with tree structure" }
+related:
+  - { url: "/arithmetic/clz.html", name: "CLZ", desc: "Leading zero count" }
+  - { url: "/arithmetic/full-adder.html", name: "Full Adder", desc: "3:2 compressor" }
+  - { url: "/edc/hamming.html", name: "Hamming Code", desc: "Uses popcount" }
+  - { url: "/arithmetic/alu.html", name: "ALU", desc: "Bit operations" }
+prev: { url: "/arithmetic/clz.html", title: "CLZ" }
+next: { url: "/arithmetic/saturating.html", title: "Saturating Arithmetic" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>Popcount</strong> (Population Count), also known as <strong>Hamming Weight</strong> or 
+    <strong>Sideways Sum</strong>, counts the number of '1' bits in a binary word. For an 8-bit 
+    input, popcount returns a value from 0 (all zeros) to 8 (all ones).
+  </p>
+  <p>
+    The naive approach of iterating through each bit takes O(n) time. Using an adder tree 
+    structure, popcount can be computed in O(log n) time. Full adders (3:2 compressors) are 
+    used to sum groups of bits efficiently.
+  </p>
+  <p>
+    Popcount is a fundamental operation in modern processors, supported by dedicated instructions 
+    like x86's POPCNT and ARM's VCNT. It's essential for cryptography (checking parity), error 
+    correction (Hamming codes), and database operations (bitmap indexes).
+  </p>
+</section>
+
+<section class="content-section" id="truth-table">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Truth Table (8-bit)
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Input (binary)</th>
+          <th>Input (hex)</th>
+          <th class="out-col">Popcount</th>
+          <th>Parity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>00000000</td><td>0x00</td><td class="val-1">0</td><td>Even</td></tr>
+        <tr><td>00000001</td><td>0x01</td><td class="val-1">1</td><td>Odd</td></tr>
+        <tr><td>00000011</td><td>0x03</td><td class="val-1">2</td><td>Even</td></tr>
+        <tr><td>00000111</td><td>0x07</td><td class="val-1">3</td><td>Odd</td></tr>
+        <tr><td>00001111</td><td>0x0F</td><td class="val-1">4</td><td>Even</td></tr>
+        <tr><td>01010101</td><td>0x55</td><td class="val-1">4</td><td>Even</td></tr>
+        <tr><td>10101010</td><td>0xAA</td><td class="val-1">4</td><td>Even</td></tr>
+        <tr><td>11110000</td><td>0xF0</td><td class="val-1">4</td><td>Even</td></tr>
+        <tr><td>11111111</td><td>0xFF</td><td class="val-1">8</td><td>Even</td></tr>
+        <tr><td>10110100</td><td>0xB4</td><td class="val-1">4</td><td>Even</td></tr>
+        <tr><td>11011011</td><td>0xDB</td><td class="val-1">6</td><td>Even</td></tr>
+        <tr><td>01110111</td><td>0x77</td><td class="val-1">6</td><td>Even</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Relationship to Parity</div>
+    <div class="bool-expr">
+      <span class="out">Parity</span> = <span class="var">popcount(x)</span> <span class="op">mod</span> <span class="num">2</span><br><br>
+      <span class="cmt">// Parity is the LSB of popcount</span><br>
+      Parity = popcount[0] = XOR of all bits
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="architecture">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Architecture
+  </h3>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 8-bit Popcount Tree</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+Input: b7  b6  b5  b4  b3  b2  b1  b0
+
+Level 1: Count pairs (half adders)
+        b7+b6   b5+b4   b3+b2   b1+b0
+          │       │       │       │
+        [2b]    [2b]    [2b]    [2b]   ← Each outputs 0-2
+
+Level 2: Merge pairs (2-bit adders)
+        [2b]+[2b]       [2b]+[2b]
+            │               │
+          [3b]           [3b]          ← Each outputs 0-4
+
+Level 3: Final merge (3-bit adder)
+              [3b]+[3b]
+                  │
+                [4b]                   ← Outputs 0-8
+
+Total: log₂(8) = 3 levels
+      </pre>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <div class="bool-label">Building Blocks</div>
+    <div class="bool-expr">
+      <span class="kw">Half Adder:</span> 2-bit → 2-bit count (0-2)<br>
+      <span class="out">sum</span> = <span class="var">a</span> <span class="op">⊕</span> <span class="var">b</span><br>
+      <span class="out">carry</span> = <span class="var">a</span> <span class="op">·</span> <span class="var">b</span><br><br>
+      <span class="kw">Full Adder:</span> 3-bit → 2-bit count (0-3)<br>
+      <span class="out">sum</span> = <span class="var">a</span> <span class="op">⊕</span> <span class="var">b</span> <span class="op">⊕</span> <span class="var">c</span><br>
+      <span class="out">carry</span> = <span class="var">ab</span> + <span class="var">bc</span> + <span class="var">ac</span>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Complexity Analysis</h4>
+    <div class="analysis-item">
+      <span class="label">Tree Levels</span>
+      <span class="value">log₂(n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">Gate Depth</span>
+      <span class="value">O(log n)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">8-bit Popcount</span>
+      <span class="value">3 levels</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">32-bit Popcount</span>
+      <span class="value">5 levels</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">64-bit Popcount</span>
+      <span class="value">6 levels</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="example">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Worked Example
+  </h3>
+
+  <div class="derivation-box">
+    <h4>8-bit Popcount: Input = 11011011</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+Input:    1 1 0 1 1 0 1 1  (decimal 219)
+
+Level 1 - Pair sums (half adders):
+  Pair 3: 1+1 = 10 (2)    Pair 2: 0+1 = 01 (1)
+  Pair 1: 1+0 = 01 (1)    Pair 0: 1+1 = 10 (2)
+
+Level 2 - Merge pairs (2-bit adders):
+  Left:  10 + 01 = 011 (3)
+  Right: 01 + 10 = 011 (3)
+
+Level 3 - Final sum (3-bit adder):
+  011 + 011 = 0110 (6)
+
+Result: popcount(11011011) = 6  ✓
+      </pre>
+    </div>
+  </div>
+
+  <div class="derivation-box">
+    <h4>SWAR (SIMD Within A Register) Method</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+<span class="cmt">// Parallel popcount using arithmetic</span>
+
+Input x = 0xB4 = 1011 0100
+
+Step 1: Count bits in pairs
+  x = (x & 0x55) + ((x >> 1) & 0x55)
+  x = (10110100 & 01010101) + ((01011010) & 01010101)
+  x = 00010100 + 01010000 = 01100100  
+  <span class="cmt">// Each 2-bit field holds count for that pair</span>
+  <span class="cmt">// 01=1, 10=2, 01=1, 00=0</span>
+
+Step 2: Count bits in nibbles
+  x = (x & 0x33) + ((x >> 2) & 0x33)
+  x = (01100100 & 00110011) + ((00011001) & 00110011)
+  x = 00100000 + 00010001 = 00110001
+  <span class="cmt">// Each 4-bit field: 0011=3, 0001=1</span>
+
+Step 3: Count bits in byte
+  x = (x & 0x0F) + ((x >> 4) & 0x0F)
+  x = (00110001 & 00001111) + ((00000011) & 00001111)
+  x = 00000001 + 00000011 = 00000100
+
+Result: popcount(0xB4) = 4  ✓
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">popcount.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 8-bit Popcount - Tree Structure</span>
+<span class="kw">module</span> popcount_8 (
+    <span class="kw">input</span>      [<span class="num">7</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">3</span>:<span class="num">0</span>] <span class="port">count</span>     <span class="cmt">// 0-8</span>
+);
+
+<span class="cmt">// Level 1: Count pairs (4 half adders)</span>
+<span class="kw">wire</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">p3</span> = <span class="port">data_in</span>[<span class="num">7</span>] + <span class="port">data_in</span>[<span class="num">6</span>];
+<span class="kw">wire</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">p2</span> = <span class="port">data_in</span>[<span class="num">5</span>] + <span class="port">data_in</span>[<span class="num">4</span>];
+<span class="kw">wire</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">p1</span> = <span class="port">data_in</span>[<span class="num">3</span>] + <span class="port">data_in</span>[<span class="num">2</span>];
+<span class="kw">wire</span> [<span class="num">1</span>:<span class="num">0</span>] <span class="port">p0</span> = <span class="port">data_in</span>[<span class="num">1</span>] + <span class="port">data_in</span>[<span class="num">0</span>];
+
+<span class="cmt">// Level 2: Merge pairs (2 adders)</span>
+<span class="kw">wire</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">q1</span> = <span class="port">p3</span> + <span class="port">p2</span>;  <span class="cmt">// 0-4</span>
+<span class="kw">wire</span> [<span class="num">2</span>:<span class="num">0</span>] <span class="port">q0</span> = <span class="port">p1</span> + <span class="port">p0</span>;  <span class="cmt">// 0-4</span>
+
+<span class="cmt">// Level 3: Final sum</span>
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">q1</span> + <span class="port">q0</span>;   <span class="cmt">// 0-8</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 32-bit Popcount - Behavioral</span>
+<span class="kw">module</span> popcount_32 (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output reg</span> [<span class="num">5</span>:<span class="num">0</span>]  <span class="port">count</span>    <span class="cmt">// 0-32</span>
+);
+
+<span class="kw">integer</span> i;
+<span class="kw">always</span> @(*) <span class="kw">begin</span>
+    <span class="port">count</span> = <span class="num">0</span>;
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < <span class="num">32</span>; i = i + <span class="num">1</span>)
+        <span class="port">count</span> = <span class="port">count</span> + <span class="port">data_in</span>[i];
+<span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 32-bit Popcount - SWAR Method</span>
+<span class="kw">module</span> popcount_32_swar (
+    <span class="kw">input</span>      [<span class="num">31</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">5</span>:<span class="num">0</span>]  <span class="port">count</span>
+);
+
+<span class="cmt">// Constants for SWAR</span>
+<span class="kw">localparam</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">M1</span> = <span class="num">32'h55555555</span>;  <span class="cmt">// 0101...</span>
+<span class="kw">localparam</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">M2</span> = <span class="num">32'h33333333</span>;  <span class="cmt">// 0011...</span>
+<span class="kw">localparam</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">M4</span> = <span class="num">32'h0F0F0F0F</span>;  <span class="cmt">// 00001111...</span>
+
+<span class="cmt">// Step 1: Count bits in pairs</span>
+<span class="kw">wire</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">step1</span> = (<span class="port">data_in</span> & <span class="port">M1</span>) + ((<span class="port">data_in</span> >> <span class="num">1</span>) & <span class="port">M1</span>);
+
+<span class="cmt">// Step 2: Count bits in nibbles</span>
+<span class="kw">wire</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">step2</span> = (<span class="port">step1</span> & <span class="port">M2</span>) + ((<span class="port">step1</span> >> <span class="num">2</span>) & <span class="port">M2</span>);
+
+<span class="cmt">// Step 3: Count bits in bytes</span>
+<span class="kw">wire</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">step3</span> = (<span class="port">step2</span> & <span class="port">M4</span>) + ((<span class="port">step2</span> >> <span class="num">4</span>) & <span class="port">M4</span>);
+
+<span class="cmt">// Step 4: Sum bytes (multiply by 0x01010101 and shift)</span>
+<span class="kw">wire</span> [<span class="num">31</span>:<span class="num">0</span>] <span class="port">step4</span> = <span class="port">step3</span> * <span class="num">32'h01010101</span>;
+
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">step4</span>[<span class="num">31</span>:<span class="num">26</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 64-bit Popcount - Tree</span>
+<span class="kw">module</span> popcount_64 (
+    <span class="kw">input</span>      [<span class="num">63</span>:<span class="num">0</span>] <span class="port">data_in</span>,
+    <span class="kw">output</span>     [<span class="num">6</span>:<span class="num">0</span>]  <span class="port">count</span>    <span class="cmt">// 0-64</span>
+);
+
+<span class="kw">wire</span> [<span class="num">5</span>:<span class="num">0</span>] <span class="port">cnt_hi</span>, <span class="port">cnt_lo</span>;
+
+popcount_32 u_hi (.data_in(<span class="port">data_in</span>[<span class="num">63</span>:<span class="num">32</span>]), .count(<span class="port">cnt_hi</span>));
+popcount_32 u_lo (.data_in(<span class="port">data_in</span>[<span class="num">31</span>:<span class="num">0</span>]),  .count(<span class="port">cnt_lo</span>));
+
+<span class="kw">assign</span> <span class="port">count</span> = <span class="port">cnt_hi</span> + <span class="port">cnt_lo</span>;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">popcount.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> popcount_8 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">data_in</span> : <span class="kw">in</span>  std_logic_vector(<span class="num">7</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">count</span>   : <span class="kw">out</span> std_logic_vector(<span class="num">3</span> <span class="kw">downto</span> <span class="num">0</span>)
+    );
+<span class="kw">end</span> popcount_8;
+
+<span class="kw">architecture</span> tree <span class="kw">of</span> popcount_8 <span class="kw">is</span>
+    <span class="cmt">-- Level 1: 2-bit sums</span>
+    <span class="kw">signal</span> p3, p2, p1, p0 : unsigned(<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="cmt">-- Level 2: 3-bit sums</span>
+    <span class="kw">signal</span> q1, q0 : unsigned(<span class="num">2</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    <span class="cmt">-- Level 1: Pair counts</span>
+    p3 <= (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">7</span>)) + (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">6</span>));
+    p2 <= (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">5</span>)) + (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">4</span>));
+    p1 <= (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">3</span>)) + (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">2</span>));
+    p0 <= (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">1</span>)) + (<span class="str">"0"</span> & <span class="port">data_in</span>(<span class="num">0</span>));
+    
+    <span class="cmt">-- Level 2: Merge pairs</span>
+    q1 <= (<span class="str">"0"</span> & p3) + (<span class="str">"0"</span> & p2);
+    q0 <= (<span class="str">"0"</span> & p1) + (<span class="str">"0"</span> & p0);
+    
+    <span class="cmt">-- Level 3: Final sum</span>
+    <span class="port">count</span> <= std_logic_vector((<span class="str">"0"</span> & q1) + (<span class="str">"0"</span> & q0));
+<span class="kw">end</span> tree;
+
+<span class="cmt">-- Generic popcount</span>
+<span class="kw">entity</span> popcount <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">32</span>);
+    <span class="kw">port</span> (
+        <span class="port">data_in</span> : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">count</span>   : <span class="kw">out</span> natural <span class="kw">range</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>
+    );
+<span class="kw">end</span> popcount;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> popcount <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(<span class="port">data_in</span>)
+        <span class="kw">variable</span> cnt : natural <span class="kw">range</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>;
+    <span class="kw">begin</span>
+        cnt := <span class="num">0</span>;
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span> <span class="kw">to</span> <span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">loop</span>
+            <span class="kw">if</span> <span class="port">data_in</span>(i) = <span class="str">'1'</span> <span class="kw">then</span>
+                cnt := cnt + <span class="num">1</span>;
+            <span class="kw">end if</span>;
+        <span class="kw">end loop</span>;
+        <span class="port">count</span> <= cnt;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="variations">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+    Variations
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>LUT-Based</h5>
+      <p>4-bit or 8-bit lookup table for small inputs. Fast but uses memory.</p>
+      <div class="formula">256-entry LUT for 8-bit</div>
+    </div>
+    <div class="concept-card">
+      <h5>SWAR Method</h5>
+      <p>SIMD Within A Register. Uses arithmetic to sum in parallel.</p>
+      <div class="formula">Software optimization</div>
+    </div>
+    <div class="concept-card">
+      <h5>CSA Tree</h5>
+      <p>Carry-Save Adder tree for wide inputs. 3:2 compressors.</p>
+      <div class="formula">Same as Wallace tree</div>
+    </div>
+    <div class="concept-card">
+      <h5>Parity Bit</h5>
+      <p>Popcount mod 2 = XOR of all bits. Much simpler.</p>
+      <div class="formula">XOR tree</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Error Correction</h5>
+      <p>Hamming weight for syndrome calculation. Parity checking.</p>
+      <div class="formula">Hamming, SEC-DED</div>
+    </div>
+    <div class="concept-card">
+      <h5>Cryptography</h5>
+      <p>Counting set bits in key schedules, S-box analysis.</p>
+      <div class="formula">AES, block ciphers</div>
+    </div>
+    <div class="concept-card">
+      <h5>Database Bitmap</h5>
+      <p>Count matching records in bitmap indexes.</p>
+      <div class="formula">Fast COUNT queries</div>
+    </div>
+    <div class="concept-card">
+      <h5>SIMD Operations</h5>
+      <p>Vector popcount for parallel bit counting.</p>
+      <div class="formula">x86 POPCNT, AVX2</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Popcount (Hamming weight) counts the number of 1 bits. Output range: 0 to n.</li>
+    <li>Tree structure: log₂(n) levels. 8-bit needs 3 levels, 32-bit needs 5 levels.</li>
+    <li>Basic building blocks: half adders (2→2) and full adders (3→2).</li>
+    <li>SWAR trick: x = (x & 0x55) + ((x >> 1) & 0x55) counts pairs in parallel.</li>
+    <li>Parity = popcount mod 2 = XOR of all bits (much simpler circuit).</li>
+    <li>Hardware: x86 POPCNT instruction, ARM VCNT, RISC-V Zbb extension.</li>
+    <li>Common application: Hamming distance = popcount(a XOR b).</li>
+  </ul>
+</section>

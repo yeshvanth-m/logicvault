@@ -1,0 +1,252 @@
+---
+layout: arithmetic
+title: Carry Select Adder
+sidebar: csla
+group: arithmetic
+
+badges:
+  - { color: green, text: Combinational }
+  - { color: amber, text: Arithmetic }
+  - { color: blue, text: Medium Speed }
+
+subtitle: >
+  A hybrid adder that computes sums for both possible carry-in values (0 and 1) in parallel, then selects the correct result using a multiplexer when the actual carry arrives. This speculative approach trades area for speed, achieving O(√N) delay.
+
+toc:
+  - { id: overview, title: Overview }
+  - { id: quick-facts, title: Quick Facts }
+  - { id: concept, title: Concept }
+  - { id: timing, title: Timing Analysis }
+  - { id: circuit, title: Circuit Diagram }
+  - { id: verilog, title: RTL Implementation }
+  - { id: interview, title: Interview Notes }
+  - { id: related, title: Related Circuits }
+
+quick_facts:
+  - { label: Inputs, value: "A[N-1:0], B[N-1:0], Cin" }
+  - { label: Outputs, value: "Sum[N-1:0], Cout" }
+  - { label: Gate count, value: "~2N (double RCA)" }
+  - { label: Logic depth, value: "O(√N)" }
+  - { label: Key idea, value: Speculative computation }
+  - { label: Use case, value: Area-conscious speed }
+
+related:
+  - { name: Ripple Carry, url: /arithmetic/ripple-carry.html, desc: Building block }
+  - { name: Carry Lookahead, url: /arithmetic/carry-lookahead.html, desc: Faster alternative }
+  - { name: Kogge-Stone, url: /arithmetic/kogge-stone.html, desc: Parallel prefix }
+  - { name: Brent-Kung, url: /arithmetic/brent-kung.html, desc: Area-efficient }
+
+prev: { title: Carry Lookahead Adder, url: /arithmetic/carry-lookahead.html }
+next: { title: Kogge-Stone Adder, url: /arithmetic/kogge-stone.html }
+---
+
+<!-- Concept -->
+<section class="section" id="concept">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z"/></svg>
+    </div>
+    <h2 class="section-title">Core Concept</h2>
+    <a href="#concept" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>The carry select adder exploits the fact that the carry-in to any block can only be 0 or 1. Instead of waiting, we:</p>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>1. Duplicate Computation</h5>
+      <p>For each block (except the first), compute two sums in parallel: one assuming Cin=0, one assuming Cin=1.</p>
+    </div>
+    <div class="concept-card">
+      <h5>2. MUX Selection</h5>
+      <p>When the actual carry arrives from the previous block, use a 2:1 MUX to select the pre-computed correct result.</p>
+    </div>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Block output selection</p>
+    <p class="bool-expr">
+      <span class="out">Sum<sub>block</sub></span> = <span class="var">Carry<sub>in</sub></span> ? <span class="var">Sum<sub>1</sub></span> : <span class="var">Sum<sub>0</sub></span>
+    </p>
+    <p class="bool-expr" style="margin-top: 0.5rem;">
+      <span class="out">Carry<sub>out</sub></span> = <span class="var">Carry<sub>in</sub></span> ? <span class="var">Cout<sub>1</sub></span> : <span class="var">Cout<sub>0</sub></span>
+    </p>
+  </div>
+
+  <div class="callout callout-tip">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+    <p><strong>Optimization:</strong> Use variable block sizes! Smaller blocks near LSB (where carry arrives first), larger blocks near MSB. Optimal block size progression: 2, 2, 3, 4, 5, ... bits.</p>
+  </div>
+</section>
+
+<!-- Timing Analysis -->
+<section class="section" id="timing">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    </div>
+    <h2 class="section-title">Timing Analysis</h2>
+    <a href="#timing" class="section-anchor">#</a>
+  </div>
+
+  <div class="prose">
+    <p>For an N-bit CSLA with K equal-sized blocks of M bits each (N = K × M):</p>
+  </div>
+
+  <div class="bool-box">
+    <p class="bool-label">Delay equation (equal blocks)</p>
+    <p class="bool-expr">
+      <span class="out">T<sub>CSLA</sub></span> = <span class="var">T<sub>RCA(M)</sub></span> <span class="op">+</span> (<span class="var">K</span> <span class="op">-</span> 1) × <span class="var">T<sub>MUX</sub></span>
+    </p>
+  </div>
+
+  <table class="perf-table">
+    <thead>
+      <tr><th>Architecture</th><th>16-bit Delay</th><th>32-bit Delay</th><th>64-bit Delay</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Ripple Carry</td><td>33 gates</td><td>65 gates</td><td>129 gates</td></tr>
+      <tr class="highlight"><td>Carry Select (4-bit blocks)</td><td>12 gates</td><td>16 gates</td><td>20 gates</td></tr>
+      <tr><td>Carry Lookahead</td><td>8 gates</td><td>10 gates</td><td>12 gates</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info" style="margin-top: 1rem;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <p><strong>Sweet spot:</strong> CSLA offers a good balance between RCA (slow, small) and CLA (fast, large). It's particularly effective when you need moderate speed improvement without the complexity of parallel prefix adders.</p>
+  </div>
+</section>
+
+<!-- Circuit Diagram -->
+<section class="section" id="circuit">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="8" cy="8" r="2"/><circle cx="16" cy="16" r="2"/><path d="M8 10v4a4 4 0 0 0 8 0v-4"/></svg>
+    </div>
+    <h2 class="section-title">Circuit Diagram</h2>
+    <a href="#circuit" class="section-anchor">#</a>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Insert 8-bit CSLA block diagram here.<br/>Show: Block0 (4-bit RCA), Block1 (dual 4-bit RCA + MUX).<br/>Label carry propagation and MUX selection.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RTL Implementation -->
+<section class="section" id="verilog">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+    </div>
+    <h2 class="section-title">RTL Implementation</h2>
+    <a href="#verilog" class="section-anchor">#</a>
+  </div>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+    <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+  </div>
+
+  <div class="code-panel active" id="panel-verilog">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Verilog</span>
+        <span class="code-filename">carry_select_adder.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// 8-bit Carry Select Adder (two 4-bit blocks)</span>
+<span class="kw">module</span> carry_select_adder (
+    <span class="kw">input</span>  [7:0] <span class="port">a</span>, <span class="port">b</span>,
+    <span class="kw">input</span>        <span class="port">cin</span>,
+    <span class="kw">output</span> [7:0] <span class="port">sum</span>,
+    <span class="kw">output</span>       <span class="port">cout</span>
+);
+
+    <span class="kw">wire</span> [3:0] sum0_c0, sum0_c1;  <span class="cmt">// Upper block sums</span>
+    <span class="kw">wire</span> cout0_c0, cout0_c1;      <span class="cmt">// Upper block carries</span>
+    <span class="kw">wire</span> c4;                      <span class="cmt">// Carry from lower block</span>
+
+    <span class="cmt">// Lower 4-bit block (standard RCA)</span>
+    <span class="kw">assign</span> {c4, <span class="port">sum</span>[3:0]} = <span class="port">a</span>[3:0] + <span class="port">b</span>[3:0] + <span class="port">cin</span>;
+
+    <span class="cmt">// Upper 4-bit block: compute both possibilities</span>
+    <span class="kw">assign</span> {cout0_c0, sum0_c0} = <span class="port">a</span>[7:4] + <span class="port">b</span>[7:4] + 1'b0;  <span class="cmt">// Cin=0</span>
+    <span class="kw">assign</span> {cout0_c1, sum0_c1} = <span class="port">a</span>[7:4] + <span class="port">b</span>[7:4] + 1'b1;  <span class="cmt">// Cin=1</span>
+
+    <span class="cmt">// MUX: Select based on actual carry</span>
+    <span class="kw">assign</span> <span class="port">sum</span>[7:4] = c4 ? sum0_c1 : sum0_c0;
+    <span class="kw">assign</span> <span class="port">cout</span> = c4 ? cout0_c1 : cout0_c0;
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div class="code-panel" id="panel-vhdl">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">carry_select_adder.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> carry_select_adder <span class="kw">is</span>
+    <span class="kw">port</span> (
+        <span class="port">a</span>, <span class="port">b</span> : <span class="kw">in</span>  std_logic_vector(7 <span class="kw">downto</span> 0);
+        <span class="port">cin</span>   : <span class="kw">in</span>  std_logic;
+        <span class="port">sum</span>   : <span class="kw">out</span> std_logic_vector(7 <span class="kw">downto</span> 0);
+        <span class="port">cout</span>  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> carry_select_adder;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> carry_select_adder <span class="kw">is</span>
+    <span class="kw">signal</span> lower_sum   : unsigned(4 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> upper_sum0  : unsigned(4 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> upper_sum1  : unsigned(4 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> c4          : std_logic;
+<span class="kw">begin</span>
+    <span class="cmt">-- Lower block</span>
+    lower_sum <= unsigned('0' & <span class="port">a</span>(3 <span class="kw">downto</span> 0)) + 
+                 unsigned('0' & <span class="port">b</span>(3 <span class="kw">downto</span> 0)) + 
+                 ("0000" & <span class="port">cin</span>);
+    <span class="port">sum</span>(3 <span class="kw">downto</span> 0) <= std_logic_vector(lower_sum(3 <span class="kw">downto</span> 0));
+    c4 <= lower_sum(4);
+    
+    <span class="cmt">-- Upper block: both possibilities</span>
+    upper_sum0 <= unsigned('0' & <span class="port">a</span>(7 <span class="kw">downto</span> 4)) + unsigned('0' & <span class="port">b</span>(7 <span class="kw">downto</span> 4));
+    upper_sum1 <= unsigned('0' & <span class="port">a</span>(7 <span class="kw">downto</span> 4)) + unsigned('0' & <span class="port">b</span>(7 <span class="kw">downto</span> 4)) + 1;
+    
+    <span class="cmt">-- MUX selection</span>
+    <span class="port">sum</span>(7 <span class="kw">downto</span> 4) <= std_logic_vector(upper_sum1(3 <span class="kw">downto</span> 0)) <span class="kw">when</span> c4 = '1'
+                       <span class="kw">else</span> std_logic_vector(upper_sum0(3 <span class="kw">downto</span> 0));
+    <span class="port">cout</span> <= upper_sum1(4) <span class="kw">when</span> c4 = '1' <span class="kw">else</span> upper_sum0(4);
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Interview Notes -->
+<section class="section" id="interview">
+  <div class="section-header">
+    <div class="section-icon">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+    </div>
+    <h2 class="section-title">Interview Notes</h2>
+    <a href="#interview" class="section-anchor">#</a>
+  </div>
+
+  <ul class="interview-list">
+    <li><strong>What's the main trade-off?</strong> — CSLA doubles the area (two adders per block) to reduce delay. It's a classic area-time trade-off.</li>
+    <li><strong>Why not use equal block sizes?</strong> — Unequal sizes (increasing toward MSB) are more efficient. The carry arrives later at upper blocks, so they have more time to compute.</li>
+    <li><strong>How does CSLA compare to CLA?</strong> — CSLA is simpler to design (uses RCA blocks) but slower (O(√N) vs O(log N)). Good for moderate speed needs.</li>
+    <li><strong>What's the MUX delay overhead?</strong> — Each block adds one MUX delay to the critical path. With K blocks, total MUX delay = (K-1) × T<sub>MUX</sub>.</li>
+    <li><strong>Can CSLA be combined with CLA?</strong> — Yes! Use CLA blocks instead of RCA blocks for even faster performance. This is called Carry-Select with Carry-Lookahead.</li>
+  </ul>
+</section>

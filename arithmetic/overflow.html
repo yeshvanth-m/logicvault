@@ -1,0 +1,494 @@
+---
+layout: arithmetic
+title: "Overflow Detection"
+sidebar: overflow
+group: arithmetic
+badges:
+  - { color: green, text: Combinational }
+  - { color: blue, text: ALU Flag }
+  - { color: red, text: Error Detection }
+subtitle: "Detects when arithmetic results exceed the representable range. Signed overflow occurs when the result's sign is incorrect. Essential for ALU flag generation, exception handling, and saturating arithmetic."
+toc:
+  - { id: "overview", title: "Overview" }
+  - { id: "quick-facts", title: "Quick Facts" }
+  - { id: "signed-unsigned", title: "Signed vs Unsigned" }
+  - { id: "detection", title: "Detection Methods" }
+  - { id: "examples", title: "Examples" }
+  - { id: "verilog", title: "RTL Implementation" }
+  - { id: "applications", title: "Applications" }
+  - { id: "interview", title: "Interview Notes" }
+  - { id: "related", title: "Related Circuits" }
+quick_facts:
+  - { label: "Signed Overflow", value: "V = Cin[MSB] ⊕ Cout[MSB]" }
+  - { label: "Unsigned Overflow", value: "C = Cout (carry out)" }
+  - { label: "Addition Overflow", value: "Same sign inputs, different sign result" }
+  - { label: "Subtraction Overflow", value: "Different sign inputs, wrong sign result" }
+  - { label: "Gate Count", value: "1 XOR gate" }
+  - { label: "Used In", value: "ALU, CPU flags, exceptions" }
+related:
+  - { url: "/arithmetic/alu.html", name: "ALU", desc: "Uses overflow detection" }
+  - { url: "/arithmetic/saturating.html", name: "Saturating Arithmetic", desc: "Clamps on overflow" }
+  - { url: "/arithmetic/sign-extend.html", name: "Sign Extension", desc: "Related concept" }
+  - { url: "/arithmetic/carry-lookahead.html", name: "CLA Adder", desc: "Carry generation" }
+prev: { url: "/arithmetic/sign-extend.html", title: "Sign Extension" }
+next: { url: "/arithmetic/comparator.html", title: "Comparator" }
+---
+
+<section class="content-section" id="overview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+    Overview
+  </h3>
+  <p>
+    <strong>Overflow Detection</strong> identifies when an arithmetic operation produces a result 
+    that cannot be correctly represented in the available bit width. This is different for signed 
+    and unsigned numbers:
+  </p>
+  <ul>
+    <li><strong>Unsigned overflow</strong> (carry): Result exceeds 2ⁿ-1 (addition) or goes below 0 (subtraction)</li>
+    <li><strong>Signed overflow</strong>: Result exceeds the signed range, causing incorrect sign</li>
+  </ul>
+  <p>
+    Signed overflow is detected when the carry into the MSB differs from the carry out of the MSB. 
+    This occurs when adding two positive numbers yields a negative result, or adding two negative 
+    numbers yields a positive result.
+  </p>
+</section>
+
+<section class="content-section" id="signed-unsigned">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Signed vs Unsigned Overflow
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>8-bit Range</th>
+          <th>Overflow Condition</th>
+          <th class="out-col">Detection</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Unsigned</strong></td>
+          <td>0 to 255</td>
+          <td>Result > 255 or < 0</td>
+          <td class="val-1">Carry/Borrow out</td>
+        </tr>
+        <tr>
+          <td><strong>Signed</strong></td>
+          <td>-128 to +127</td>
+          <td>Result > 127 or < -128</td>
+          <td class="val-1">Cin[7] ⊕ Cout[7]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>Unsigned Overflow (C flag)</h5>
+      <p>Simple: carry out of MSB position for add, borrow for subtract.</p>
+      <div class="formula">C = Cout</div>
+    </div>
+    <div class="concept-card">
+      <h5>Signed Overflow (V flag)</h5>
+      <p>XOR of carry into MSB and carry out of MSB.</p>
+      <div class="formula">V = Cin[n-1] ⊕ Cout[n-1]</div>
+    </div>
+    <div class="concept-card">
+      <h5>Alternative V Formula</h5>
+      <p>For addition: V = (A[n-1] == B[n-1]) && (A[n-1] != Sum[n-1])</p>
+      <div class="formula">Same signs → different result sign</div>
+    </div>
+    <div class="concept-card">
+      <h5>No Overflow Possible</h5>
+      <p>Adding numbers with different signs never overflows (signed).</p>
+      <div class="formula">Opposite signs safe</div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="detection">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+    Detection Methods
+  </h3>
+
+  <div class="bool-box">
+    <div class="bool-label">Signed Overflow Detection</div>
+    <div class="bool-expr">
+      <span class="kw">Method 1: Carry XOR</span><br>
+      <span class="out">V</span> = <span class="var">Cin[MSB]</span> <span class="op">⊕</span> <span class="var">Cout[MSB]</span><br><br>
+      
+      <span class="kw">Method 2: Sign Check (Addition)</span><br>
+      <span class="out">V</span> = (<span class="var">A[MSB]</span> == <span class="var">B[MSB]</span>) <span class="op">AND</span> (<span class="var">A[MSB]</span> != <span class="var">Sum[MSB]</span>)<br>
+      <span class="out">V</span> = (~<span class="var">A[MSB]</span> &amp; ~<span class="var">B[MSB]</span> &amp; <span class="var">Sum[MSB]</span>) | 
+          (<span class="var">A[MSB]</span> &amp; <span class="var">B[MSB]</span> &amp; ~<span class="var">Sum[MSB]</span>)<br><br>
+      
+      <span class="kw">Method 3: Sign Check (Subtraction)</span><br>
+      <span class="out">V</span> = (<span class="var">A[MSB]</span> != <span class="var">B[MSB]</span>) <span class="op">AND</span> (<span class="var">A[MSB]</span> != <span class="var">Diff[MSB]</span>)
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-placeholder">
+      <p>📐 Overflow Detection in Ripple Carry Adder</p>
+      <pre style="font-family: var(--mono); font-size: 0.8rem; line-height: 1.5;">
+      A[7] B[7]     A[6] B[6]         A[0] B[0]
+        │   │         │   │             │   │
+        ▼   ▼         ▼   ▼             ▼   ▼
+      ┌───────┐     ┌───────┐         ┌───────┐
+Cout ←│  FA   │← C7 │  FA   │← C6 ... │  FA   │← C0 (Cin)
+      └───┬───┘     └───┬───┘         └───┬───┘
+          │             │                 │
+          ▼             ▼                 ▼
+       Sum[7]        Sum[6]            Sum[0]
+
+Overflow (V) = C7 ⊕ Cout
+Carry (C)    = Cout
+
+Where C7 = carry INTO bit 7 (from bit 6 full adder)
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="examples">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg></span>
+    Examples
+  </h3>
+
+  <div class="tt-wrap">
+    <table class="truth-table">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>A</th>
+          <th>B</th>
+          <th>Result</th>
+          <th class="out-col">C</th>
+          <th class="out-col">V</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="7" style="text-align:center; font-weight:bold; background: var(--card-bg);">8-bit Addition (signed range: -128 to +127)</td></tr>
+        <tr><td>100 + 50</td><td>0x64</td><td>0x32</td><td>0x96 (-106)</td><td>0</td><td class="val-1">1</td><td>Positive overflow!</td></tr>
+        <tr><td>127 + 1</td><td>0x7F</td><td>0x01</td><td>0x80 (-128)</td><td>0</td><td class="val-1">1</td><td>Positive overflow!</td></tr>
+        <tr><td>-100 + (-50)</td><td>0x9C</td><td>0xCE</td><td>0x6A (+106)</td><td>1</td><td class="val-1">1</td><td>Negative overflow!</td></tr>
+        <tr><td>-128 + (-1)</td><td>0x80</td><td>0xFF</td><td>0x7F (+127)</td><td>1</td><td class="val-1">1</td><td>Negative overflow!</td></tr>
+        <tr><td>50 + 30</td><td>0x32</td><td>0x1E</td><td>0x50 (+80)</td><td>0</td><td>0</td><td>No overflow ✓</td></tr>
+        <tr><td>50 + (-30)</td><td>0x32</td><td>0xE2</td><td>0x14 (+20)</td><td>1</td><td>0</td><td>No overflow ✓</td></tr>
+        <tr><td>-50 + 30</td><td>0xCE</td><td>0x1E</td><td>0xEC (-20)</td><td>0</td><td>0</td><td>No overflow ✓</td></tr>
+        <tr><td colspan="7" style="text-align:center; font-weight:bold; background: var(--card-bg);">8-bit Unsigned (range: 0 to 255)</td></tr>
+        <tr><td>200 + 100</td><td>0xC8</td><td>0x64</td><td>0x2C (44)</td><td class="val-1">1</td><td>-</td><td>Unsigned overflow!</td></tr>
+        <tr><td>100 - 150</td><td>0x64</td><td>0x96</td><td>0xCE (206)</td><td class="val-1">1</td><td>-</td><td>Unsigned underflow!</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="derivation-box">
+    <h4>Detailed Example: 100 + 50 (signed 8-bit)</h4>
+    <div class="derivation-table">
+      <pre style="font-family: var(--mono); font-size: 0.85rem; line-height: 1.8;">
+A = 100 = 0110 0100
+B =  50 = 0011 0010
+          ─────────
+Carries:  0110 0100  ← Cin[7] = 0
+Sum:      1001 0110  = 0x96 = -106 (wrong!)
+
+Cout[7] = 0 (no final carry)
+Cin[7]  = 0 (carry into MSB position)
+
+V = Cin[7] XOR Cout[7] = 0 XOR 0 = 0 ❌
+
+Wait, let me recalculate...
+
+Actually:    0 1 1 0 0 1 0 0   (A = 100)
+           + 0 0 1 1 0 0 1 0   (B = 50)
+             ─────────────────
+Carries:   0 1 1 0 0 0 0 0 _   (C7=1, Cout=0)
+           ─────────────────
+Sum:         1 0 0 1 0 1 1 0   = 0x96 = -106
+
+Cin[7] = 1, Cout[7] = 0
+V = 1 XOR 0 = 1 ✓ OVERFLOW DETECTED
+
+Alternative check:
+- A[7] = 0 (positive)
+- B[7] = 0 (positive)  
+- Sum[7] = 1 (negative)
+- Same signs, different result → OVERFLOW ✓
+      </pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="verilog">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+    RTL Implementation
+  </h3>
+
+  <div class="code-tabs">
+    <button class="ctab active" onclick="showTab(event, 'verilog-code')">Verilog</button>
+    <button class="ctab" onclick="showTab(event, 'vhdl-code')">VHDL</button>
+  </div>
+
+  <div id="verilog-code" class="code-panel active">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VERILOG</span>
+        <span class="code-filename">overflow_detect.v</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="cmt">// Simple Overflow Detection</span>
+<span class="kw">module</span> overflow_add #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">sum</span>,
+    <span class="kw">output</span>                  <span class="port">carry</span>,      <span class="cmt">// Unsigned overflow</span>
+    <span class="kw">output</span>                  <span class="port">overflow</span>    <span class="cmt">// Signed overflow</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">result</span> = {<span class="num">1'b0</span>, <span class="port">a</span>} + {<span class="num">1'b0</span>, <span class="port">b</span>};
+<span class="kw">assign</span> <span class="port">sum</span>   = <span class="port">result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+<span class="kw">assign</span> <span class="port">carry</span> = <span class="port">result</span>[<span class="port">WIDTH</span>];
+
+<span class="cmt">// Signed overflow: same sign inputs, different sign output</span>
+<span class="kw">assign</span> <span class="port">overflow</span> = (~<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]) |
+                  (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">sum</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Overflow Detection for Subtraction</span>
+<span class="kw">module</span> overflow_sub #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">diff</span>,
+    <span class="kw">output</span>                  <span class="port">borrow</span>,     <span class="cmt">// Unsigned underflow</span>
+    <span class="kw">output</span>                  <span class="port">overflow</span>    <span class="cmt">// Signed overflow</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">result</span> = {<span class="num">1'b0</span>, <span class="port">a</span>} - {<span class="num">1'b0</span>, <span class="port">b</span>};
+<span class="kw">assign</span> <span class="port">diff</span>   = <span class="port">result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+<span class="kw">assign</span> <span class="port">borrow</span> = <span class="port">result</span>[<span class="port">WIDTH</span>];  <span class="cmt">// Borrow = ~Cout for subtraction</span>
+
+<span class="cmt">// Signed overflow: different signs, result sign matches b</span>
+<span class="kw">assign</span> <span class="port">overflow</span> = (~<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & <span class="port">diff</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]) |
+                  (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">b</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] & ~<span class="port">diff</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Using Carry-In XOR Carry-Out Method</span>
+<span class="kw">module</span> overflow_xor #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">8</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">input</span>                   <span class="port">cin</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">sum</span>,
+    <span class="kw">output</span>                  <span class="port">cout</span>,
+    <span class="kw">output</span>                  <span class="port">overflow</span>
+);
+
+<span class="cmt">// Get both carry into MSB and carry out</span>
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">carries</span>;
+<span class="kw">assign</span> <span class="port">carries</span>[<span class="num">0</span>] = <span class="port">cin</span>;
+
+<span class="kw">genvar</span> i;
+<span class="kw">generate</span>
+    <span class="kw">for</span> (i = <span class="num">0</span>; i < <span class="port">WIDTH</span>; i = i + <span class="num">1</span>) <span class="kw">begin</span> : <span class="port">adder</span>
+        <span class="kw">assign</span> <span class="port">sum</span>[i] = <span class="port">a</span>[i] ^ <span class="port">b</span>[i] ^ <span class="port">carries</span>[i];
+        <span class="kw">assign</span> <span class="port">carries</span>[i+<span class="num">1</span>] = (<span class="port">a</span>[i] & <span class="port">b</span>[i]) | 
+                               (<span class="port">a</span>[i] & <span class="port">carries</span>[i]) | 
+                               (<span class="port">b</span>[i] & <span class="port">carries</span>[i]);
+    <span class="kw">end</span>
+<span class="kw">endgenerate</span>
+
+<span class="kw">assign</span> <span class="port">cout</span> = <span class="port">carries</span>[<span class="port">WIDTH</span>];
+
+<span class="cmt">// Overflow = Cin to MSB XOR Cout from MSB</span>
+<span class="kw">assign</span> <span class="port">overflow</span> = <span class="port">carries</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] ^ <span class="port">carries</span>[<span class="port">WIDTH</span>];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Complete ALU with All Flags</span>
+<span class="kw">module</span> alu_flags #(
+    <span class="kw">parameter</span> <span class="port">WIDTH</span> = <span class="num">32</span>
+)(
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">a</span>,
+    <span class="kw">input</span>      [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b</span>,
+    <span class="kw">input</span>                   <span class="port">is_sub</span>,
+    <span class="kw">output</span>     [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">result</span>,
+    <span class="kw">output</span>                  <span class="port">Z</span>,  <span class="cmt">// Zero flag</span>
+    <span class="kw">output</span>                  <span class="port">N</span>,  <span class="cmt">// Negative flag</span>
+    <span class="kw">output</span>                  <span class="port">C</span>,  <span class="cmt">// Carry/Borrow flag</span>
+    <span class="kw">output</span>                  <span class="port">V</span>   <span class="cmt">// Overflow flag</span>
+);
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>] <span class="port">b_operand</span> = <span class="port">is_sub</span> ? ~<span class="port">b</span> : <span class="port">b</span>;
+<span class="kw">wire</span> <span class="port">cin</span> = <span class="port">is_sub</span>;  <span class="cmt">// For A - B = A + ~B + 1</span>
+
+<span class="kw">wire</span> [<span class="port">WIDTH</span>:<span class="num">0</span>] <span class="port">sum_ext</span> = {<span class="num">1'b0</span>, <span class="port">a</span>} + {<span class="num">1'b0</span>, <span class="port">b_operand</span>} + <span class="port">cin</span>;
+
+<span class="kw">assign</span> <span class="port">result</span> = <span class="port">sum_ext</span>[<span class="port">WIDTH</span>-<span class="num">1</span>:<span class="num">0</span>];
+<span class="kw">assign</span> <span class="port">Z</span> = (<span class="port">result</span> == {<span class="port">WIDTH</span>{<span class="num">1'b0</span>}});
+<span class="kw">assign</span> <span class="port">N</span> = <span class="port">result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>];
+<span class="kw">assign</span> <span class="port">C</span> = <span class="port">sum_ext</span>[<span class="port">WIDTH</span>];
+
+<span class="cmt">// Overflow using sign-based detection</span>
+<span class="kw">assign</span> <span class="port">V</span> = (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] == <span class="port">b_operand</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]) && 
+           (<span class="port">a</span>[<span class="port">WIDTH</span>-<span class="num">1</span>] != <span class="port">result</span>[<span class="port">WIDTH</span>-<span class="num">1</span>]);
+
+<span class="kw">endmodule</span></pre>
+    </div>
+  </div>
+
+  <div id="vhdl-code" class="code-panel">
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">VHDL</span>
+        <span class="code-filename">overflow_detect.vhd</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre class="code-body"><span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">ALL</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">ALL</span>;
+
+<span class="kw">entity</span> overflow_add <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">8</span>);
+    <span class="kw">port</span> (
+        <span class="port">a, b</span>     : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">sum</span>      : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">carry</span>    : <span class="kw">out</span> std_logic;
+        <span class="port">overflow</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> overflow_add;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> overflow_add <span class="kw">is</span>
+    <span class="kw">signal</span> result : unsigned(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> sum_int : std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    result <= (<span class="str">'0'</span> & unsigned(<span class="port">a</span>)) + (<span class="str">'0'</span> & unsigned(<span class="port">b</span>));
+    sum_int <= std_logic_vector(result(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>));
+    <span class="port">sum</span> <= sum_int;
+    <span class="port">carry</span> <= result(<span class="port">WIDTH</span>);
+    
+    <span class="cmt">-- Signed overflow: same sign inputs, different sign output</span>
+    <span class="port">overflow</span> <= (<span class="kw">not</span> <span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">and</span> <span class="kw">not</span> <span class="port">b</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">and</span> sum_int(<span class="port">WIDTH</span>-<span class="num">1</span>)) <span class="kw">or</span>
+                (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">and</span> <span class="port">b</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">and</span> <span class="kw">not</span> sum_int(<span class="port">WIDTH</span>-<span class="num">1</span>));
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- ALU with all flags</span>
+<span class="kw">entity</span> alu_flags <span class="kw">is</span>
+    <span class="kw">generic</span> (<span class="port">WIDTH</span> : natural := <span class="num">32</span>);
+    <span class="kw">port</span> (
+        <span class="port">a, b</span>   : <span class="kw">in</span>  std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">is_sub</span> : <span class="kw">in</span>  std_logic;
+        <span class="port">result</span> : <span class="kw">out</span> std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+        <span class="port">Z, N, C, V</span> : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> alu_flags;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> alu_flags <span class="kw">is</span>
+    <span class="kw">signal</span> b_op : std_logic_vector(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>);
+    <span class="kw">signal</span> res : unsigned(<span class="port">WIDTH</span> <span class="kw">downto</span> <span class="num">0</span>);
+<span class="kw">begin</span>
+    b_op <= <span class="kw">not</span> <span class="port">b</span> <span class="kw">when</span> <span class="port">is_sub</span> = <span class="str">'1'</span> <span class="kw">else</span> <span class="port">b</span>;
+    res <= (<span class="str">'0'</span> & unsigned(<span class="port">a</span>)) + unsigned(b_op) + 
+           (<span class="str">""</span> & <span class="port">is_sub</span>);
+    
+    <span class="port">result</span> <= std_logic_vector(res(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>));
+    <span class="port">Z</span> <= <span class="str">'1'</span> <span class="kw">when</span> res(<span class="port">WIDTH</span>-<span class="num">1</span> <span class="kw">downto</span> <span class="num">0</span>) = <span class="num">0</span> <span class="kw">else</span> <span class="str">'0'</span>;
+    <span class="port">N</span> <= res(<span class="port">WIDTH</span>-<span class="num">1</span>);
+    <span class="port">C</span> <= res(<span class="port">WIDTH</span>);
+    <span class="port">V</span> <= (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">xnor</span> b_op(<span class="port">WIDTH</span>-<span class="num">1</span>)) <span class="kw">and</span> 
+         (<span class="port">a</span>(<span class="port">WIDTH</span>-<span class="num">1</span>) <span class="kw">xor</span> res(<span class="port">WIDTH</span>-<span class="num">1</span>));
+<span class="kw">end</span> behavioral;</pre>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="applications">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+    Applications
+  </h3>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <h5>ALU Flags</h5>
+      <p>V flag used for signed comparisons and conditional branches.</p>
+      <div class="formula">BGT, BLT, BLE, BGE</div>
+    </div>
+    <div class="concept-card">
+      <h5>Exception Handling</h5>
+      <p>Trap on overflow for arithmetic exceptions in some ISAs.</p>
+      <div class="formula">MIPS: ADD vs ADDU</div>
+    </div>
+    <div class="concept-card">
+      <h5>Saturating Arithmetic</h5>
+      <p>Overflow flag triggers saturation to max/min value.</p>
+      <div class="formula">DSP, audio processing</div>
+    </div>
+    <div class="concept-card">
+      <h5>BigNum Library</h5>
+      <p>Detect overflow to trigger carry propagation to next word.</p>
+      <div class="formula">Multi-word arithmetic</div>
+    </div>
+  </div>
+
+  <div class="analysis-box">
+    <h4>Flag Usage for Signed Comparisons</h4>
+    <div class="analysis-item">
+      <span class="label">A == B</span>
+      <span class="value">Z = 1</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">A != B</span>
+      <span class="value">Z = 0</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">A < B (signed)</span>
+      <span class="value">N ⊕ V = 1</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">A >= B (signed)</span>
+      <span class="value">N ⊕ V = 0</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">A < B (unsigned)</span>
+      <span class="value">C = 0 (borrow occurred)</span>
+    </div>
+    <div class="analysis-item">
+      <span class="label">A >= B (unsigned)</span>
+      <span class="value">C = 1 (no borrow)</span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section" id="interview">
+  <h3 class="section-header">
+    <span class="section-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/></svg></span>
+    Interview Notes
+  </h3>
+  <ul class="interview-list">
+    <li>Unsigned overflow = carry out. Signed overflow = Cin[MSB] XOR Cout[MSB].</li>
+    <li>Signed addition overflow: same sign operands, different sign result.</li>
+    <li>Adding different-sign operands NEVER causes signed overflow.</li>
+    <li>For subtraction: V = (A[MSB] != B[MSB]) && (A[MSB] != Result[MSB]).</li>
+    <li>Hardware cost: just 1 XOR gate (given access to MSB carries).</li>
+    <li>Signed comparison after CMP: use N XOR V for less-than condition.</li>
+    <li>MIPS: ADD traps on overflow, ADDU ignores overflow (same hardware, different handling).</li>
+  </ul>
+</section>
