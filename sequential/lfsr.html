@@ -1,0 +1,529 @@
+---
+layout: null
+title: LFSR
+nav: sequential
+sidebar: lfsr
+group: registers
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LFSR (Linear Feedback Shift Register) — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#structure">Structure</a></li>
+      <li><a href="#fibonacci">Fibonacci LFSR</a></li>
+      <li><a href="#galois">Galois LFSR</a></li>
+      <li><a href="#polynomials">Feedback Polynomials</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#applications">Applications</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">LFSR</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">PRNG</span>
+    </div>
+    <h1 class="page-title">LFSR (Linear Feedback Shift Register)</h1>
+    <p class="page-subtitle">
+      A shift register whose input is a linear function (XOR) of selected bits. Generates pseudo-random sequences that cycle through 2<sup>N</sup>-1 states before repeating — essential for CRC, encryption, and test pattern generation.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Feedback</p>
+        <p class="qf-value">XOR of tap bits</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Max sequence</p>
+        <p class="qf-value">2<sup>N</sup> - 1 states</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Forbidden state</p>
+        <p class="qf-value">All zeros (stuck)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Key property</p>
+        <p class="qf-value">Pseudo-random</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Structure -->
+  <section class="section" id="structure">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">How It Works</h2>
+      <a href="#structure" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>An LFSR is a shift register where selected <strong>tap positions</strong> are XORed together and fed back to the input. The tap positions determine the sequence properties:</p>
+      <ul style="margin: 1rem 0 1rem 1.5rem;">
+        <li><strong>Maximal-length:</strong> Correct taps → cycles through 2<sup>N</sup>-1 states</li>
+        <li><strong>Non-maximal:</strong> Wrong taps → shorter cycles or multiple cycles</li>
+        <li><strong>Polynomial:</strong> Taps are defined by characteristic polynomial</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Why 2<sup>N</sup>-1?</strong> The all-zeros state is a "stuck" state — XOR of zeros is zero, so it never transitions. A maximal LFSR visits all states except all-zeros.</p>
+    </div>
+  </section>
+
+  <!-- Fibonacci LFSR -->
+  <section class="section" id="fibonacci">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">Fibonacci LFSR (External XOR)</h2>
+      <a href="#fibonacci" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The "standard" configuration: XOR gates take taps from multiple positions and feed the result into the first flip-flop. Also called <strong>many-to-one</strong> or <strong>external feedback</strong>.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 130" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="130" fill="var(--surface2)" rx="8"/>
+        
+        <!-- DFF boxes -->
+        <rect x="60" y="50" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="87" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D3</text>
+        
+        <rect x="140" y="50" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="167" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D2</text>
+        
+        <rect x="220" y="50" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="247" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D1</text>
+        
+        <rect x="300" y="50" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="327" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D0</text>
+        
+        <!-- Connections -->
+        <line x1="115" y1="70" x2="140" y2="70" stroke="var(--text)" stroke-width="2"/>
+        <line x1="195" y1="70" x2="220" y2="70" stroke="var(--text)" stroke-width="2"/>
+        <line x1="275" y1="70" x2="300" y2="70" stroke="var(--text)" stroke-width="2"/>
+        
+        <!-- Output from D0 -->
+        <line x1="355" y1="70" x2="380" y2="70" stroke="var(--orange)" stroke-width="2"/>
+        <text x="390" y="75" fill="var(--orange)" font-family="var(--mono)" font-size="10" font-weight="bold">OUT</text>
+        
+        <!-- XOR gate -->
+        <ellipse cx="35" cy="70" rx="12" ry="15" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <text x="35" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="12" text-anchor="middle">⊕</text>
+        
+        <!-- XOR input from output -->
+        <circle cx="380" cy="70" r="3" fill="var(--orange)"/>
+        <line x1="380" y1="70" x2="380" y2="110" stroke="var(--orange)" stroke-width="1.5"/>
+        <line x1="380" y1="110" x2="35" y2="110" stroke="var(--orange)" stroke-width="1.5"/>
+        <line x1="35" y1="110" x2="35" y2="85" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <!-- Tap from D2 (position 2) -->
+        <circle cx="167" cy="50" r="3" fill="var(--blue)"/>
+        <line x1="167" y1="50" x2="167" y2="25" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="167" y1="25" x2="35" y2="25" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="35" y1="25" x2="35" y2="55" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- XOR output to D3 -->
+        <line x1="47" y1="70" x2="60" y2="70" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Labels -->
+        <text x="87" y="40" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Q3</text>
+        <text x="167" y="40" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">Q2 (tap)</text>
+        <text x="247" y="40" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Q1</text>
+        <text x="327" y="40" fill="var(--orange)" font-family="var(--mono)" font-size="9" text-anchor="middle">Q0 (tap)</text>
+        
+        <text x="250" y="125" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">4-bit Fibonacci LFSR: x⁴ + x + 1 (taps at positions 0 and 2)</text>
+      </svg>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Feedback for polynomial x⁴ + x + 1</p>
+      <p class="bool-expr">
+        <span class="out">D<sub>3</sub></span> = <span class="var">Q<sub>0</sub></span> <span class="op">⊕</span> <span class="var">Q<sub>2</sub></span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Galois LFSR -->
+  <section class="section" id="galois">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">Galois LFSR (Internal XOR)</h2>
+      <a href="#galois" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>XOR gates placed <strong>between</strong> flip-flops at tap positions. Also called <strong>one-to-many</strong> or <strong>internal feedback</strong>. Faster because XOR is in parallel with shift.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="100" fill="var(--surface2)" rx="8"/>
+        
+        <!-- DFF boxes -->
+        <rect x="60" y="35" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="87" y="60" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D3</text>
+        
+        <rect x="160" y="35" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="187" y="60" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D2</text>
+        
+        <rect x="260" y="35" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="287" y="60" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D1</text>
+        
+        <rect x="360" y="35" width="55" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="387" y="60" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">D0</text>
+        
+        <!-- XOR between D2 and D1 (tap position) -->
+        <ellipse cx="235" cy="55" rx="10" ry="12" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <text x="235" y="59" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">⊕</text>
+        
+        <!-- Connections through XOR -->
+        <line x1="115" y1="55" x2="160" y2="55" stroke="var(--text)" stroke-width="2"/>
+        <line x1="215" y1="55" x2="225" y2="55" stroke="var(--text)" stroke-width="2"/>
+        <line x1="245" y1="55" x2="260" y2="55" stroke="var(--text)" stroke-width="2"/>
+        <line x1="315" y1="55" x2="360" y2="55" stroke="var(--text)" stroke-width="2"/>
+        
+        <!-- Output -->
+        <line x1="415" y1="55" x2="440" y2="55" stroke="var(--orange)" stroke-width="2"/>
+        <text x="450" y="60" fill="var(--orange)" font-family="var(--mono)" font-size="10" font-weight="bold">OUT</text>
+        
+        <!-- Feedback from output to first FF and XOR -->
+        <circle cx="440" cy="55" r="3" fill="var(--orange)"/>
+        <line x1="440" y1="55" x2="440" y2="85" stroke="var(--orange)" stroke-width="1.5"/>
+        <line x1="440" y1="85" x2="40" y2="85" stroke="var(--orange)" stroke-width="1.5"/>
+        <line x1="40" y1="85" x2="40" y2="55" stroke="var(--orange)" stroke-width="1.5"/>
+        <line x1="40" y1="55" x2="60" y2="55" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- Feedback to XOR -->
+        <circle cx="235" cy="85" r="3" fill="var(--orange)"/>
+        <line x1="235" y1="85" x2="235" y2="67" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <!-- Labels -->
+        <text x="250" y="18" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">4-bit Galois LFSR: x⁴ + x + 1 (XOR at position 1)</text>
+      </svg>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Fibonacci Pros</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Easier to understand, direct polynomial mapping, single XOR chain.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Galois Pros</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Faster (XOR in parallel), better for high-speed. Same sequence, different phase.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Polynomials -->
+  <section class="section" id="polynomials">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <h2 class="section-title">Maximal-Length Polynomials</h2>
+      <a href="#polynomials" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>For maximum sequence length, the feedback polynomial must be <strong>primitive</strong>. Common maximal-length tap configurations:</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Bits</th>
+            <th>Polynomial</th>
+            <th>Taps</th>
+            <th>Sequence Length</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>3</td><td>x³ + x + 1</td><td>[3, 1]</td><td>7</td></tr>
+          <tr><td>4</td><td>x⁴ + x + 1</td><td>[4, 1]</td><td>15</td></tr>
+          <tr><td>7</td><td>x⁷ + x + 1</td><td>[7, 1]</td><td>127</td></tr>
+          <tr><td>8</td><td>x⁸ + x⁶ + x⁵ + x⁴ + 1</td><td>[8, 6, 5, 4]</td><td>255</td></tr>
+          <tr><td>16</td><td>x¹⁶ + x¹⁴ + x¹³ + x¹¹ + 1</td><td>[16, 14, 13, 11]</td><td>65,535</td></tr>
+          <tr><td>32</td><td>x³² + x²² + x² + x + 1</td><td>[32, 22, 2, 1]</td><td>4,294,967,295</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>CRC polynomials:</strong> CRC-16, CRC-32, etc. use standardized polynomials optimized for error detection, not necessarily maximal length.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">lfsr.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// 8-bit LFSR (Fibonacci) - polynomial x^8 + x^6 + x^5 + x^4 + 1</span>
+<span class="kw">module</span> lfsr_8bit (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">output</span> <span class="kw">reg</span> [7:0] Q,
+    <span class="kw">output</span> <span class="kw">wire</span> out
+);
+
+    <span class="kw">wire</span> feedback = Q[7] ^ Q[5] ^ Q[4] ^ Q[3];
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= 8'b1;  <span class="cmt">// Non-zero seed</span>
+        <span class="kw">else if</span> (en)
+            Q &lt;= {Q[6:0], feedback};
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> out = Q[7];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Galois LFSR - often faster</span>
+<span class="kw">module</span> lfsr_galois_8bit (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">output</span> <span class="kw">reg</span> [7:0] Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= 8'b1;
+        <span class="kw">else if</span> (en) <span class="kw">begin</span>
+            Q[7] &lt;= Q[0];
+            Q[6] &lt;= Q[7];
+            Q[5] &lt;= Q[6] ^ Q[0];  <span class="cmt">// tap</span>
+            Q[4] &lt;= Q[5] ^ Q[0];  <span class="cmt">// tap</span>
+            Q[3] &lt;= Q[4] ^ Q[0];  <span class="cmt">// tap</span>
+            Q[2] &lt;= Q[3];
+            Q[1] &lt;= Q[2];
+            Q[0] &lt;= Q[1];
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Parameterized LFSR with common polynomials</span>
+<span class="kw">module</span> lfsr_param #(
+    <span class="kw">parameter</span> WIDTH = 16,
+    <span class="kw">parameter</span> [WIDTH-1:0] TAPS = 16'b1011010000000000  <span class="cmt">// x^16+x^14+x^13+x^11+1</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">output</span> <span class="kw">reg</span> [WIDTH-1:0] Q
+);
+
+    <span class="kw">wire</span> feedback = ^(Q &amp; TAPS);  <span class="cmt">// XOR of tapped bits</span>
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= {{(WIDTH-1){1'b0}}, 1'b1};
+        <span class="kw">else if</span> (en)
+            Q &lt;= {Q[WIDTH-2:0], feedback};
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">lfsr.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- 8-bit LFSR (Fibonacci) - polynomial x^8 + x^6 + x^5 + x^4 + 1</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> lfsr_8bit <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        en    : <span class="kw">in</span>  std_logic;
+        Q     : <span class="kw">out</span> std_logic_vector(7 <span class="kw">downto</span> 0);
+        dout  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> lfsr_8bit;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> lfsr_8bit <span class="kw">is</span>
+    <span class="kw">signal</span> reg_q : std_logic_vector(7 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> feedback : std_logic;
+<span class="kw">begin</span>
+    <span class="cmt">-- Taps: x^8 + x^6 + x^5 + x^4 + 1</span>
+    feedback &lt;= reg_q(7) <span class="kw">xor</span> reg_q(5) <span class="kw">xor</span> reg_q(4) <span class="kw">xor</span> reg_q(3);
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            reg_q &lt;= "00000001";  <span class="cmt">-- Non-zero seed</span>
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> en = '1' <span class="kw">then</span>
+                reg_q &lt;= reg_q(6 <span class="kw">downto</span> 0) &amp; feedback;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q    &lt;= reg_q;
+    dout &lt;= reg_q(7);
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- 4-bit LFSR example - x^4 + x + 1</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> lfsr_4bit <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        Q     : <span class="kw">out</span> std_logic_vector(3 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> lfsr_4bit;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> lfsr_4bit <span class="kw">is</span>
+    <span class="kw">signal</span> reg_q : std_logic_vector(3 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            reg_q &lt;= "0001";
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            reg_q &lt;= reg_q(2 <span class="kw">downto</span> 0) &amp; (reg_q(3) <span class="kw">xor</span> reg_q(0));
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q &lt;= reg_q;
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Applications -->
+  <section class="section" id="applications">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <h2 class="section-title">Applications</h2>
+      <a href="#applications" class="section-anchor">#</a>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">CRC Computation</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Error detection codes (CRC-16, CRC-32) are computed using LFSR-based division.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">PRNG</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Pseudo-random number generators for games, simulation, and (weak) cryptography.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">BIST</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Built-In Self Test uses LFSRs to generate test patterns and signature analysis.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Scrambling</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Data scrambling in communication (USB, SATA, PCIe) prevents long runs of 0s/1s.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Spread Spectrum</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">PN sequences for CDMA, GPS, and spread spectrum communications.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Encryption</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Stream ciphers (though modern ciphers use more complex structures).</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Security warning:</strong> LFSRs are NOT cryptographically secure — the sequence can be predicted from a short sample using the Berlekamp-Massey algorithm. Use proper cryptographic PRNGs for security applications.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/ring-counter.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Ring Counter
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/' | relative_url }}">
+        All Sequential
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+---
+layout: null
+title: Shift Register
+nav: sequential
+sidebar: shift-reg
+group: registers
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Shift Register — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#types">Types of Shift Registers</a></li>
+      <li><a href="#siso">SISO (Serial-In Serial-Out)</a></li>
+      <li><a href="#sipo">SIPO (Serial-In Parallel-Out)</a></li>
+      <li><a href="#piso">PISO (Parallel-In Serial-Out)</a></li>
+      <li><a href="#pipo">PIPO (Parallel-In Parallel-Out)</a></li>
+      <li><a href="#bidirectional">Bidirectional</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#applications">Applications</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Shift Register</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Register</span>
+    </div>
+    <h1 class="page-title">Shift Register</h1>
+    <p class="page-subtitle">
+      A shift register is a cascade of flip-flops where the output of one feeds the input of the next. Data "shifts" one position per clock cycle. Used for serial-parallel conversion, delay lines, and data buffering.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Building block</p>
+        <p class="qf-value">D Flip-Flops</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">N-bit register</p>
+        <p class="qf-value">N flip-flops</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Shift per clock</p>
+        <p class="qf-value">1 bit position</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Direction</p>
+        <p class="qf-value">Left / Right / Both</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Types -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Types of Shift Registers</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>SISO</strong></td><td>Serial</td><td>Serial</td><td>Delay line, data buffer</td></tr>
+          <tr><td><strong>SIPO</strong></td><td>Serial</td><td>Parallel</td><td>Serial-to-parallel conversion</td></tr>
+          <tr><td><strong>PISO</strong></td><td>Parallel</td><td>Serial</td><td>Parallel-to-serial conversion</td></tr>
+          <tr><td><strong>PIPO</strong></td><td>Parallel</td><td>Parallel</td><td>Temporary storage, pipeline reg</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SISO -->
+  <section class="section" id="siso">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">SISO (Serial-In Serial-Out)</h2>
+      <a href="#siso" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The simplest shift register. Data enters one bit at a time and exits one bit at a time after N clock cycles (where N is the register width). Acts as a <strong>delay line</strong>.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 100" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="100" fill="var(--surface2)" rx="8"/>
+        
+        <!-- DFF boxes -->
+        <rect x="80" y="30" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="110" y="55" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="170" y="30" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="200" y="55" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="260" y="30" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="290" y="55" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="350" y="30" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="380" y="55" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <!-- Connections -->
+        <text x="30" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="12" font-weight="bold">Din</text>
+        <line x1="50" y1="50" x2="80" y2="50" stroke="var(--blue)" stroke-width="2"/>
+        
+        <line x1="140" y1="50" x2="170" y2="50" stroke="var(--text)" stroke-width="2"/>
+        <line x1="230" y1="50" x2="260" y2="50" stroke="var(--text)" stroke-width="2"/>
+        <line x1="320" y1="50" x2="350" y2="50" stroke="var(--text)" stroke-width="2"/>
+        
+        <line x1="410" y1="50" x2="435" y2="50" stroke="var(--orange)" stroke-width="2"/>
+        <text x="440" y="55" fill="var(--orange)" font-family="var(--mono)" font-size="12" font-weight="bold">Dout</text>
+        
+        <!-- Clock -->
+        <text x="225" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" text-anchor="middle">CLK →</text>
+      </svg>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Delay = N clock cycles</p>
+      <p class="bool-expr">
+        <span class="out">D<sub>out</sub></span>[t] = <span class="var">D<sub>in</sub></span>[t - N]
+      </p>
+    </div>
+  </section>
+
+  <!-- SIPO -->
+  <section class="section" id="sipo">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">SIPO (Serial-In Parallel-Out)</h2>
+      <a href="#sipo" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Data enters serially but all flip-flop outputs are available simultaneously. After N clocks, the complete N-bit word is available in parallel. Used in <strong>serial receivers</strong> (UART, SPI).</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 130" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="130" fill="var(--surface2)" rx="8"/>
+        
+        <!-- DFF boxes -->
+        <rect x="80" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="110" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="170" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="200" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="260" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="290" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="350" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="380" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <!-- Serial input -->
+        <text x="30" y="65" fill="var(--blue)" font-family="var(--mono)" font-size="12" font-weight="bold">Din</text>
+        <line x1="50" y1="60" x2="80" y2="60" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Connections between DFFs -->
+        <line x1="140" y1="60" x2="170" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <line x1="230" y1="60" x2="260" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <line x1="320" y1="60" x2="350" y2="60" stroke="var(--text)" stroke-width="2"/>
+        
+        <!-- Parallel outputs -->
+        <line x1="110" y1="80" x2="110" y2="110" stroke="var(--orange)" stroke-width="2"/>
+        <text x="110" y="120" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q3</text>
+        
+        <line x1="200" y1="80" x2="200" y2="110" stroke="var(--orange)" stroke-width="2"/>
+        <text x="200" y="120" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q2</text>
+        
+        <line x1="290" y1="80" x2="290" y2="110" stroke="var(--orange)" stroke-width="2"/>
+        <text x="290" y="120" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q1</text>
+        
+        <line x1="380" y1="80" x2="380" y2="110" stroke="var(--orange)" stroke-width="2"/>
+        <text x="380" y="120" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q0</text>
+        
+        <!-- Label -->
+        <text x="30" y="20" fill="var(--text-dim)" font-family="var(--mono)" font-size="10">Serial → Parallel</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- PISO -->
+  <section class="section" id="piso">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">PISO (Parallel-In Serial-Out)</h2>
+      <a href="#piso" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>An N-bit word is loaded in parallel (all at once), then shifted out serially one bit per clock. Used in <strong>serial transmitters</strong> (UART TX, SPI MOSI).</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 130" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="130" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Parallel inputs -->
+        <line x1="110" y1="10" x2="110" y2="40" stroke="var(--blue)" stroke-width="2"/>
+        <text x="110" y="8" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">D3</text>
+        
+        <line x1="200" y1="10" x2="200" y2="40" stroke="var(--blue)" stroke-width="2"/>
+        <text x="200" y="8" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">D2</text>
+        
+        <line x1="290" y1="10" x2="290" y2="40" stroke="var(--blue)" stroke-width="2"/>
+        <text x="290" y="8" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">D1</text>
+        
+        <line x1="380" y1="10" x2="380" y2="40" stroke="var(--blue)" stroke-width="2"/>
+        <text x="380" y="8" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">D0</text>
+        
+        <!-- DFF boxes -->
+        <rect x="80" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="110" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="170" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="200" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="260" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="290" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <rect x="350" y="40" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="380" y="65" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">DFF</text>
+        
+        <!-- Connections between DFFs -->
+        <line x1="140" y1="60" x2="170" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <line x1="230" y1="60" x2="260" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <line x1="320" y1="60" x2="350" y2="60" stroke="var(--text)" stroke-width="2"/>
+        
+        <!-- Serial output -->
+        <line x1="410" y1="60" x2="435" y2="60" stroke="var(--orange)" stroke-width="2"/>
+        <text x="440" y="65" fill="var(--orange)" font-family="var(--mono)" font-size="12" font-weight="bold">Dout</text>
+        
+        <!-- Load signal -->
+        <text x="30" y="100" fill="var(--text-dim)" font-family="var(--mono)" font-size="10">LOAD: parallel input</text>
+        <text x="30" y="115" fill="var(--text-dim)" font-family="var(--mono)" font-size="10">SHIFT: serial output</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Mode control:</strong> PISO typically has a LOAD/SHIFT control signal. When LOAD=1, parallel data is captured. When LOAD=0, data shifts out serially.</p>
+    </div>
+  </section>
+
+  <!-- PIPO -->
+  <section class="section" id="pipo">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">PIPO (Parallel-In Parallel-Out)</h2>
+      <a href="#pipo" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>All bits loaded and output in parallel. Essentially a simple <strong>register</strong> or <strong>pipeline stage</strong>. Data is captured on clock edge and held until next load.</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Function</p>
+        <p class="qf-value">Q[n:0] ← D[n:0]</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">On each clock edge</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Cases</p>
+        <p class="qf-value">Pipeline registers</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Temporary storage, data buffering</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bidirectional -->
+  <section class="section" id="bidirectional">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <h2 class="section-title">Bidirectional Shift Register</h2>
+      <a href="#bidirectional" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Can shift data left or right based on a direction control signal. Uses multiplexers to select between left neighbor and right neighbor for each flip-flop's input.</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>DIR</th>
+            <th>SHIFT</th>
+            <th>Operation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td>Hold (no change)</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td>Shift Right</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td>Hold (no change)</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td>Shift Left</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Arithmetic shifts:</strong> Shift left = multiply by 2. Shift right (arithmetic) = divide by 2. Logical shift fills with 0; arithmetic shift preserves sign bit.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">shift_reg.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// 8-bit Shift Register (SIPO)</span>
+<span class="kw">module</span> shift_reg_sipo #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> din,           <span class="cmt">// Serial input</span>
+    <span class="kw">output</span> <span class="kw">wire</span> [WIDTH-1:0] Q  <span class="cmt">// Parallel output</span>
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] shift;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            shift &lt;= {WIDTH{1'b0}};
+        <span class="kw">else</span>
+            shift &lt;= {shift[WIDTH-2:0], din};  <span class="cmt">// Shift left, new bit enters LSB</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> Q = shift;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 8-bit PISO Shift Register</span>
+<span class="kw">module</span> shift_reg_piso #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> load,          <span class="cmt">// 1=load parallel, 0=shift</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] D, <span class="cmt">// Parallel input</span>
+    <span class="kw">output</span> <span class="kw">wire</span> dout           <span class="cmt">// Serial output (MSB first)</span>
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] shift;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            shift &lt;= {WIDTH{1'b0}};
+        <span class="kw">else if</span> (load)
+            shift &lt;= D;                       <span class="cmt">// Load parallel</span>
+        <span class="kw">else</span>
+            shift &lt;= {shift[WIDTH-2:0], 1'b0}; <span class="cmt">// Shift left</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> dout = shift[WIDTH-1];  <span class="cmt">// MSB is serial out</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">shift_reg.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- 8-bit Shift Register (SIPO)</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> shift_reg_sipo <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 8);
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        din   : <span class="kw">in</span>  std_logic;
+        Q     : <span class="kw">out</span> std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> shift_reg_sipo;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> shift_reg_sipo <span class="kw">is</span>
+    <span class="kw">signal</span> shift : std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            shift &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            shift &lt;= shift(WIDTH-2 <span class="kw">downto</span> 0) &amp; din;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q &lt;= shift;
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Applications -->
+  <section class="section" id="applications">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <h2 class="section-title">Applications</h2>
+      <a href="#applications" class="section-anchor">#</a>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Serial Communication</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">UART, SPI, I2C all use shift registers for serial-parallel conversion.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Delay Lines</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">SISO creates precise N-cycle delays. Used in DSP, audio effects.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">LED Drivers</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Cascade shift registers (74HC595) to drive many LEDs with few pins.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">CRC/Checksum</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">LFSR-based shift registers compute CRC for error detection.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/t-ff.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        T Flip-Flop
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/counter-async.html' | relative_url }}">
+        Async Counter
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

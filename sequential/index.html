@@ -1,0 +1,302 @@
+---
+layout: null
+title: Sequential Logic
+nav: sequential
+sidebar: sequential-index
+group: latches
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sequential Logic — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .circuit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin: 2rem 0;
+  }
+  .circuit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .circuit-card:hover {
+    border-color: var(--blue);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .circuit-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .circuit-card-symbol {
+    width: 44px;
+    height: 44px;
+    background: var(--blue-1, rgba(26, 95, 176, 0.1));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--blue);
+  }
+  .circuit-card h3 {
+    color: var(--text);
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  .circuit-card-type {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .circuit-card p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;
+  }
+  .category-section {
+    margin-top: 2.5rem;
+  }
+  .category-section h2 {
+    font-size: 1.25rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .cat-badge {
+    font-size: 0.75rem;
+    background: var(--surface2);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Sequential Logic</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Memory Elements</span>
+    </div>
+    <h1 class="page-title">Sequential Logic</h1>
+    <p class="page-subtitle">
+      Sequential circuits have memory — their outputs depend on both current inputs and past history. Unlike combinational circuits, they require clock signals and can store state.
+    </p>
+  </div>
+
+  <!-- Key Concepts -->
+  <section id="concepts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Combinational vs Sequential</p>
+        <p class="qf-value">Output = f(inputs, state)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Memory element</p>
+        <p class="qf-value">Flip-flop / Latch</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Synchronous</p>
+        <p class="qf-value">Clock-controlled updates</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Foundation for</p>
+        <p class="qf-value">Registers, Counters, FSMs</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latches -->
+  <section class="category-section">
+    <h2>Latches <span class="cat-badge">Level-sensitive</span></h2>
+    <div class="circuit-grid">
+      <a href="{{ '/sequential/sr-latch.html' | relative_url }}" class="circuit-card">
+        <div class="circuit-card-header">
+          <div class="circuit-card-symbol">SR</div>
+          <div>
+            <h3>SR Latch</h3>
+            <span class="circuit-card-type">Set-Reset</span>
+          </div>
+        </div>
+        <p>The simplest memory element. Set and Reset inputs control state. Has a forbidden state (S=R=1).</p>
+      </a>
+
+      <a href="{{ '/sequential/d-latch.html' | relative_url }}" class="circuit-card">
+        <div class="circuit-card-header">
+          <div class="circuit-card-symbol">D</div>
+          <div>
+            <h3>D Latch</h3>
+            <span class="circuit-card-type">Data / Transparent</span>
+          </div>
+        </div>
+        <p>Single data input eliminates forbidden state. Transparent when enabled — output follows input.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Flip-Flops -->
+  <section class="category-section">
+    <h2>Flip-Flops <span class="cat-badge">Edge-triggered</span></h2>
+    <div class="circuit-grid">
+      <a href="{{ '/sequential/d-ff.html' | relative_url }}" class="circuit-card">
+        <div class="circuit-card-header">
+          <div class="circuit-card-symbol">D</div>
+          <div>
+            <h3>D Flip-Flop</h3>
+            <span class="circuit-card-type">Data FF</span>
+          </div>
+        </div>
+        <p>The workhorse of synchronous design. Samples D only at clock edge. Foundation of registers and pipelines.</p>
+      </a>
+
+      <a href="{{ '/sequential/jk-ff.html' | relative_url }}" class="circuit-card">
+        <div class="circuit-card-header">
+          <div class="circuit-card-symbol">JK</div>
+          <div>
+            <h3>JK Flip-Flop</h3>
+            <span class="circuit-card-type">Universal FF</span>
+          </div>
+        </div>
+        <p>Most versatile flip-flop with toggle mode (J=K=1). No forbidden state. Used in counters and academic contexts.</p>
+      </a>
+
+      <a href="{{ '/sequential/t-ff.html' | relative_url }}" class="circuit-card">
+        <div class="circuit-card-header">
+          <div class="circuit-card-symbol">T</div>
+          <div>
+            <h3>T Flip-Flop</h3>
+            <span class="circuit-card-type">Toggle FF</span>
+          </div>
+        </div>
+        <p>Toggles output when T=1, holds when T=0. Simplest structure for binary counters and frequency dividers.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Latch vs Flip-Flop -->
+  <section class="section" style="margin-top: 3rem;">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <h2 class="section-title">Latch vs Flip-Flop</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Latch</th>
+            <th>Flip-Flop</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trigger type</td>
+            <td>Level-sensitive</td>
+            <td>Edge-triggered</td>
+          </tr>
+          <tr>
+            <td>When sampled</td>
+            <td>Entire enable HIGH period</td>
+            <td>Only at clock edge</td>
+          </tr>
+          <tr>
+            <td>Transparency</td>
+            <td>Yes (can cause races)</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Gate count</td>
+            <td>Lower (~4 gates)</td>
+            <td>Higher (~8-12 gates)</td>
+          </tr>
+          <tr>
+            <td>Modern usage</td>
+            <td>Special cases, CDC</td>
+            <td>Standard synchronous design</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Industry standard:</strong> Flip-flops (especially D flip-flops) dominate synchronous design. Latches appear in special cases like clock gating cells and CDC synchronizers.</p>
+    </div>
+  </section>
+
+  <!-- Coming Soon -->
+  <section class="category-section">
+    <h2>Coming Soon <span class="cat-badge">Planned</span></h2>
+    <div class="prose">
+      <ul style="margin: 1rem 0 1rem 1.5rem; color: var(--text-dim);">
+        <li>Shift Registers (SIPO, PISO, SISO, PIPO)</li>
+        <li>Asynchronous & Synchronous Counters</li>
+        <li>Ring Counter & Johnson Counter</li>
+        <li>LFSR (Linear Feedback Shift Register)</li>
+        <li>Mealy & Moore State Machines</li>
+        <li>Sequence Detectors</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/sr-latch.html' | relative_url }}">
+        SR Latch
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

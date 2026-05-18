@@ -440,7 +440,7 @@ pre.code-body {
   padding: 1.1rem 1.25rem;
   overflow-x: auto;
   font-family: var(--mono);
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   line-height: 1.75;
   color: var(--text);
   margin: 0;
@@ -604,3 +604,10 @@ pre.code-body {
   .sidebar-toggle { display: block; }
   .page-title { font-size: 1.65rem; }
 }
+
+/* ── Code Syntax Highlighting ───────────────────────── */
+.kw  { color: #5e35b1; font-weight: 500; }  /* keywords: module, always, if, etc. */
+.cmt { color: #9aa3b2; font-style: italic; } /* comments */
+.port { color: #1a5fb0; }                    /* signal/port names */
+.num { color: #c56200; }                     /* numbers */
+.str { color: #059669; }                     /* strings */

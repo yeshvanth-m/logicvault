@@ -1,0 +1,533 @@
+---
+layout: null
+title: Synchronous Counter
+nav: sequential
+sidebar: counter-sync
+group: registers
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Synchronous Counter — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#operation">Operation</a></li>
+      <li><a href="#carry-logic">Carry Logic</a></li>
+      <li><a href="#up-down">Up/Down Counter</a></li>
+      <li><a href="#loadable">Loadable Counter</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#comparison">Async vs Sync Comparison</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Sync Counter</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Counter</span>
+    </div>
+    <h1 class="page-title">Synchronous Counter</h1>
+    <p class="page-subtitle">
+      All flip-flops share the same clock signal and change state simultaneously. No ripple delay — outputs are glitch-free. The standard choice for modern digital design.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Clock</p>
+        <p class="qf-value">Common to all FFs</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Propagation</p>
+        <p class="qf-value">1 × t<sub>pd</sub></p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Glitches</p>
+        <p class="qf-value">None</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Logic</p>
+        <p class="qf-value">Carry chain needed</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Operation -->
+  <section class="section" id="operation">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">How It Works</h2>
+      <a href="#operation" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each flip-flop receives the same clock. The <strong>toggle enable</strong> (T input) for each stage is determined by combinational logic:</p>
+      <ul style="margin: 1rem 0 1rem 1.5rem;">
+        <li><strong>T0 = 1</strong> (always toggles)</li>
+        <li><strong>T1 = Q0</strong> (toggle when Q0=1)</li>
+        <li><strong>T2 = Q0 · Q1</strong> (toggle when both lower bits are 1)</li>
+        <li><strong>Tn = Q0 · Q1 · ... · Q(n-1)</strong></li>
+      </ul>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 150" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="150" fill="var(--surface2)" rx="8"/>
+        
+        <!-- T-FF boxes -->
+        <rect x="60" y="50" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="95" y="70" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">T-FF</text>
+        <text x="95" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">T=1</text>
+        
+        <rect x="170" y="50" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="205" y="70" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">T-FF</text>
+        <text x="205" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">T=Q0</text>
+        
+        <rect x="290" y="50" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="325" y="70" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">T-FF</text>
+        <text x="325" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">T=Q0·Q1</text>
+        
+        <rect x="400" y="50" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="435" y="70" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">T-FF</text>
+        <text x="435" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">T=Q0·Q1·Q2</text>
+        
+        <!-- Common clock line -->
+        <line x1="20" y1="130" x2="480" y2="130" stroke="var(--blue)" stroke-width="2"/>
+        <text x="15" y="133" fill="var(--blue)" font-family="var(--mono)" font-size="10" font-weight="bold">CLK</text>
+        
+        <!-- Clock connections going up -->
+        <line x1="95" y1="100" x2="95" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="205" y1="100" x2="205" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="325" y1="100" x2="325" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="435" y1="100" x2="435" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Q outputs -->
+        <text x="95" y="40" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q0</text>
+        <line x1="95" y1="50" x2="95" y2="43" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <text x="205" y="40" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q1</text>
+        <line x1="205" y1="50" x2="205" y2="43" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <text x="325" y="40" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q2</text>
+        <line x1="325" y1="50" x2="325" y2="43" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <text x="435" y="40" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q3</text>
+        <line x1="435" y1="50" x2="435" y2="43" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <!-- Label -->
+        <text x="250" y="20" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" text-anchor="middle">4-bit Synchronous Counter - All FFs share same clock</text>
+      </svg>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Toggle Condition for bit n</p>
+      <p class="bool-expr">
+        <span class="var">T<sub>n</sub></span> = <span class="var">Q<sub>0</sub></span> <span class="op">·</span> <span class="var">Q<sub>1</sub></span> <span class="op">·</span> ... <span class="op">·</span> <span class="var">Q<sub>n-1</sub></span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Carry Logic -->
+  <section class="section" id="carry-logic">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h2 class="section-title">Carry Chain & Lookahead</h2>
+      <a href="#carry-logic" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The T input depends on an AND chain of all lower bits. This creates a <strong>carry propagation problem</strong> similar to adders:</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Ripple Carry</p>
+        <p class="qf-value">T<sub>n</sub> = T<sub>n-1</sub> · Q<sub>n-1</sub></p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Simple but slow for wide counters</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Carry Lookahead</p>
+        <p class="qf-value">T<sub>n</sub> = Q<sub>0</sub>·Q<sub>1</sub>·...·Q<sub>n-1</sub></p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Parallel AND — faster but more gates</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Practical limit:</strong> For counters wider than ~16 bits, use hierarchical or pipelined designs to meet timing. Most synthesis tools handle this automatically when you write <code>Q &lt;= Q + 1</code>.</p>
+    </div>
+  </section>
+
+  <!-- Up/Down -->
+  <section class="section" id="up-down">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7M5 12l7 7 7-7"/></svg>
+      </div>
+      <h2 class="section-title">Up/Down Counter</h2>
+      <a href="#up-down" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Add a direction control input. Toggle condition uses Q or Q' based on direction:</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>DIR</th>
+            <th>Operation</th>
+            <th>T<sub>n</sub> condition</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td>Count Up</td><td>Q<sub>0</sub> · Q<sub>1</sub> · ... · Q<sub>n-1</sub></td></tr>
+          <tr><td class="val-1">1</td><td>Count Down</td><td>Q'<sub>0</sub> · Q'<sub>1</sub> · ... · Q'<sub>n-1</sub></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">Up/Down Toggle Logic</p>
+      <p class="bool-expr">
+        <span class="var">T<sub>n</sub></span> = (<span class="var">DIR'</span> <span class="op">·</span> <span class="var">Q<sub>n-1</sub></span> <span class="op">+</span> <span class="var">DIR</span> <span class="op">·</span> <span class="var">Q'<sub>n-1</sub></span>) <span class="op">·</span> <span class="var">T<sub>n-1</sub></span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Loadable -->
+  <section class="section" id="loadable">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      </div>
+      <h2 class="section-title">Loadable (Presettable) Counter</h2>
+      <a href="#loadable" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Add a parallel load capability to initialize the counter to any value. Essential for:</p>
+      <ul style="margin: 1rem 0 1rem 1.5rem;">
+        <li><strong>MOD-N counters:</strong> Load (2<sup>N</sup> - MOD) to count up to overflow</li>
+        <li><strong>Timers:</strong> Load countdown value</li>
+        <li><strong>Address generators:</strong> Jump to specific address</li>
+      </ul>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>LOAD</th>
+            <th>EN</th>
+            <th>Operation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-1">1</td><td>X</td><td>Q ← D (parallel load)</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td>Q ← Q + 1 (count)</td></tr>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td>Q ← Q (hold)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">sync_counter.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Simple N-bit Synchronous Up Counter</span>
+<span class="kw">module</span> sync_counter #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">output</span> <span class="kw">reg</span> [WIDTH-1:0] Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= {WIDTH{1'b0}};
+        <span class="kw">else if</span> (en)
+            Q &lt;= Q + 1'b1;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Up/Down Counter with Load</span>
+<span class="kw">module</span> updown_counter #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">input</span>  <span class="kw">wire</span> dir,       <span class="cmt">// 0=up, 1=down</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> load,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] D,
+    <span class="kw">output</span> <span class="kw">reg</span> [WIDTH-1:0] Q,
+    <span class="kw">output</span> <span class="kw">wire</span> tc         <span class="cmt">// Terminal count</span>
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= {WIDTH{1'b0}};
+        <span class="kw">else if</span> (load)
+            Q &lt;= D;
+        <span class="kw">else if</span> (en) <span class="kw">begin</span>
+            <span class="kw">if</span> (dir)
+                Q &lt;= Q - 1'b1;  <span class="cmt">// Down</span>
+            <span class="kw">else</span>
+                Q &lt;= Q + 1'b1;  <span class="cmt">// Up</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Terminal count: all 1s (up) or all 0s (down)</span>
+    <span class="kw">assign</span> tc = dir ? (Q == {WIDTH{1'b0}}) : (Q == {WIDTH{1'b1}});
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// MOD-N Counter (e.g., MOD-10 decade counter)</span>
+<span class="kw">module</span> mod_n_counter #(
+    <span class="kw">parameter</span> MOD = 10,
+    <span class="kw">parameter</span> WIDTH = $clog2(MOD)
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> en,
+    <span class="kw">output</span> <span class="kw">reg</span> [WIDTH-1:0] Q,
+    <span class="kw">output</span> <span class="kw">wire</span> tc
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= {WIDTH{1'b0}};
+        <span class="kw">else if</span> (en) <span class="kw">begin</span>
+            <span class="kw">if</span> (Q == MOD - 1)
+                Q &lt;= {WIDTH{1'b0}};  <span class="cmt">// Wrap</span>
+            <span class="kw">else</span>
+                Q &lt;= Q + 1'b1;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> tc = (Q == MOD - 1) &amp;&amp; en;
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">sync_counter.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Simple N-bit Synchronous Up Counter</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> sync_counter <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 8);
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        en    : <span class="kw">in</span>  std_logic;
+        Q     : <span class="kw">out</span> std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> sync_counter;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> sync_counter <span class="kw">is</span>
+    <span class="kw">signal</span> count : unsigned(WIDTH-1 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            count &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> en = '1' <span class="kw">then</span>
+                count &lt;= count + 1;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q &lt;= std_logic_vector(count);
+<span class="kw">end</span> behavioral;
+
+<span class="cmt">-- Up/Down Counter with Load</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> updown_counter <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 8);
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        en    : <span class="kw">in</span>  std_logic;
+        dir   : <span class="kw">in</span>  std_logic;  <span class="cmt">-- 0=up, 1=down</span>
+        load  : <span class="kw">in</span>  std_logic;
+        D     : <span class="kw">in</span>  std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        Q     : <span class="kw">out</span> std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        tc    : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> updown_counter;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> updown_counter <span class="kw">is</span>
+    <span class="kw">signal</span> count : unsigned(WIDTH-1 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            count &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> load = '1' <span class="kw">then</span>
+                count &lt;= unsigned(D);
+            <span class="kw">elsif</span> en = '1' <span class="kw">then</span>
+                <span class="kw">if</span> dir = '1' <span class="kw">then</span>
+                    count &lt;= count - 1;
+                <span class="kw">else</span>
+                    count &lt;= count + 1;
+                <span class="kw">end if</span>;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q  &lt;= std_logic_vector(count);
+    tc &lt;= '1' <span class="kw">when</span> (dir = '1' <span class="kw">and</span> count = 0) <span class="kw">or</span>
+                   (dir = '0' <span class="kw">and</span> count = (2**WIDTH - 1))
+           <span class="kw">else</span> '0';
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <h2 class="section-title">Async vs Sync Counter Summary</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Asynchronous</th>
+            <th>Synchronous</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Clocking</td>
+            <td>Ripple (Q clocks next FF)</td>
+            <td>Common clock to all FFs</td>
+          </tr>
+          <tr>
+            <td>Output timing</td>
+            <td>Staggered (glitchy)</td>
+            <td>Simultaneous (clean)</td>
+          </tr>
+          <tr>
+            <td>Max frequency</td>
+            <td>Lower (N × t<sub>pd</sub>)</td>
+            <td>Higher (1 × t<sub>pd</sub> + logic)</td>
+          </tr>
+          <tr>
+            <td>Hardware</td>
+            <td>Simple (no carry logic)</td>
+            <td>More complex</td>
+          </tr>
+          <tr>
+            <td>Power</td>
+            <td>Lower (fewer transitions)</td>
+            <td>Higher</td>
+          </tr>
+          <tr>
+            <td>Use case</td>
+            <td>Simple dividers, low-speed</td>
+            <td>All modern synchronous designs</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/counter-async.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Async Counter
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/ring-counter.html' | relative_url }}">
+        Ring Counter
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

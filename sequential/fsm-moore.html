@@ -1,0 +1,541 @@
+---
+layout: null
+title: Moore Machine
+nav: sequential
+sidebar: fsm-moore
+group: fsm
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Moore Machine — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#structure">Structure</a></li>
+      <li><a href="#diagram">State Diagram</a></li>
+      <li><a href="#table">State Table</a></li>
+      <li><a href="#timing">Timing Behavior</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#conversion">Mealy ↔ Moore</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Moore Machine</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-purple">FSM</span>
+    </div>
+    <h1 class="page-title">Moore Machine</h1>
+    <p class="page-subtitle">
+      A finite state machine where outputs depend <strong>only</strong> on the current state. Outputs are synchronous with the clock and inherently glitch-free, making Moore machines the preferred choice for most digital designs.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Output depends on</p>
+        <p class="qf-value">State only</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Output changes</p>
+        <p class="qf-value">At clock edge</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Glitch-free</p>
+        <p class="qf-value">Yes (inherently)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Latency</p>
+        <p class="qf-value">1 cycle delay</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Structure -->
+  <section class="section" id="structure">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Structure</h2>
+      <a href="#structure" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Next State Logic -->
+        <rect x="120" y="50" width="100" height="60" rx="6" fill="var(--surface)" stroke="var(--blue)" stroke-width="2"/>
+        <text x="170" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">Next State</text>
+        <text x="170" y="90" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">Logic</text>
+        
+        <!-- State Register -->
+        <rect x="270" y="50" width="80" height="60" rx="6" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="310" y="75" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">State</text>
+        <text x="310" y="90" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">Register</text>
+        
+        <!-- Output Logic -->
+        <rect x="380" y="50" width="80" height="60" rx="6" fill="var(--surface)" stroke="var(--orange)" stroke-width="2"/>
+        <text x="420" y="85" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">Output</text>
+        
+        <!-- Input arrow -->
+        <line x1="30" y1="80" x2="120" y2="80" stroke="var(--text)" stroke-width="2"/>
+        <polygon points="115,75 120,80 115,85" fill="var(--text)"/>
+        <text x="30" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="10">Input</text>
+        
+        <!-- Next state to register -->
+        <line x1="220" y1="80" x2="270" y2="80" stroke="var(--text)" stroke-width="2"/>
+        <polygon points="265,75 270,80 265,85" fill="var(--text)"/>
+        
+        <!-- Register to output (Moore: state only!) -->
+        <line x1="350" y1="80" x2="380" y2="80" stroke="var(--green)" stroke-width="2"/>
+        <polygon points="375,75 380,80 375,85" fill="var(--green)"/>
+        
+        <!-- Register feedback -->
+        <line x1="310" y1="110" x2="310" y2="140" stroke="var(--green)" stroke-width="2"/>
+        <line x1="310" y1="140" x2="100" y2="140" stroke="var(--green)" stroke-width="2"/>
+        <line x1="100" y1="140" x2="100" y2="65" stroke="var(--green)" stroke-width="2"/>
+        <line x1="100" y1="65" x2="120" y2="65" stroke="var(--green)" stroke-width="2"/>
+        <polygon points="115,60 120,65 115,70" fill="var(--green)"/>
+        
+        <!-- Output arrow -->
+        <line x1="460" y1="80" x2="490" y2="80" stroke="var(--orange)" stroke-width="2"/>
+        <text x="475" y="73" fill="var(--orange)" font-family="var(--mono)" font-size="10">Out</text>
+        
+        <!-- NO input to output connection (key difference from Mealy!) -->
+        
+        <!-- Label -->
+        <text x="250" y="170" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Output = f(State) — Input does NOT directly affect output</text>
+      </svg>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Moore Machine Definition</p>
+      <p class="bool-expr">
+        <span class="out">Next State</span> = f(<span class="var">Current State</span>, <span class="var">Input</span>)<br>
+        <span class="out">Output</span> = g(<span class="var">Current State</span>) &nbsp;&nbsp;<em style="color: var(--text-dim);">← No input dependency!</em>
+      </p>
+    </div>
+  </section>
+
+  <!-- State Diagram -->
+  <section class="section" id="diagram">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">State Diagram Notation</h2>
+      <a href="#diagram" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>In Moore diagrams, outputs are labeled <strong>inside states</strong> (nodes), not on transitions. Format: <code>State / output</code></p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- State S0 -->
+        <circle cx="100" cy="90" r="40" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="100" y="85" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">S0</text>
+        <line x1="70" y1="95" x2="130" y2="95" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="100" y="110" fill="var(--orange)" font-family="var(--mono)" font-size="11" text-anchor="middle">0</text>
+        
+        <!-- State S1 -->
+        <circle cx="225" cy="90" r="40" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="225" y="85" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">S1</text>
+        <line x1="195" y1="95" x2="255" y2="95" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="225" y="110" fill="var(--orange)" font-family="var(--mono)" font-size="11" text-anchor="middle">0</text>
+        
+        <!-- State S2 -->
+        <circle cx="350" cy="90" r="40" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="350" y="85" fill="var(--text)" font-family="var(--mono)" font-size="12" text-anchor="middle">S2</text>
+        <line x1="320" y1="95" x2="380" y2="95" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="350" y="110" fill="var(--orange)" font-family="var(--mono)" font-size="11" text-anchor="middle">1</text>
+        
+        <!-- Transition S0 -> S1 -->
+        <line x1="140" y1="80" x2="185" y2="80" stroke="var(--blue)" stroke-width="2"/>
+        <polygon points="180,75 185,80 180,85" fill="var(--blue)"/>
+        <text x="162" y="72" fill="var(--blue)" font-family="var(--mono)" font-size="10">1</text>
+        
+        <!-- Transition S1 -> S2 -->
+        <line x1="265" y1="80" x2="310" y2="80" stroke="var(--blue)" stroke-width="2"/>
+        <polygon points="305,75 310,80 305,85" fill="var(--blue)"/>
+        <text x="287" y="72" fill="var(--blue)" font-family="var(--mono)" font-size="10">1</text>
+        
+        <!-- Transition S0 self-loop -->
+        <ellipse cx="65" cy="60" rx="18" ry="15" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <text x="45" y="45" fill="var(--blue)" font-family="var(--mono)" font-size="10">0</text>
+        
+        <!-- Transition S1 -> S0 (bottom) -->
+        <path d="M 185 105 Q 162 140 140 105" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <polygon points="145,108 140,105 147,103" fill="var(--blue)"/>
+        <text x="162" y="145" fill="var(--blue)" font-family="var(--mono)" font-size="10">0</text>
+        
+        <!-- Transition S2 -> S0 (long bottom) -->
+        <path d="M 315 115 Q 225 165 135 115" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <polygon points="140,118 135,115 142,112" fill="var(--blue)"/>
+        <text x="225" y="168" fill="var(--blue)" font-family="var(--mono)" font-size="10">0</text>
+        
+        <!-- Transition S2 self-loop -->
+        <ellipse cx="385" cy="60" rx="18" ry="15" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <text x="405" y="45" fill="var(--blue)" font-family="var(--mono)" font-size="10">1</text>
+        
+        <!-- Legend -->
+        <text x="225" y="20" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">State labels: name / output &nbsp;|&nbsp; Edge labels: input only</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- State Table -->
+  <section class="section" id="table">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">State Table</h2>
+      <a href="#table" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Example: "11" sequence detector (outputs 1 after seeing two consecutive 1s)</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Current State</th>
+            <th>Input</th>
+            <th>Next State</th>
+            <th>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>S0 (idle)</td><td class="val-0">0</td><td>S0</td><td rowspan="2" class="val-0">0</td></tr>
+          <tr><td>S0 (idle)</td><td class="val-1">1</td><td>S1</td></tr>
+          <tr><td>S1 (seen 1)</td><td class="val-0">0</td><td>S0</td><td rowspan="2" class="val-0">0</td></tr>
+          <tr><td>S1 (seen 1)</td><td class="val-1">1</td><td>S2</td></tr>
+          <tr><td>S2 (seen 11)</td><td class="val-0">0</td><td>S0</td><td rowspan="2" class="val-1">1</td></tr>
+          <tr><td>S2 (seen 11)</td><td class="val-1">1</td><td>S2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p>Output depends <strong>only on state</strong>. S2 always outputs 1, regardless of input. Compare to Mealy which requires fewer states but has output on transition.</p>
+    </div>
+  </section>
+
+  <!-- Timing -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+      </div>
+      <h2 class="section-title">Timing Behavior</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 170" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="170" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Clock signal -->
+        <text x="20" y="30" fill="var(--text-dim)" font-family="var(--mono)" font-size="10">CLK</text>
+        <polyline points="60,35 60,20 90,20 90,35 120,35 120,20 150,20 150,35 180,35 180,20 210,20 210,35 240,35 240,20 270,20 270,35 300,35 300,20 330,20 330,35 360,35 360,20 390,20 390,35 420,35" 
+                  fill="none" stroke="var(--text-dim)" stroke-width="1.5"/>
+        
+        <!-- Input signal -->
+        <text x="20" y="60" fill="var(--blue)" font-family="var(--mono)" font-size="10">IN</text>
+        <polyline points="60,65 90,65 90,50 240,50 240,65 300,65 300,50 420,50" 
+                  fill="none" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- State -->
+        <text x="20" y="95" fill="var(--green)" font-family="var(--mono)" font-size="10">State</text>
+        <polyline points="60,100 120,100" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="85" y="98" fill="var(--green)" font-family="var(--mono)" font-size="8">S0</text>
+        <polyline points="120,100 120,85 180,85" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="145" y="83" fill="var(--green)" font-family="var(--mono)" font-size="8">S1</text>
+        <polyline points="180,85 180,70 270,70" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="220" y="68" fill="var(--green)" font-family="var(--mono)" font-size="8">S2</text>
+        <polyline points="270,70 270,100 330,100" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="295" y="98" fill="var(--green)" font-family="var(--mono)" font-size="8">S0</text>
+        <polyline points="330,100 330,85 390,85" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="355" y="83" fill="var(--green)" font-family="var(--mono)" font-size="8">S1</text>
+        <polyline points="390,85 390,70 420,70" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text x="405" y="68" fill="var(--green)" font-family="var(--mono)" font-size="8">S2</text>
+        
+        <!-- Output (Moore - changes with state, at clock edge) -->
+        <text x="20" y="130" fill="var(--orange)" font-family="var(--mono)" font-size="10">OUT</text>
+        <polyline points="60,135 180,135 180,120 270,120 270,135 390,135 390,120 420,120" 
+                  fill="none" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- Highlight: output changes at clock edge, with state -->
+        <line x1="180" y1="15" x2="180" y2="140" stroke="var(--green)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="185" y="155" fill="var(--green)" font-family="var(--mono)" font-size="8">sync with clk</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Glitch-free:</strong> Since output only changes when state changes (at clock edge), Moore outputs are inherently stable. No glitches from input transitions.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">moore_sequence_11.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Moore FSM: Detects "11" sequence</span>
+<span class="cmt">// Output high when in S2 state (after two 1s)</span>
+<span class="kw">module</span> moore_seq_11 (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> din,
+    <span class="kw">output</span> <span class="kw">wire</span> detected
+);
+
+    <span class="cmt">// State encoding</span>
+    <span class="kw">localparam</span> [1:0] S0 = 2'b00,  <span class="cmt">// Idle</span>
+                      S1 = 2'b01,  <span class="cmt">// Seen one 1</span>
+                      S2 = 2'b10;  <span class="cmt">// Seen two 1s (output!)</span>
+
+    <span class="kw">reg</span> [1:0] state, next_state;
+
+    <span class="cmt">// State register</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            state &lt;= S0;
+        <span class="kw">else</span>
+            state &lt;= next_state;
+    <span class="kw">end</span>
+
+    <span class="cmt">// Next state logic (combinational)</span>
+    <span class="kw">always</span> @(*) <span class="kw">begin</span>
+        <span class="kw">case</span> (state)
+            S0: next_state = din ? S1 : S0;
+            S1: next_state = din ? S2 : S0;
+            S2: next_state = din ? S2 : S0;
+            <span class="kw">default</span>: next_state = S0;
+        <span class="kw">endcase</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Moore output: depends ONLY on state</span>
+    <span class="kw">assign</span> detected = (state == S2);
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Alternative: One-hot encoding (faster, more area)</span>
+<span class="kw">module</span> moore_onehot (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> din,
+    <span class="kw">output</span> <span class="kw">wire</span> detected
+);
+
+    <span class="cmt">// One-hot states</span>
+    <span class="kw">reg</span> [2:0] state;
+    <span class="kw">localparam</span> [2:0] S0 = 3'b001,
+                      S1 = 3'b010,
+                      S2 = 3'b100;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            state &lt;= S0;
+        <span class="kw">else begin</span>
+            state[0] &lt;= (state[0] &amp; ~din) | (state[1] &amp; ~din) | (state[2] &amp; ~din);
+            state[1] &lt;= state[0] &amp; din;
+            state[2] &lt;= (state[1] &amp; din) | (state[2] &amp; din);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> detected = state[2];  <span class="cmt">// Just check one bit!</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">moore_sequence_11.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Moore FSM: Detects "11" sequence</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> moore_seq_11 <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk      : <span class="kw">in</span>  std_logic;
+        rst_n    : <span class="kw">in</span>  std_logic;
+        din      : <span class="kw">in</span>  std_logic;
+        detected : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> moore_seq_11;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> moore_seq_11 <span class="kw">is</span>
+    <span class="kw">type</span> state_type <span class="kw">is</span> (S0, S1, S2);
+    <span class="kw">signal</span> state, next_state : state_type;
+<span class="kw">begin</span>
+
+    <span class="cmt">-- State register</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            state &lt;= S0;
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            state &lt;= next_state;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Next state logic</span>
+    <span class="kw">process</span>(state, din)
+    <span class="kw">begin</span>
+        <span class="kw">case</span> state <span class="kw">is</span>
+            <span class="kw">when</span> S0 =&gt;
+                <span class="kw">if</span> din = '1' <span class="kw">then</span>
+                    next_state &lt;= S1;
+                <span class="kw">else</span>
+                    next_state &lt;= S0;
+                <span class="kw">end if</span>;
+
+            <span class="kw">when</span> S1 =&gt;
+                <span class="kw">if</span> din = '1' <span class="kw">then</span>
+                    next_state &lt;= S2;
+                <span class="kw">else</span>
+                    next_state &lt;= S0;
+                <span class="kw">end if</span>;
+
+            <span class="kw">when</span> S2 =&gt;
+                <span class="kw">if</span> din = '1' <span class="kw">then</span>
+                    next_state &lt;= S2;
+                <span class="kw">else</span>
+                    next_state &lt;= S0;
+                <span class="kw">end if</span>;
+        <span class="kw">end case</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Moore output: depends ONLY on state</span>
+    detected &lt;= '1' <span class="kw">when</span> state = S2 <span class="kw">else</span> '0';
+
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conversion -->
+  <section class="section" id="conversion">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4M7 23l-4-4 4-4M21 5H3M3 19h18"/></svg>
+      </div>
+      <h2 class="section-title">Mealy ↔ Moore Conversion</h2>
+      <a href="#conversion" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Any Mealy machine can be converted to Moore (and vice versa), but they are not equivalent in terms of states and timing:</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Direction</th>
+            <th>Effect</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mealy → Moore</td>
+            <td>May need <strong>more states</strong> (split states with different outputs on incoming edges). Output delayed by 1 clock.</td>
+          </tr>
+          <tr>
+            <td>Moore → Mealy</td>
+            <td>May need <strong>fewer states</strong> (combine states). Output 1 clock earlier.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Rule of thumb:</strong> Use Moore for most designs (simpler timing, glitch-free). Use Mealy when you need faster response or minimum states.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/fsm-mealy.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Mealy Machine
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/seq-detector.html' | relative_url }}">
+        Sequence Detector
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

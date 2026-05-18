@@ -1,0 +1,533 @@
+---
+layout: null
+title: Asynchronous Counter
+nav: sequential
+sidebar: counter-async
+group: registers
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Asynchronous Counter (Ripple Counter) — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#operation">Operation</a></li>
+      <li><a href="#timing">Timing & Propagation Delay</a></li>
+      <li><a href="#up-counter">Up Counter</a></li>
+      <li><a href="#down-counter">Down Counter</a></li>
+      <li><a href="#mod-n">MOD-N Counter</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Async Counter</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Counter</span>
+    </div>
+    <h1 class="page-title">Asynchronous Counter (Ripple Counter)</h1>
+    <p class="page-subtitle">
+      An asynchronous counter chains flip-flops where the output of one stage clocks the next. Also called a <strong>ripple counter</strong> because the clock signal "ripples" through the stages with cumulative delay.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Building block</p>
+        <p class="qf-value">T or JK Flip-Flops</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">N-bit counter</p>
+        <p class="qf-value">Counts 0 to 2<sup>N</sup>-1</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Max frequency</p>
+        <p class="qf-value">f<sub>max</sub> = 1 / (N × t<sub>pd</sub>)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Complexity</p>
+        <p class="qf-value">Simple (minimal logic)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Operation -->
+  <section class="section" id="operation">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">How It Works</h2>
+      <a href="#operation" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each flip-flop is configured in <strong>toggle mode</strong> (T=1 or JK with J=K=1). The output Q of each stage clocks the next stage:</p>
+      <ul style="margin: 1rem 0 1rem 1.5rem;">
+        <li><strong>Stage 0:</strong> Clocked by the input clock</li>
+        <li><strong>Stage 1:</strong> Clocked by Q0 (toggles when Q0 falls/rises)</li>
+        <li><strong>Stage N:</strong> Clocked by Q(N-1)</li>
+      </ul>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 120" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="120" fill="var(--surface2)" rx="8"/>
+        
+        <!-- T-FF boxes -->
+        <rect x="60" y="35" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="95" y="55" fill="var(--text)" font-family="var(--mono)" font-size="11" text-anchor="middle">T-FF</text>
+        <text x="95" y="70" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">T=1</text>
+        
+        <rect x="180" y="35" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="215" y="55" fill="var(--text)" font-family="var(--mono)" font-size="11" text-anchor="middle">T-FF</text>
+        <text x="215" y="70" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">T=1</text>
+        
+        <rect x="300" y="35" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="335" y="55" fill="var(--text)" font-family="var(--mono)" font-size="11" text-anchor="middle">T-FF</text>
+        <text x="335" y="70" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">T=1</text>
+        
+        <!-- Clock input -->
+        <text x="15" y="65" fill="var(--blue)" font-family="var(--mono)" font-size="11" font-weight="bold">CLK</text>
+        <line x1="40" y1="60" x2="60" y2="60" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Q outputs -->
+        <line x1="130" y1="60" x2="155" y2="60" stroke="var(--orange)" stroke-width="2"/>
+        <circle cx="155" cy="60" r="3" fill="var(--orange)"/>
+        <line x1="155" y1="60" x2="180" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <text x="95" y="105" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q0 (LSB)</text>
+        <line x1="95" y1="85" x2="95" y2="95" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <line x1="250" y1="60" x2="275" y2="60" stroke="var(--orange)" stroke-width="2"/>
+        <circle cx="275" cy="60" r="3" fill="var(--orange)"/>
+        <line x1="275" y1="60" x2="300" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <text x="215" y="105" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q1</text>
+        <line x1="215" y1="85" x2="215" y2="95" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <line x1="370" y1="60" x2="400" y2="60" stroke="var(--orange)" stroke-width="2"/>
+        <text x="335" y="105" fill="var(--orange)" font-family="var(--mono)" font-size="10" text-anchor="middle">Q2 (MSB)</text>
+        <line x1="335" y1="85" x2="335" y2="95" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <!-- Dots for continuation -->
+        <text x="420" y="65" fill="var(--text-dim)" font-family="var(--mono)" font-size="14">...</text>
+        
+        <!-- Label -->
+        <text x="225" y="20" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" text-anchor="middle">3-bit Ripple Counter (counts 0-7)</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Timing -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h2 class="section-title">Timing & Propagation Delay</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The key limitation: each stage adds one flip-flop delay. For an N-bit counter, total worst-case delay is <strong>N × t<sub>pd</sub></strong>.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 450px;">
+        <rect width="400" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- CLK signal -->
+        <text x="15" y="35" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold">CLK</text>
+        <polyline points="50,40 50,20 80,20 80,40 110,40 110,20 140,20 140,40 170,40 170,20 200,20 200,40 230,40 230,20 260,20 260,40 290,40 290,20 320,20 320,40 350,40 350,20 380,20" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Q0 - immediate response -->
+        <text x="15" y="70" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold">Q0</text>
+        <polyline points="50,75 83,75 83,55 113,55 113,75 143,75 143,55 173,55 173,75 203,75 203,55 233,55 233,75 263,75 263,55 293,55 293,75 323,75 323,55 353,55 353,75 380,75" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Q1 - delayed -->
+        <text x="15" y="105" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold">Q1</text>
+        <polyline points="50,110 88,110 88,90 148,90 148,110 208,110 208,90 268,90 268,110 328,110 328,90 380,90" fill="none" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- Q2 - more delayed -->
+        <text x="15" y="140" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold">Q2</text>
+        <polyline points="50,145 93,145 93,125 213,125 213,145 333,145 333,125 380,125" fill="none" stroke="var(--red, #dc3545)" stroke-width="2"/>
+        
+        <!-- Delay annotations -->
+        <line x1="80" y1="45" x2="83" y2="50" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="2,2"/>
+        <text x="78" y="52" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">t_pd</text>
+        
+        <line x1="83" y1="80" x2="88" y2="85" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="2,2"/>
+        <text x="82" y="87" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">t_pd</text>
+        
+        <line x1="88" y1="115" x2="93" y2="120" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="2,2"/>
+        <text x="87" y="122" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">t_pd</text>
+        
+        <!-- Total delay note -->
+        <text x="200" y="170" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Glitch window: outputs not stable until 3×t_pd after clock edge</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div>
+        <p><strong>Glitch hazard:</strong> During the ripple period, outputs show intermediate (incorrect) values. Example: 0111→1000 may briefly show 0110, 0100, 0000 before settling to 1000.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Up Counter -->
+  <section class="section" id="up-counter">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </div>
+      <h2 class="section-title">Up Counter</h2>
+      <a href="#up-counter" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Counts upward: 0, 1, 2, ... 2<sup>N</sup>-1, then wraps to 0. Uses <strong>negative edge triggering</strong> — each stage toggles when the previous stage transitions from 1→0.</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Count</th>
+            <th>Q2</th><th>Q1</th><th>Q0</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+          <tr><td>1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+          <tr><td>2</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+          <tr><td>3</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td></tr>
+          <tr><td>4</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+          <tr><td>5</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+          <tr><td>6</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+          <tr><td>7</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Down Counter -->
+  <section class="section" id="down-counter">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      </div>
+      <h2 class="section-title">Down Counter</h2>
+      <a href="#down-counter" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Counts downward: 2<sup>N</sup>-1, ... 2, 1, 0, then wraps to 2<sup>N</sup>-1. Uses <strong>Q' (complement)</strong> output to clock next stage, or uses positive edge triggering.</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Method 1</p>
+        <p class="qf-value">Use Q' to clock next</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Same negative-edge FFs, but connect Q' instead of Q</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Method 2</p>
+        <p class="qf-value">Use positive-edge FFs</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Toggle on 0→1 transition of previous stage</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOD-N -->
+  <section class="section" id="mod-n">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">MOD-N Counter (Truncated Counter)</h2>
+      <a href="#mod-n" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Counts from 0 to N-1 (not a power of 2). Uses asynchronous reset to force counter back to 0 when target count is reached.</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">MOD-10 (Decade Counter)</p>
+        <p class="qf-value">0 → 9 → 0</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Reset when Q3Q2Q1Q0 = 1010 (10)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">MOD-6</p>
+        <p class="qf-value">0 → 5 → 0</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Reset when Q2Q1Q0 = 110 (6)</p>
+      </div>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Glitch in reset:</strong> When using combinational logic to detect count N and trigger async reset, the counter momentarily shows N before resetting. This can cause glitches in downstream logic.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">ripple_counter.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// 4-bit Ripple Counter (Asynchronous)</span>
+<span class="cmt">// Note: This models the ripple behavior but synthesis</span>
+<span class="cmt">// tools may optimize it differently</span>
+<span class="kw">module</span> ripple_counter_4bit (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">output</span> <span class="kw">reg</span> [3:0] Q
+);
+
+    <span class="cmt">// Stage 0 - clocked by input clock</span>
+    <span class="kw">always</span> @(<span class="kw">negedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q[0] &lt;= 1'b0;
+        <span class="kw">else</span>
+            Q[0] &lt;= ~Q[0];  <span class="cmt">// Toggle</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Stage 1 - clocked by Q[0]</span>
+    <span class="kw">always</span> @(<span class="kw">negedge</span> Q[0] <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q[1] &lt;= 1'b0;
+        <span class="kw">else</span>
+            Q[1] &lt;= ~Q[1];
+    <span class="kw">end</span>
+
+    <span class="cmt">// Stage 2 - clocked by Q[1]</span>
+    <span class="kw">always</span> @(<span class="kw">negedge</span> Q[1] <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q[2] &lt;= 1'b0;
+        <span class="kw">else</span>
+            Q[2] &lt;= ~Q[2];
+    <span class="kw">end</span>
+
+    <span class="cmt">// Stage 3 - clocked by Q[2]</span>
+    <span class="kw">always</span> @(<span class="kw">negedge</span> Q[2] <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q[3] &lt;= 1'b0;
+        <span class="kw">else</span>
+            Q[3] &lt;= ~Q[3];
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// MOD-10 Decade Counter with Async Reset</span>
+<span class="kw">module</span> decade_counter (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">output</span> <span class="kw">reg</span> [3:0] Q
+);
+
+    <span class="kw">wire</span> reset_10 = (Q == 4'd10);  <span class="cmt">// Decode count 10</span>
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n <span class="kw">or</span> <span class="kw">posedge</span> reset_10) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n || reset_10)
+            Q &lt;= 4'b0;
+        <span class="kw">else</span>
+            Q &lt;= Q + 1'b1;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">ripple_counter.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- 4-bit Ripple Counter (Asynchronous)</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> ripple_counter_4bit <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        Q     : <span class="kw">out</span> std_logic_vector(3 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> ripple_counter_4bit;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> ripple_counter_4bit <span class="kw">is</span>
+    <span class="kw">signal</span> Q_int : std_logic_vector(3 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+    <span class="cmt">-- Stage 0</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            Q_int(0) &lt;= '0';
+        <span class="kw">elsif</span> falling_edge(clk) <span class="kw">then</span>
+            Q_int(0) &lt;= <span class="kw">not</span> Q_int(0);
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Stage 1</span>
+    <span class="kw">process</span>(Q_int(0), rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            Q_int(1) &lt;= '0';
+        <span class="kw">elsif</span> falling_edge(Q_int(0)) <span class="kw">then</span>
+            Q_int(1) &lt;= <span class="kw">not</span> Q_int(1);
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Stage 2</span>
+    <span class="kw">process</span>(Q_int(1), rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            Q_int(2) &lt;= '0';
+        <span class="kw">elsif</span> falling_edge(Q_int(1)) <span class="kw">then</span>
+            Q_int(2) &lt;= <span class="kw">not</span> Q_int(2);
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Stage 3</span>
+    <span class="kw">process</span>(Q_int(2), rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            Q_int(3) &lt;= '0';
+        <span class="kw">elsif</span> falling_edge(Q_int(2)) <span class="kw">then</span>
+            Q_int(3) &lt;= <span class="kw">not</span> Q_int(3);
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q &lt;= Q_int;
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Limitations -->
+  <section class="section" id="limitations">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h2 class="section-title">Limitations & When to Use Sync Counters</h2>
+      <a href="#limitations" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Async Counter</th>
+            <th>Sync Counter</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Propagation delay</td>
+            <td style="color: var(--red);">N × t<sub>pd</sub> (cumulative)</td>
+            <td style="color: var(--green);">1 × t<sub>pd</sub> (all parallel)</td>
+          </tr>
+          <tr>
+            <td>Max frequency</td>
+            <td style="color: var(--red);">Limited by ripple time</td>
+            <td style="color: var(--green);">Higher (clock period only)</td>
+          </tr>
+          <tr>
+            <td>Glitches</td>
+            <td style="color: var(--red);">Yes (transient states)</td>
+            <td style="color: var(--green);">No (all bits change together)</td>
+          </tr>
+          <tr>
+            <td>Logic complexity</td>
+            <td style="color: var(--green);">Minimal</td>
+            <td style="color: var(--amber);">More (carry logic)</td>
+          </tr>
+          <tr>
+            <td>Power</td>
+            <td style="color: var(--green);">Lower</td>
+            <td style="color: var(--amber);">Higher</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>When to use async:</strong> Low-speed applications, simple frequency dividers, low-power designs. For anything feeding synchronous logic or requiring glitch-free outputs, use synchronous counters.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/shift-reg.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Shift Register
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/counter-sync.html' | relative_url }}">
+        Sync Counter
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

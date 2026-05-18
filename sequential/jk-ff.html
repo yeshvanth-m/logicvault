@@ -1,0 +1,380 @@
+---
+layout: null
+title: JK Flip-Flop
+nav: sequential
+sidebar: jk-ff
+group: latches
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JK Flip-Flop — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quick-facts">Quick Facts</a></li>
+      <li><a href="#truth-table">Truth Table</a></li>
+      <li><a href="#toggle">Toggle Mode</a></li>
+      <li><a href="#excitation">Excitation Table</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#vs-d">JK vs D Flip-Flop</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="./">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">JK Flip-Flop</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Edge-Triggered</span>
+    </div>
+    <h1 class="page-title">JK Flip-Flop</h1>
+    <p class="page-subtitle">
+      The JK flip-flop is the most versatile flip-flop. It eliminates the forbidden state of SR by defining J=K=1 as a <strong>toggle</strong> operation — the output inverts on each clock edge.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Inputs</p>
+        <p class="qf-value">J, K, CLK</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Outputs</p>
+        <p class="qf-value">Q, Q'</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Trigger</p>
+        <p class="qf-value">Edge-triggered</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Special mode</p>
+        <p class="qf-value">J=K=1 → Toggle</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Forbidden state</p>
+        <p class="qf-value">None!</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Named after</p>
+        <p class="qf-value">Jack Kilby (likely)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Truth Table -->
+  <section class="section" id="truth-table">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Truth Table</h2>
+      <a href="#truth-table" class="section-anchor">#</a>
+    </div>
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>J</th><th>K</th>
+            <th class="out-col divider">Q<sub>next</sub></th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="out-col">Q</td><td>Hold (No change)</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0 out-col">0</td><td>Reset</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1 out-col">1</td><td>Set</td></tr>
+          <tr style="background: rgba(10, 124, 82, 0.1);"><td class="val-1">1</td><td class="val-1">1</td><td class="out-col">Q'</td><td><strong>Toggle!</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">Characteristic Equation</p>
+      <p class="bool-expr">
+        <span class="out">Q<sub>next</sub></span> = <span class="var">J</span> <span class="op">·</span> <span class="var">Q'</span> <span class="op">+</span> <span class="var">K'</span> <span class="op">·</span> <span class="var">Q</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Toggle Mode -->
+  <section class="section" id="toggle">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </div>
+      <h2 class="section-title">Toggle Mode (J=K=1)</h2>
+      <a href="#toggle" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>When J=K=1, the JK flip-flop <strong>toggles</strong> (inverts) its output on each clock edge. This makes it perfect for building counters:</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 400 140" xmlns="http://www.w3.org/2000/svg" style="max-width: 480px;">
+        <rect width="400" height="140" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Clock signal -->
+        <text x="15" y="40" fill="var(--text)" font-family="var(--mono)" font-size="11" font-weight="bold">CLK</text>
+        <polyline points="50,45 70,45 70,25 100,25 100,45 130,45 130,25 160,25 160,45 190,45 190,25 220,25 220,45 250,45 250,25 280,25 280,45 310,45 310,25 340,25 340,45 370,45" fill="none" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- Q output (toggling) -->
+        <text x="15" y="100" fill="var(--text)" font-family="var(--mono)" font-size="11" font-weight="bold">Q</text>
+        <polyline points="50,105 100,105 100,85 160,85 160,105 220,105 220,85 280,85 280,105 340,105 340,85 370,85" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+        
+        <!-- Annotations -->
+        <text x="200" y="130" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" text-anchor="middle">J=K=1: Q toggles every clock edge → Frequency divider (÷2)</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Frequency divider:</strong> A JK flip-flop with J=K=1 divides the clock frequency by 2. Chain N of them to divide by 2<sup>N</sup>.</p>
+    </div>
+  </section>
+
+  <!-- Excitation Table -->
+  <section class="section" id="excitation">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Excitation Table</h2>
+      <a href="#excitation" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The <strong>excitation table</strong> shows what J,K inputs are needed to achieve a desired state transition. Essential for designing counters and FSMs:</p>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Q</th><th>Q<sub>next</sub></th>
+            <th class="out-col divider">J</th><th class="out-col">K</th>
+            <th>Interpretation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="val-0">0</td><td class="val-0">0</td><td class="out-col">0</td><td class="out-col">X</td><td>Stay 0: J must be 0, K doesn't matter</td></tr>
+          <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1 out-col">1</td><td class="out-col">X</td><td>0→1: J must be 1 (set), K doesn't matter</td></tr>
+          <tr><td class="val-1">1</td><td class="val-0">0</td><td class="out-col">X</td><td class="val-1 out-col">1</td><td>1→0: K must be 1 (reset), J doesn't matter</td></tr>
+          <tr><td class="val-1">1</td><td class="val-1">1</td><td class="out-col">X</td><td class="out-col">0</td><td>Stay 1: K must be 0, J doesn't matter</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Don't cares (X):</strong> The X entries are powerful — they give flexibility in K-map simplification when designing counters.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">jk_ff.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// JK Flip-Flop</span>
+<span class="kw">module</span> jk_ff (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> J,
+    <span class="kw">input</span>  <span class="kw">wire</span> K,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q,
+    <span class="kw">output</span> <span class="kw">wire</span> Qn
+);
+
+    <span class="kw">assign</span> Qn = ~Q;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk) <span class="kw">begin</span>
+        <span class="kw">case</span> ({J, K})
+            2'b00: Q &lt;= Q;      <span class="cmt">// Hold</span>
+            2'b01: Q &lt;= 1'b0;   <span class="cmt">// Reset</span>
+            2'b10: Q &lt;= 1'b1;   <span class="cmt">// Set</span>
+            2'b11: Q &lt;= ~Q;     <span class="cmt">// Toggle</span>
+        <span class="kw">endcase</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Alternative using characteristic equation</span>
+<span class="kw">module</span> jk_ff_v2 (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk, J, K,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk)
+        Q &lt;= (J &amp; ~Q) | (~K &amp; Q);  <span class="cmt">// Q_next = J·Q' + K'·Q</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">jk_ff.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- JK Flip-Flop</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> jk_ff <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk : <span class="kw">in</span>  std_logic;
+        J   : <span class="kw">in</span>  std_logic;
+        K   : <span class="kw">in</span>  std_logic;
+        Q   : <span class="kw">out</span> std_logic;
+        Qn  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> jk_ff;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> jk_ff <span class="kw">is</span>
+    <span class="kw">signal</span> Q_int : std_logic := '0';
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> J = '0' <span class="kw">and</span> K = '0' <span class="kw">then</span>
+                Q_int &lt;= Q_int;    <span class="cmt">-- Hold</span>
+            <span class="kw">elsif</span> J = '0' <span class="kw">and</span> K = '1' <span class="kw">then</span>
+                Q_int &lt;= '0';      <span class="cmt">-- Reset</span>
+            <span class="kw">elsif</span> J = '1' <span class="kw">and</span> K = '0' <span class="kw">then</span>
+                Q_int &lt;= '1';      <span class="cmt">-- Set</span>
+            <span class="kw">else</span>
+                Q_int &lt;= <span class="kw">not</span> Q_int; <span class="cmt">-- Toggle</span>
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    Q  &lt;= Q_int;
+    Qn &lt;= <span class="kw">not</span> Q_int;
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- JK vs D -->
+  <section class="section" id="vs-d">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <h2 class="section-title">JK vs D Flip-Flop</h2>
+      <a href="#vs-d" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="truth-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>JK Flip-Flop</th>
+            <th>D Flip-Flop</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Inputs</td>
+            <td>J, K (2 inputs)</td>
+            <td>D (1 input)</td>
+          </tr>
+          <tr>
+            <td>Modes</td>
+            <td>Hold, Set, Reset, Toggle</td>
+            <td>Set, Reset only</td>
+          </tr>
+          <tr>
+            <td>Toggle capability</td>
+            <td>Native (J=K=1)</td>
+            <td>Requires feedback (D=Q')</td>
+          </tr>
+          <tr>
+            <td>Gate count</td>
+            <td>Higher</td>
+            <td>Lower</td>
+          </tr>
+          <tr>
+            <td>Modern usage</td>
+            <td>Less common (textbooks, counters)</td>
+            <td>Dominant (all synchronous design)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Industry reality:</strong> D flip-flops dominate modern design because synthesis tools optimize everything into DFFs anyway. JK is mostly seen in academic contexts and legacy designs.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/d-ff.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        D Flip-Flop
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/t-ff.html' | relative_url }}">
+        T Flip-Flop
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

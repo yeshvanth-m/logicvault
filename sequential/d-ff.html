@@ -1,0 +1,543 @@
+---
+layout: null
+title: D Flip-Flop
+nav: sequential
+sidebar: d-ff
+group: latches
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>D Flip-Flop — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quick-facts">Quick Facts</a></li>
+      <li><a href="#operation">How It Works</a></li>
+      <li><a href="#truth-table">Truth Table</a></li>
+      <li><a href="#master-slave">Master-Slave Architecture</a></li>
+      <li><a href="#timing">Timing Parameters</a></li>
+      <li><a href="#async">Async Reset/Preset</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#applications">Applications</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="./">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">D Flip-Flop</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Edge-Triggered</span>
+    </div>
+    <h1 class="page-title">D Flip-Flop</h1>
+    <p class="page-subtitle">
+      The D flip-flop (DFF) is the fundamental building block of synchronous digital design. It samples the D input only at the clock edge and holds the value until the next edge — enabling predictable, clock-synchronized circuits.
+    </p>
+  </div>
+
+  <!-- Quick Facts -->
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Inputs</p>
+        <p class="qf-value">D, CLK</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Outputs</p>
+        <p class="qf-value">Q, Q'</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Trigger</p>
+        <p class="qf-value">Rising or Falling edge</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Circuit type</p>
+        <p class="qf-value">Edge-triggered</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Memory</p>
+        <p class="qf-value">1 bit</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Gate count</p>
+        <p class="qf-value">~6-12 (varies)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" id="operation">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <h2 class="section-title">How It Works</h2>
+      <a href="#operation" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Unlike the D latch (which is transparent), the D flip-flop <strong>samples D only at the clock edge</strong>. The output Q takes the value of D at that instant and holds it stable until the next clock edge — regardless of how D changes.</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">At Rising Edge (↑)</p>
+        <p class="qf-value">Q ← D</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Q captures value of D at that instant</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Between Edges</p>
+        <p class="qf-value">Q holds</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Q ignores D changes — stable output</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Edge-triggered = no transparency:</strong> This solves the race condition problems of latches. The DFF is the workhorse of all synchronous digital design.</p>
+    </div>
+  </section>
+
+  <!-- Truth Table -->
+  <section class="section" id="truth-table">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Truth Table (Positive Edge-Triggered)</h2>
+      <a href="#truth-table" class="section-anchor">#</a>
+    </div>
+    <div class="tt-wrap">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>CLK</th><th>D</th>
+            <th class="out-col divider">Q<sub>next</sub></th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td class="val-0">X</td><td class="out-col">Q<sub>prev</sub></td><td>Hold</td></tr>
+          <tr><td>1</td><td class="val-0">X</td><td class="out-col">Q<sub>prev</sub></td><td>Hold</td></tr>
+          <tr><td>↓ (falling)</td><td class="val-0">X</td><td class="out-col">Q<sub>prev</sub></td><td>Hold</td></tr>
+          <tr style="background: rgba(10, 124, 82, 0.1);"><td>↑ (rising)</td><td class="val-0">0</td><td class="val-0 out-col">0</td><td><strong>Sample</strong></td></tr>
+          <tr style="background: rgba(10, 124, 82, 0.1);"><td>↑ (rising)</td><td class="val-1">1</td><td class="val-1 out-col">1</td><td><strong>Sample</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">Characteristic Equation</p>
+      <p class="bool-expr">
+        <span class="out">Q<sub>next</sub></span> = <span class="var">D</span> &nbsp;&nbsp;<span class="op">(at clock edge)</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Master-Slave Architecture -->
+  <section class="section" id="master-slave">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Master-Slave Architecture</h2>
+      <a href="#master-slave" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>A common implementation uses <strong>two D latches in series</strong> with inverted clock signals. This creates true edge-triggered behavior:</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 140" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="450" height="140" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Title -->
+        <text x="225" y="18" fill="var(--text)" font-family="var(--mono)" font-size="11" text-anchor="middle" font-weight="bold">Master-Slave D Flip-Flop (Positive Edge-Triggered)</text>
+        
+        <!-- Input D -->
+        <text x="15" y="65" fill="var(--text)" font-family="var(--mono)" font-size="13" font-weight="bold">D</text>
+        <line x1="30" y1="60" x2="70" y2="60" stroke="var(--text)" stroke-width="2"/>
+        
+        <!-- Master latch box -->
+        <rect x="70" y="40" width="100" height="60" fill="var(--surface)" stroke="var(--green)" stroke-width="2" rx="4"/>
+        <text x="120" y="58" fill="var(--green)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">MASTER</text>
+        <text x="120" y="72" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">D Latch</text>
+        <text x="78" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">E=CLK'</text>
+        
+        <!-- Wire between latches -->
+        <line x1="170" y1="60" x2="210" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <text x="190" y="52" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Qm</text>
+        
+        <!-- Slave latch box -->
+        <rect x="210" y="40" width="100" height="60" fill="var(--surface)" stroke="var(--blue)" stroke-width="2" rx="4"/>
+        <text x="260" y="58" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">SLAVE</text>
+        <text x="260" y="72" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">D Latch</text>
+        <text x="218" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">E=CLK</text>
+        
+        <!-- Output Q -->
+        <line x1="310" y1="60" x2="420" y2="60" stroke="var(--text)" stroke-width="2"/>
+        <text x="425" y="65" fill="var(--green)" font-family="var(--mono)" font-size="13" font-weight="bold">Q</text>
+        
+        <!-- Clock input -->
+        <text x="15" y="120" fill="var(--text)" font-family="var(--mono)" font-size="13" font-weight="bold">CLK</text>
+        <line x1="45" y1="115" x2="100" y2="115" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- Inverter -->
+        <circle cx="108" cy="115" r="5" fill="none" stroke="var(--orange)" stroke-width="1.5"/>
+        
+        <!-- CLK' to master -->
+        <line x1="113" y1="115" x2="130" y2="115" stroke="var(--orange)" stroke-width="2"/>
+        <line x1="130" y1="115" x2="130" y2="100" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- CLK to slave -->
+        <line x1="100" y1="115" x2="100" y2="125" stroke="var(--orange)" stroke-width="2"/>
+        <circle cx="100" cy="115" r="2" fill="var(--orange)"/>
+        <line x1="100" y1="125" x2="270" y2="125" stroke="var(--orange)" stroke-width="2"/>
+        <line x1="270" y1="125" x2="270" y2="100" stroke="var(--orange)" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">CLK = 0</p>
+        <p class="qf-value">Master transparent, Slave latched</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">D → Qm (internal), Q holds previous</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">CLK = 1</p>
+        <p class="qf-value">Master latched, Slave transparent</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Qm → Q, D blocked from changing Qm</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Rising Edge (0→1)</p>
+        <p class="qf-value">D captured to Q</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Master closes, slave opens — value transfers</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timing Parameters -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h2 class="section-title">Timing Parameters</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Critical timing parameters that define flip-flop behavior. Violating these causes <strong>metastability</strong> — unpredictable output.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="450" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Clock signal -->
+        <text x="15" y="45" fill="var(--text)" font-family="var(--mono)" font-size="11" font-weight="bold">CLK</text>
+        <polyline points="45,50 120,50 120,30 200,30 200,50 280,50 280,30 360,30 360,50 420,50" fill="none" stroke="var(--orange)" stroke-width="2"/>
+        
+        <!-- D signal -->
+        <text x="15" y="95" fill="var(--text)" font-family="var(--mono)" font-size="11" font-weight="bold">D</text>
+        <polyline points="45,100 100,100 100,80 250,80 250,100 420,100" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Q output -->
+        <text x="15" y="145" fill="var(--text)" font-family="var(--mono)" font-size="11" font-weight="bold">Q</text>
+        <polyline points="45,150 215,150 215,130 420,130" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+        
+        <!-- Setup time annotation -->
+        <line x1="100" y1="65" x2="100" y2="110" stroke="var(--red)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="200" y1="25" x2="200" y2="110" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="100" y1="110" x2="200" y2="110" stroke="var(--red)" stroke-width="2"/>
+        <text x="150" y="122" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">t_setup</text>
+        
+        <!-- Hold time annotation -->
+        <line x1="250" y1="75" x2="250" y2="110" stroke="var(--blue)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="200" y1="115" x2="250" y2="115" stroke="var(--blue)" stroke-width="2"/>
+        <text x="225" y="127" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">t_hold</text>
+        
+        <!-- Clock-to-Q delay -->
+        <line x1="200" y1="155" x2="215" y2="155" stroke="var(--green)" stroke-width="2"/>
+        <text x="207" y="168" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">t_cq</text>
+      </svg>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Setup Time (t<sub>su</sub>)</p>
+        <p class="qf-value">D stable BEFORE edge</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">D must be stable this long before clock edge</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Hold Time (t<sub>h</sub>)</p>
+        <p class="qf-value">D stable AFTER edge</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">D must remain stable this long after clock edge</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Clock-to-Q (t<sub>cq</sub>)</p>
+        <p class="qf-value">Edge → Q valid</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Propagation delay from clock edge to stable output</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Metastability:</strong> If setup/hold times are violated, the flip-flop may enter a metastable state where Q is neither 0 nor 1 for an unpredictable duration. This is the root cause of many clock domain crossing bugs.</p>
+    </div>
+  </section>
+
+  <!-- Async Reset/Preset -->
+  <section class="section" id="async">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+      </div>
+      <h2 class="section-title">Async Reset/Preset</h2>
+      <a href="#async" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Practical flip-flops include <strong>asynchronous control signals</strong> that override normal operation regardless of the clock:</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Async Reset (CLR)</p>
+        <p class="qf-value">Q → 0 immediately</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Forces Q=0, ignores clock. Used for power-on initialization.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Async Preset (PRE)</p>
+        <p class="qf-value">Q → 1 immediately</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Forces Q=1, ignores clock. Less common than reset.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Priority</p>
+        <p class="qf-value">Reset > Preset > Clock</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Async signals have highest priority</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+      <button class="ctab" onclick="switchCode(this,'async')">With Async Reset</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">dff.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// D Flip-Flop - Positive Edge Triggered</span>
+<span class="kw">module</span> dff (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> D,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk) <span class="kw">begin</span>
+        Q &lt;= D;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// D Flip-Flop with Synchronous Reset</span>
+<span class="kw">module</span> dff_sync_rst (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,   <span class="cmt">// Active-low sync reset</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> D,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= 1'b0;
+        <span class="kw">else</span>
+            Q &lt;= D;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">dff.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- D Flip-Flop - Positive Edge Triggered</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> dff <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk : <span class="kw">in</span>  std_logic;
+        D   : <span class="kw">in</span>  std_logic;
+        Q   : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> dff;
+
+<span class="kw">architecture</span> behavioral <span class="kw">of</span> dff <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rising_edge(clk) <span class="kw">then</span>
+            Q &lt;= D;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> behavioral;</pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-async">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">dff_async.v</span>
+          <button class="code-copy" onclick="copyCode(this,'async-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="async-code"><span class="cmt">// D Flip-Flop with Asynchronous Reset</span>
+<span class="kw">module</span> dff_async_rst (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,   <span class="cmt">// Active-low ASYNC reset</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> D,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q
+);
+
+    <span class="cmt">// Note: rst_n in sensitivity list = asynchronous</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= 1'b0;    <span class="cmt">// Async reset - immediate</span>
+        <span class="kw">else</span>
+            Q &lt;= D;       <span class="cmt">// Normal operation</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// D Flip-Flop with Async Reset AND Preset</span>
+<span class="kw">module</span> dff_async_rst_pre (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> pre_n,   <span class="cmt">// Active-low preset</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> D,
+    <span class="kw">output</span> <span class="kw">reg</span>  Q
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n <span class="kw">or</span> <span class="kw">negedge</span> pre_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            Q &lt;= 1'b0;    <span class="cmt">// Reset has priority</span>
+        <span class="kw">else if</span> (!pre_n)
+            Q &lt;= 1'b1;    <span class="cmt">// Preset</span>
+        <span class="kw">else</span>
+            Q &lt;= D;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Applications -->
+  <section class="section" id="applications">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <h2 class="section-title">Applications</h2>
+      <a href="#applications" class="section-anchor">#</a>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">Registers</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">N flip-flops in parallel form an N-bit register — the basis of all CPU registers, pipeline stages, etc.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Counters</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Chained flip-flops with feedback create binary counters. Used in timers, frequency dividers, address generators.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Shift Registers</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Cascaded DFFs where Q of one feeds D of next. Used in serial-parallel conversion, LFSR, delay lines.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">State Machines</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">DFFs hold FSM state. Combinational logic computes next state from current state + inputs.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Synchronizers</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">Two DFFs in series synchronize signals crossing clock domains, reducing metastability risk.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Pipeline Stages</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">DFFs between combinational stages enable pipelining — the key to high-performance processor design.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/d-latch.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        D Latch
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/jk-ff.html' | relative_url }}">
+        JK Flip-Flop
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>
