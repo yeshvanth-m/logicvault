@@ -1,0 +1,515 @@
+---
+layout: null
+title: Arbiter
+nav: routing
+sidebar: arbiter
+group: routing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Arbiter — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#types">Arbiter Types</a></li>
+      <li><a href="#fixed-priority">Fixed Priority</a></li>
+      <li><a href="#round-robin">Round Robin</a></li>
+      <li><a href="#weighted">Weighted Round Robin</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/routing/mux2.html' | relative_url }}">Routing</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Arbiter</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Routing</span>
+      <span class="badge badge-amber">Resource Sharing</span>
+    </div>
+    <h1 class="page-title">Arbiter</h1>
+    <p class="page-subtitle">
+      Resolves contention when multiple requestors compete for a shared resource. Selects one winner based on priority, fairness, or other policies.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Function</p>
+        <p class="qf-value">Resource Selection</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Inputs</p>
+        <p class="qf-value">N Request Lines</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Output</p>
+        <p class="qf-value">Grant (one-hot)</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Case</p>
+        <p class="qf-value">Bus, Cache, NoC</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Types -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">Arbiter Types</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Policy</th>
+            <th>Fairness</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Fixed Priority</td><td>Static priority order</td><td>None</td><td>Interrupt controllers</td></tr>
+          <tr><td>Round Robin</td><td>Rotating priority</td><td>Equal</td><td>Bus arbitration</td></tr>
+          <tr><td>Weighted RR</td><td>Proportional slots</td><td>Weighted</td><td>QoS systems</td></tr>
+          <tr><td>LRU</td><td>Least recent wins</td><td>Usage-based</td><td>Cache replacement</td></tr>
+          <tr><td>Random</td><td>LFSR selection</td><td>Probabilistic</td><td>Load balancing</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Fixed Priority -->
+  <section class="section" id="fixed-priority">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <h2 class="section-title">Fixed Priority Arbiter</h2>
+      <a href="#fixed-priority" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Simplest arbiter: request 0 has highest priority, then 1, 2, etc. Low-indexed requests always win. Can cause <strong>starvation</strong> of lower-priority requestors.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="225" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Fixed Priority Arbiter (4 inputs)</text>
+        
+        <!-- Requests -->
+        <text x="30" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="9">req[0]</text>
+        <text x="30" y="80" fill="var(--blue)" font-family="var(--mono)" font-size="9">req[1]</text>
+        <text x="30" y="105" fill="var(--blue)" font-family="var(--mono)" font-size="9">req[2]</text>
+        <text x="30" y="130" fill="var(--blue)" font-family="var(--mono)" font-size="9">req[3]</text>
+        
+        <line x1="75" y1="50" x2="130" y2="50" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="75" y1="75" x2="130" y2="75" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="75" y1="100" x2="130" y2="100" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="75" y1="125" x2="130" y2="125" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Priority logic -->
+        <rect x="130" y="35" width="160" height="110" rx="6" fill="var(--surface)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="210" y="90" fill="var(--purple)" font-family="var(--mono)" font-size="10" text-anchor="middle">Priority</text>
+        <text x="210" y="105" fill="var(--purple)" font-family="var(--mono)" font-size="10" text-anchor="middle">Encoder</text>
+        
+        <!-- Logic: gnt[i] = req[i] & ~any_higher -->
+        <text x="145" y="60" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">gnt[0] = req[0]</text>
+        <text x="145" y="75" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">gnt[1] = req[1] &amp; ~req[0]</text>
+        <text x="145" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">gnt[2] = req[2] &amp; ~(req[0]|req[1])</text>
+        <text x="145" y="130" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">...</text>
+        
+        <!-- Grants -->
+        <line x1="290" y1="50" x2="350" y2="50" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="290" y1="75" x2="350" y2="75" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="290" y1="100" x2="350" y2="100" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="290" y1="125" x2="350" y2="125" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <text x="360" y="55" fill="var(--green)" font-family="var(--mono)" font-size="9">gnt[0]</text>
+        <text x="360" y="80" fill="var(--green)" font-family="var(--mono)" font-size="9">gnt[1]</text>
+        <text x="360" y="105" fill="var(--green)" font-family="var(--mono)" font-size="9">gnt[2]</text>
+        <text x="360" y="130" fill="var(--green)" font-family="var(--mono)" font-size="9">gnt[3]</text>
+        
+        <!-- Priority labels -->
+        <text x="415" y="55" fill="var(--red)" font-family="var(--mono)" font-size="7">HIGH</text>
+        <text x="415" y="130" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">LOW</text>
+        
+        <text x="225" y="165" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Only one grant active at a time (one-hot)</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Round Robin -->
+  <section class="section" id="round-robin">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Round Robin Arbiter</h2>
+      <a href="#round-robin" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Fair arbitration: priority rotates after each grant. Last winner gets lowest priority next time. Ensures all requestors get service.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 530px;">
+        <rect width="480" height="200" fill="var(--surface2)" rx="8"/>
+        
+        <text x="240" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Round Robin Arbiter</text>
+        
+        <!-- Pointer register -->
+        <rect x="30" y="70" width="80" height="50" rx="4" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="70" y="90" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">Priority</text>
+        <text x="70" y="105" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">Pointer</text>
+        
+        <!-- Request inputs -->
+        <line x1="130" y1="60" x2="180" y2="60" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="155" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">req[]</text>
+        
+        <!-- Arbiter core -->
+        <rect x="180" y="45" width="130" height="100" rx="6" fill="var(--surface)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="245" y="80" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">Masked</text>
+        <text x="245" y="95" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">Priority</text>
+        <text x="245" y="110" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">Arbiter</text>
+        
+        <!-- Grant output -->
+        <line x1="310" y1="95" x2="360" y2="95" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="335" y="88" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">gnt[]</text>
+        
+        <!-- Update pointer -->
+        <path d="M 360 95 L 380 95 L 380 160 L 70 160 L 70 120" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="225" y="175" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">Update pointer on grant</text>
+        
+        <!-- Example sequence -->
+        <rect x="380" y="45" width="90" height="100" rx="4" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="425" y="62" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">Sequence:</text>
+        <text x="390" y="78" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">T1: →0 wins</text>
+        <text x="390" y="92" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">T2: →1 wins</text>
+        <text x="390" y="106" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">T3: →2 wins</text>
+        <text x="390" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">T4: →3 wins</text>
+        <text x="390" y="134" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">T5: →0 wins</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Implementation:</strong> Use a mask based on pointer position. Mask off lower-priority requests, run priority encoder. If no masked request, use unmasked priority encoder.</p>
+    </div>
+  </section>
+
+  <!-- Weighted RR -->
+  <section class="section" id="weighted">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+      </div>
+      <h2 class="section-title">Weighted Round Robin</h2>
+      <a href="#weighted" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each requestor gets a weight (number of slots). Higher weight = more grants per round. Used for QoS and bandwidth allocation.</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Credit-Based</h5>
+        <p>Each port has credit counter. Decremented on grant, reset when round completes. Skip port when credit = 0.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Deficit Round Robin</h5>
+        <p>Unused credits carry over. Good for variable-size packets. Fair even with different burst sizes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">arbiter.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Fixed Priority Arbiter</span>
+<span class="kw">module</span> arbiter_fixed #(
+    <span class="kw">parameter</span> N = 4
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> [N-1:0] req,
+    <span class="kw">output</span> <span class="kw">wire</span> [N-1:0] gnt
+);
+
+    <span class="kw">wire</span> [N-1:0] higher_pri_req;
+    
+    <span class="cmt">// higher_pri_req[i] = any request with index &lt; i</span>
+    <span class="kw">assign</span> higher_pri_req[0] = 1'b0;
+    <span class="kw">genvar</span> i;
+    <span class="kw">generate</span>
+        <span class="kw">for</span> (i = 1; i &lt; N; i = i + 1) <span class="kw">begin</span> : gen_hpr
+            <span class="kw">assign</span> higher_pri_req[i] = |req[i-1:0];
+        <span class="kw">end</span>
+    <span class="kw">endgenerate</span>
+    
+    <span class="cmt">// Grant if requesting and no higher priority</span>
+    <span class="kw">assign</span> gnt = req &amp; ~higher_pri_req;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Round Robin Arbiter</span>
+<span class="kw">module</span> arbiter_rr #(
+    <span class="kw">parameter</span> N = 4
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>        clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>        rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [N-1:0] req,
+    <span class="kw">output</span> <span class="kw">reg</span>  [N-1:0] gnt
+);
+
+    <span class="kw">reg</span> [N-1:0] mask;  <span class="cmt">// Masks lower priority requests</span>
+    <span class="kw">wire</span> [N-1:0] masked_req;
+    <span class="kw">wire</span> [N-1:0] mask_gnt;
+    <span class="kw">wire</span> [N-1:0] unmask_gnt;
+    <span class="kw">wire</span>        no_masked_req;
+
+    <span class="cmt">// Mask requests below last grant</span>
+    <span class="kw">assign</span> masked_req = req &amp; mask;
+    
+    <span class="cmt">// Fixed priority on masked requests</span>
+    arbiter_fixed #(N) masked_arb (
+        .req(masked_req),
+        .gnt(mask_gnt)
+    );
+    
+    <span class="cmt">// Fixed priority on all requests (fallback)</span>
+    arbiter_fixed #(N) unmask_arb (
+        .req(req),
+        .gnt(unmask_gnt)
+    );
+    
+    <span class="cmt">// Use masked if any, else unmasked</span>
+    <span class="kw">assign</span> no_masked_req = ~|masked_req;
+    
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            gnt  &lt;= {N{1'b0}};
+            mask &lt;= {N{1'b1}};  <span class="cmt">// All enabled</span>
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (|req) <span class="kw">begin</span>
+                gnt &lt;= no_masked_req ? unmask_gnt : mask_gnt;
+                <span class="cmt">// Update mask: set bits above winner</span>
+                mask &lt;= no_masked_req ? 
+                    ({N{1'b1}} &lt;&lt; $clog2(unmask_gnt+1)) :
+                    ({N{1'b1}} &lt;&lt; $clog2(mask_gnt+1));
+            <span class="kw">end else begin</span>
+                gnt &lt;= {N{1'b0}};
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Cleaner Round Robin using rotate</span>
+<span class="kw">module</span> arbiter_rr_simple #(
+    <span class="kw">parameter</span> N = 4
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>        clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>        rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [N-1:0] req,
+    <span class="kw">output</span> <span class="kw">wire</span> [N-1:0] gnt,
+    <span class="kw">output</span> <span class="kw">wire</span>        valid
+);
+
+    <span class="kw">reg</span> [$clog2(N)-1:0] ptr;  <span class="cmt">// Points to highest priority</span>
+    <span class="kw">wire</span> [2*N-1:0] double_req;
+    <span class="kw">wire</span> [2*N-1:0] double_gnt;
+    
+    <span class="cmt">// Double the request for wraparound</span>
+    <span class="kw">assign</span> double_req = {req, req};
+    
+    <span class="cmt">// Shift and mask</span>
+    <span class="kw">wire</span> [N-1:0] shifted_req = double_req[ptr +: N];
+    <span class="kw">wire</span> [N-1:0] shifted_gnt;
+    
+    <span class="cmt">// Fixed priority on shifted</span>
+    arbiter_fixed #(N) pri_arb (
+        .req(shifted_req),
+        .gnt(shifted_gnt)
+    );
+    
+    <span class="cmt">// Unshift grant</span>
+    <span class="kw">assign</span> double_gnt = {{N{1'b0}}, shifted_gnt} &lt;&lt; ptr;
+    <span class="kw">assign</span> gnt = double_gnt[N-1:0] | double_gnt[2*N-1:N];
+    <span class="kw">assign</span> valid = |gnt;
+    
+    <span class="cmt">// Update pointer</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            ptr &lt;= 0;
+        <span class="kw">else if</span> (valid)
+            ptr &lt;= (ptr + 1) % N;  <span class="cmt">// Move to next</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">arbiter.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Fixed Priority Arbiter</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> arbiter_fixed <span class="kw">is</span>
+    <span class="kw">generic</span> (N : integer := 4);
+    <span class="kw">port</span> (
+        req : <span class="kw">in</span>  std_logic_vector(N-1 <span class="kw">downto</span> 0);
+        gnt : <span class="kw">out</span> std_logic_vector(N-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> arbiter_fixed;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> arbiter_fixed <span class="kw">is</span>
+<span class="kw">begin</span>
+    <span class="kw">process</span>(req)
+        <span class="kw">variable</span> found : std_logic;
+    <span class="kw">begin</span>
+        found := '0';
+        gnt &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">for</span> i <span class="kw">in</span> 0 <span class="kw">to</span> N-1 <span class="kw">loop</span>
+            <span class="kw">if</span> req(i) = '1' <span class="kw">and</span> found = '0' <span class="kw">then</span>
+                gnt(i) &lt;= '1';
+                found := '1';
+            <span class="kw">end if</span>;
+        <span class="kw">end loop</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> rtl;
+
+<span class="cmt">-- Round Robin Arbiter</span>
+<span class="kw">entity</span> arbiter_rr <span class="kw">is</span>
+    <span class="kw">generic</span> (N : integer := 4);
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        req   : <span class="kw">in</span>  std_logic_vector(N-1 <span class="kw">downto</span> 0);
+        gnt   : <span class="kw">out</span> std_logic_vector(N-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> arbiter_rr;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> arbiter_rr <span class="kw">is</span>
+    <span class="kw">signal</span> ptr : integer <span class="kw">range</span> 0 <span class="kw">to</span> N-1;
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+        <span class="kw">variable</span> idx : integer;
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            ptr &lt;= 0;
+            gnt &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            gnt &lt;= (<span class="kw">others</span> =&gt; '0');
+            <span class="kw">for</span> i <span class="kw">in</span> 0 <span class="kw">to</span> N-1 <span class="kw">loop</span>
+                idx := (ptr + i) <span class="kw">mod</span> N;
+                <span class="kw">if</span> req(idx) = '1' <span class="kw">then</span>
+                    gnt(idx) &lt;= '1';
+                    ptr &lt;= (idx + 1) <span class="kw">mod</span> N;
+                    <span class="kw">exit</span>;
+                <span class="kw">end if</span>;
+            <span class="kw">end loop</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>What is starvation?</strong> — A low-priority requestor never gets service because higher-priority ones are always active. Fixed priority is prone to this.</li>
+      <li><strong>How does round robin prevent starvation?</strong> — Priority rotates after each grant. Even the lowest original priority becomes highest eventually.</li>
+      <li><strong>What's the latency of a fixed priority arbiter?</strong> — Combinational: one gate delay per priority level. Can be O(log N) with parallel prefix network.</li>
+      <li><strong>When would you use fixed priority?</strong> — Interrupt controllers (some interrupts are truly more urgent), or when starvation is acceptable.</li>
+      <li><strong>How to handle simultaneous request and release?</strong> — Common to have req hold high during entire transaction. Grant is held until transaction completes.</li>
+      <li><strong>Matrix arbiter vs round robin?</strong> — Matrix arbiter tracks pairwise priorities. More state but can handle complex scenarios. RR is simpler for equal weights.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/routing/mux8.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        MUX 8:1
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/routing/demux.html' | relative_url }}">
+        Demultiplexer
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

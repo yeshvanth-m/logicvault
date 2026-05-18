@@ -1,0 +1,486 @@
+---
+layout: null
+title: Frequency Divider
+nav: sequential
+sidebar: freq-div
+group: generators
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Frequency Divider — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#power-of-2">Power-of-2 Divider</a></li>
+      <li><a href="#arbitrary">Arbitrary Divider</a></li>
+      <li><a href="#odd">Odd Division</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/index.html' | relative_url }}">Sequential</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Frequency Divider</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-purple">Clock Management</span>
+    </div>
+    <h1 class="page-title">Frequency Divider</h1>
+    <p class="page-subtitle">
+      Divides input clock frequency by integer factor. Produces lower frequency output clock from higher frequency source.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Input</p>
+        <p class="qf-value">f<sub>in</sub></p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Output</p>
+        <p class="qf-value">f<sub>in</sub> / N</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Method</p>
+        <p class="qf-value">Counter</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Case</p>
+        <p class="qf-value">Clock Gen, Timing</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Power of 2 -->
+  <section class="section" id="power-of-2">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+      </div>
+      <h2 class="section-title">Power-of-2 Divider</h2>
+      <a href="#power-of-2" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Simplest divider: a counter's MSB divides by 2, next bit by 4, etc. Just use the appropriate counter bit as output.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 480 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 530px;">
+        <rect width="480" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="240" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Divide-by-4 Using Counter</text>
+        
+        <!-- Clock in -->
+        <text x="30" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="8">clk</text>
+        <polyline points="50,60 60,60 60,45 70,45 70,60 80,60 80,45 90,45 90,60 100,60 100,45 110,45 110,60 120,60 120,45 130,45 130,60 140,60 140,45 150,45 150,60 160,60 160,45 170,45 170,60 180,60" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Counter bits -->
+        <text x="30" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">cnt[0]</text>
+        <polyline points="60,95 70,95 70,80 90,80 90,95 110,95 110,80 130,80 130,95 150,95 150,80 170,80 170,95 180,95" fill="none" stroke="var(--text-dim)" stroke-width="1.5"/>
+        
+        <text x="30" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">cnt[1]</text>
+        <polyline points="60,125 90,125 90,110 130,110 130,125 170,125 170,110 180,110" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Output label -->
+        <text x="200" y="120" fill="var(--green)" font-family="var(--mono)" font-size="8">= clk/4</text>
+        
+        <!-- Formula box -->
+        <rect x="280" y="45" width="180" height="80" rx="4" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="370" y="65" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Division Factor:</text>
+        <text x="370" y="85" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">cnt[0] → ÷2</text>
+        <text x="370" y="100" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">cnt[1] → ÷4</text>
+        <text x="370" y="115" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">cnt[n] → ÷2<tspan baseline-shift="super" font-size="7">n+1</tspan></text>
+        
+        <text x="240" y="165" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">50% duty cycle automatically</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Arbitrary -->
+  <section class="section" id="arbitrary">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Arbitrary Divider</h2>
+      <a href="#arbitrary" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>For divide-by-N: count from 0 to N-1, toggle output at count 0. Or count from N-1 down to 0, toggle at 0.</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Even Division (N even)</h5>
+        <p>Count to N/2 - 1, toggle output, repeat. Gives 50% duty cycle.</p>
+        <div class="formula">// Divide by 6
+if (cnt == 2) begin
+  cnt <= 0;
+  clk_out <= ~clk_out;
+end else
+  cnt <= cnt + 1;</div>
+      </div>
+      <div class="concept-card amber">
+        <h5>Non-50% Duty Cycle</h5>
+        <p>Count full N cycles, pulse for 1 cycle. Duty cycle = 1/N.</p>
+        <div class="formula">// Divide by 5, 20% duty
+if (cnt == 4)
+  cnt <= 0;
+else
+  cnt <= cnt + 1;
+clk_out <= (cnt == 0);</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Odd Division -->
+  <section class="section" id="odd">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+      </div>
+      <h2 class="section-title">Odd Division with 50% Duty</h2>
+      <a href="#odd" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Odd division (÷3, ÷5, ÷7) with 50% duty cycle requires dual-edge technique: generate two clocks offset by half-cycle, then OR or XOR them.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 160" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="160" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Divide-by-3 with 50% Duty</text>
+        
+        <!-- CLK_P -->
+        <text x="30" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="8">clk_p</text>
+        <polyline points="70,60 100,60 100,45 160,45 160,60 190,60 190,45 250,45 250,60 280,60 280,45 340,45 340,60 400,60" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- CLK_N -->
+        <text x="30" y="90" fill="var(--green)" font-family="var(--mono)" font-size="8">clk_n</text>
+        <polyline points="70,95 115,95 115,80 175,80 175,95 205,95 205,80 265,80 265,95 295,95 295,80 355,80 355,95 400,95" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <!-- ORed result -->
+        <text x="30" y="130" fill="var(--purple)" font-family="var(--mono)" font-size="8">clk/3</text>
+        <polyline points="70,135 100,135 100,120 175,120 175,135 190,135 190,120 265,120 265,135 280,135 280,120 355,120 355,135 400,135" fill="none" stroke="var(--purple)" stroke-width="2"/>
+        
+        <!-- Period markers -->
+        <line x1="100" y1="140" x2="100" y2="150" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="190" y1="140" x2="190" y2="150" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="145" y="155" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">3 input cycles</text>
+        
+        <!-- Note -->
+        <text x="450" y="90" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">clk_n from</text>
+        <text x="450" y="100" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">negedge</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-warning" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <p><strong>Glitch Risk:</strong> ORing/XORing clocks from different edges can create glitches. For clean clocks, use PLL/MMCM or clock enables instead of divided clocks.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">freq_div.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Power-of-2 divider (simple counter)</span>
+<span class="kw">module</span> freq_div_pow2 #(
+    <span class="kw">parameter</span> DIV_BITS = 4  <span class="cmt">// Divides up to 2^16</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>               clk_in,
+    <span class="kw">input</span>  <span class="kw">wire</span>               rst_n,
+    <span class="kw">output</span> <span class="kw">wire</span> [DIV_BITS-1:0] clk_div  <span class="cmt">// [0]=÷2, [1]=÷4, etc.</span>
+);
+
+    <span class="kw">reg</span> [DIV_BITS-1:0] cnt;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_in <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            cnt &lt;= 0;
+        <span class="kw">else</span>
+            cnt &lt;= cnt + 1;
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> clk_div = cnt;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Arbitrary even divider (50% duty)</span>
+<span class="kw">module</span> freq_div_even #(
+    <span class="kw">parameter</span> DIV = 10  <span class="cmt">// Must be even</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_in,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">output</span> <span class="kw">reg</span>  clk_out
+);
+
+    <span class="kw">localparam</span> HALF = DIV / 2;
+    <span class="kw">localparam</span> CNT_W = $clog2(HALF);
+    
+    <span class="kw">reg</span> [CNT_W-1:0] cnt;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_in <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            cnt     &lt;= 0;
+            clk_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (cnt == HALF - 1) <span class="kw">begin</span>
+                cnt     &lt;= 0;
+                clk_out &lt;= ~clk_out;
+            <span class="kw">end else begin</span>
+                cnt &lt;= cnt + 1;
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Odd divider with 50% duty (dual-edge)</span>
+<span class="kw">module</span> freq_div_odd #(
+    <span class="kw">parameter</span> DIV = 3  <span class="cmt">// Must be odd ≥ 3</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_in,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">output</span> <span class="kw">wire</span> clk_out
+);
+
+    <span class="kw">localparam</span> CNT_W = $clog2(DIV);
+    
+    <span class="kw">reg</span> [CNT_W-1:0] cnt_p, cnt_n;
+    <span class="kw">reg</span>            clk_p, clk_n;
+
+    <span class="cmt">// Posedge counter</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_in <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            cnt_p &lt;= 0;
+            clk_p &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (cnt_p == DIV - 1)
+                cnt_p &lt;= 0;
+            <span class="kw">else</span>
+                cnt_p &lt;= cnt_p + 1;
+            
+            <span class="cmt">// High for first (DIV+1)/2 cycles</span>
+            clk_p &lt;= (cnt_p &lt; (DIV + 1) / 2);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Negedge counter (offset by half cycle)</span>
+    <span class="kw">always</span> @(<span class="kw">negedge</span> clk_in <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            cnt_n &lt;= 0;
+            clk_n &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (cnt_n == DIV - 1)
+                cnt_n &lt;= 0;
+            <span class="kw">else</span>
+                cnt_n &lt;= cnt_n + 1;
+            
+            clk_n &lt;= (cnt_n &lt; (DIV + 1) / 2);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Combine for 50% duty</span>
+    <span class="kw">assign</span> clk_out = clk_p | clk_n;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Clock enable (preferred in FPGAs)</span>
+<span class="kw">module</span> clk_enable #(
+    <span class="kw">parameter</span> DIV = 10
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">output</span> <span class="kw">reg</span>  ce    <span class="cmt">// Clock enable pulse</span>
+);
+
+    <span class="kw">localparam</span> CNT_W = $clog2(DIV);
+    <span class="kw">reg</span> [CNT_W-1:0] cnt;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            cnt &lt;= 0;
+            ce  &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (cnt == DIV - 1) <span class="kw">begin</span>
+                cnt &lt;= 0;
+                ce  &lt;= 1'b1;
+            <span class="kw">end else begin</span>
+                cnt &lt;= cnt + 1;
+                ce  &lt;= 1'b0;
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">freq_div.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Even frequency divider</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> freq_div_even <span class="kw">is</span>
+    <span class="kw">generic</span> (DIV : integer := 10);
+    <span class="kw">port</span> (
+        clk_in  : <span class="kw">in</span>  std_logic;
+        rst_n   : <span class="kw">in</span>  std_logic;
+        clk_out : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> freq_div_even;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> freq_div_even <span class="kw">is</span>
+    <span class="kw">constant</span> HALF : integer := DIV / 2;
+    <span class="kw">signal</span> cnt : integer <span class="kw">range</span> 0 <span class="kw">to</span> HALF - 1;
+    <span class="kw">signal</span> clk_r : std_logic;
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk_in, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            cnt &lt;= 0;
+            clk_r &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk_in) <span class="kw">then</span>
+            <span class="kw">if</span> cnt = HALF - 1 <span class="kw">then</span>
+                cnt &lt;= 0;
+                clk_r &lt;= <span class="kw">not</span> clk_r;
+            <span class="kw">else</span>
+                cnt &lt;= cnt + 1;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    clk_out &lt;= clk_r;
+
+<span class="kw">end</span> rtl;
+
+<span class="cmt">-- Clock enable generator</span>
+<span class="kw">entity</span> clk_enable <span class="kw">is</span>
+    <span class="kw">generic</span> (DIV : integer := 10);
+    <span class="kw">port</span> (
+        clk   : <span class="kw">in</span>  std_logic;
+        rst_n : <span class="kw">in</span>  std_logic;
+        ce    : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> clk_enable;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> clk_enable <span class="kw">is</span>
+    <span class="kw">signal</span> cnt : integer <span class="kw">range</span> 0 <span class="kw">to</span> DIV - 1;
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            cnt &lt;= 0;
+            ce &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> cnt = DIV - 1 <span class="kw">then</span>
+                cnt &lt;= 0;
+                ce &lt;= '1';
+            <span class="kw">else</span>
+                cnt &lt;= cnt + 1;
+                ce &lt;= '0';
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Clock enable vs divided clock?</strong> — Clock enable is safer: single clock domain, no skew issues. Divided clock creates new domain requiring synchronization.</li>
+      <li><strong>How to divide by odd number with 50% duty?</strong> — Use dual-edge technique: generate clocks on both edges, combine them. Or use DLL/PLL.</li>
+      <li><strong>Why does MSB divide by 2?</strong> — Binary counter: MSB toggles every 2^(N-1) counts. For N-bit counter, bit[0] toggles every clock (÷2).</li>
+      <li><strong>Fractional division?</strong> — Use DDS (Direct Digital Synthesis) or fractional-N PLL. Cannot do exact fractional with simple counters.</li>
+      <li><strong>Glitch-free clock switching?</strong> — Synchronize switch signal to both clocks, gate each clock, AND clocks with synced enables.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/pulse-gen.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Pulse Generator
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/pwm.html' | relative_url }}">
+        PWM Generator
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

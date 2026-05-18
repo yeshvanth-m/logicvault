@@ -78,6 +78,7 @@
       <a href="{{ '/routing/mux8.html' | relative_url }}" class="nav-item{% if page.sidebar == 'mux-8' %} active{% endif %}">8:1 MUX</a>
       <a href="{{ '/routing/demux.html' | relative_url }}" class="nav-item{% if page.sidebar == 'demux' %} active{% endif %}">DEMUX</a>
       <a href="{{ '/routing/tristate.html' | relative_url }}" class="nav-item{% if page.sidebar == 'tri-state' %} active{% endif %}">Tri-state Buffer</a>
+      <a href="{{ '/routing/arbiter.html' | relative_url }}" class="nav-item{% if page.sidebar == 'arbiter' %} active{% endif %}">Arbiter</a>
     </div>
 
     <button class="nav-group-toggle{% if page.group == 'codec' %} open{% endif %}" onclick="toggleGroup(this)">
@@ -102,6 +103,16 @@
       <a href="{{ '/edc/parity-check.html' | relative_url }}" class="nav-item{% if page.sidebar == 'parity-check' %} active{% endif %}">Parity Checker</a>
       <a href="{{ '/edc/hamming.html' | relative_url }}" class="nav-item{% if page.sidebar == 'hamming' %} active{% endif %}">Hamming Code</a>
       <a href="{{ '/edc/crc.html' | relative_url }}" class="nav-item{% if page.sidebar == 'crc' %} active{% endif %}">CRC</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'memory' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Memory</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'memory' %} open{% endif %}">
+      <a href="{{ '/memory/sram.html' | relative_url }}" class="nav-item{% if page.sidebar == 'sram' %} active{% endif %}">SRAM</a>
+      <a href="{{ '/memory/rom.html' | relative_url }}" class="nav-item{% if page.sidebar == 'rom' %} active{% endif %}">ROM</a>
+      <a href="{{ '/memory/register-file.html' | relative_url }}" class="nav-item{% if page.sidebar == 'register-file' %} active{% endif %}">Register File</a>
     </div>
   </div>
 
@@ -141,6 +152,40 @@
       <a href="{{ '/sequential/fsm-mealy.html' | relative_url }}" class="nav-item{% if page.sidebar == 'fsm-mealy' %} active{% endif %}">Mealy Machine</a>
       <a href="{{ '/sequential/fsm-moore.html' | relative_url }}" class="nav-item{% if page.sidebar == 'fsm-moore' %} active{% endif %}">Moore Machine</a>
       <a href="{{ '/sequential/seq-detector.html' | relative_url }}" class="nav-item{% if page.sidebar == 'seq-det' %} active{% endif %}">Sequence Detector</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'timing' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Timing & Synchronization</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'timing' %} open{% endif %}">
+      <a href="{{ '/sequential/metastability.html' | relative_url }}" class="nav-item{% if page.sidebar == 'metastability' %} active{% endif %}">Metastability</a>
+      <a href="{{ '/sequential/cdc.html' | relative_url }}" class="nav-item{% if page.sidebar == 'cdc' %} active{% endif %}">Clock Domain Crossing</a>
+      <a href="{{ '/sequential/setup-hold.html' | relative_url }}" class="nav-item{% if page.sidebar == 'setup-hold' %} active{% endif %}">Setup & Hold Time</a>
+      <a href="{{ '/sequential/reset.html' | relative_url }}" class="nav-item{% if page.sidebar == 'reset' %} active{% endif %}">Reset Design</a>
+      <a href="{{ '/sequential/clock-gating.html' | relative_url }}" class="nav-item{% if page.sidebar == 'clock-gating' %} active{% endif %}">Clock Gating</a>
+      <a href="{{ '/sequential/fifo.html' | relative_url }}" class="nav-item{% if page.sidebar == 'fifo' %} active{% endif %}">Async FIFO</a>
+      <a href="{{ '/sequential/scan-chain.html' | relative_url }}" class="nav-item{% if page.sidebar == 'scan-chain' %} active{% endif %}">Scan Chain / DFT</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'dataflow' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Data Flow & Pipelines</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'dataflow' %} open{% endif %}">
+      <a href="{{ '/sequential/pipeline.html' | relative_url }}" class="nav-item{% if page.sidebar == 'pipeline' %} active{% endif %}">Pipeline</a>
+      <a href="{{ '/sequential/ready-valid.html' | relative_url }}" class="nav-item{% if page.sidebar == 'ready-valid' %} active{% endif %}">Ready/Valid Handshake</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'generators' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Pulse & Signal Generators</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'generators' %} open{% endif %}">
+      <a href="{{ '/sequential/debouncer.html' | relative_url }}" class="nav-item{% if page.sidebar == 'debouncer' %} active{% endif %}">Debouncer</a>
+      <a href="{{ '/sequential/pulse-gen.html' | relative_url }}" class="nav-item{% if page.sidebar == 'pulse-gen' %} active{% endif %}">Pulse Generator</a>
+      <a href="{{ '/sequential/freq-div.html' | relative_url }}" class="nav-item{% if page.sidebar == 'freq-div' %} active{% endif %}">Frequency Divider</a>
+      <a href="{{ '/sequential/pwm.html' | relative_url }}" class="nav-item{% if page.sidebar == 'pwm' %} active{% endif %}">PWM Generator</a>
     </div>
   </div>
 

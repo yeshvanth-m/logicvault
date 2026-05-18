@@ -1,0 +1,586 @@
+---
+layout: null
+title: Asynchronous FIFO
+nav: sequential
+sidebar: fifo
+group: timing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Asynchronous FIFO — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#gray-pointers">Gray Code Pointers</a></li>
+      <li><a href="#full-empty">Full/Empty Detection</a></li>
+      <li><a href="#sizing">FIFO Sizing</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Asynchronous FIFO</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-red">Critical</span>
+    </div>
+    <h1 class="page-title">Asynchronous FIFO</h1>
+    <p class="page-subtitle">
+      The standard solution for transferring data between clock domains. Uses dual-port memory with Gray-coded pointers for safe cross-domain synchronization.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Purpose</p>
+        <p class="qf-value">CDC Data Transfer</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Pointer Encoding</p>
+        <p class="qf-value">Gray Code</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Depth</p>
+        <p class="qf-value">Power of 2</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Latency</p>
+        <p class="qf-value">2-3 cycles</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Architecture</h2>
+      <a href="#architecture" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 550 280" xmlns="http://www.w3.org/2000/svg" style="max-width: 600px;">
+        <rect width="550" height="280" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Write domain -->
+        <rect x="20" y="25" width="200" height="230" rx="6" fill="rgba(59,130,246,0.1)" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="120" y="45" fill="var(--blue)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Write Domain (wclk)</text>
+        
+        <!-- Read domain -->
+        <rect x="330" y="25" width="200" height="230" rx="6" fill="rgba(34,197,94,0.1)" stroke="var(--green)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="430" y="45" fill="var(--green)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Read Domain (rclk)</text>
+        
+        <!-- Dual-port RAM -->
+        <rect x="180" y="100" width="190" height="80" rx="6" fill="var(--surface)" stroke="var(--amber)" stroke-width="2"/>
+        <text x="275" y="140" fill="var(--amber)" font-family="var(--mono)" font-size="11" font-weight="bold" text-anchor="middle">Dual-Port RAM</text>
+        <text x="275" y="160" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">DEPTH × WIDTH</text>
+        
+        <!-- Write pointer -->
+        <rect x="50" y="80" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="90" y="100" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">wptr</text>
+        <text x="90" y="115" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">(binary)</text>
+        
+        <!-- Write Gray pointer -->
+        <rect x="50" y="135" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="90" y="155" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">wptr_gray</text>
+        
+        <!-- Read pointer -->
+        <rect x="420" y="80" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="460" y="100" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">rptr</text>
+        <text x="460" y="115" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">(binary)</text>
+        
+        <!-- Read Gray pointer -->
+        <rect x="420" y="135" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="460" y="155" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">rptr_gray</text>
+        
+        <!-- Sync blocks -->
+        <rect x="50" y="195" width="80" height="35" rx="4" fill="var(--surface)" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="90" y="210" fill="var(--red)" font-family="var(--mono)" font-size="8" text-anchor="middle">2-FF Sync</text>
+        <text x="90" y="222" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">rptr→wclk</text>
+        
+        <rect x="420" y="195" width="80" height="35" rx="4" fill="var(--surface)" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="460" y="210" fill="var(--red)" font-family="var(--mono)" font-size="8" text-anchor="middle">2-FF Sync</text>
+        <text x="460" y="222" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">wptr→rclk</text>
+        
+        <!-- Write data path -->
+        <text x="35" y="105" fill="var(--blue)" font-family="var(--mono)" font-size="8">wen</text>
+        <text x="35" y="70" fill="var(--blue)" font-family="var(--mono)" font-size="8">wdata</text>
+        <line x1="175" y1="100" x2="180" y2="100" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="130" y1="100" x2="175" y2="100" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="175" y1="70" x2="175" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="60" y1="70" x2="175" y2="70" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="175" y1="130" x2="180" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Read data path -->
+        <text x="505" y="105" fill="var(--green)" font-family="var(--mono)" font-size="8">ren</text>
+        <text x="505" y="155" fill="var(--green)" font-family="var(--mono)" font-size="8">rdata</text>
+        <line x1="370" y1="140" x2="420" y2="100" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="500" y1="100" x2="520" y2="100" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="370" y1="155" x2="530" y2="155" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <!-- Cross-domain arrows -->
+        <path d="M 130 155 Q 275 200 420 210" fill="none" stroke="var(--purple)" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow)"/>
+        <path d="M 420 155 Q 275 110 130 210" fill="none" stroke="var(--purple)" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow)"/>
+        <defs><marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--purple)"/></marker></defs>
+        
+        <!-- Full/Empty flags -->
+        <text x="90" y="248" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">full</text>
+        <text x="460" y="248" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">empty</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Write Side</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Binary write pointer (wptr)</li>
+          <li>Gray-coded wptr for sync</li>
+          <li>Receives rptr from read domain</li>
+          <li>Generates FULL flag</li>
+        </ul>
+      </div>
+      <div class="concept-card green">
+        <h5>Read Side</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Binary read pointer (rptr)</li>
+          <li>Gray-coded rptr for sync</li>
+          <li>Receives wptr from write domain</li>
+          <li>Generates EMPTY flag</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gray Code Pointers -->
+  <section class="section" id="gray-pointers">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+      </div>
+      <h2 class="section-title">Gray Code Pointers</h2>
+      <a href="#gray-pointers" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Pointers must be synchronized across clock domains. <strong>Gray coding ensures only 1 bit changes per increment</strong>, making synchronization safe even if sampling occurs during transition.</p>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Binary</th>
+            <th>Gray</th>
+            <th>Changed Bits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>0000</td><td>0000</td><td>—</td></tr>
+          <tr><td>1</td><td>0001</td><td>0001</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>2</td><td>0010</td><td>0011</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>3</td><td>0011</td><td>0010</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>4</td><td>0100</td><td>0110</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>5</td><td>0101</td><td>0111</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>6</td><td>0110</td><td>0101</td><td style="color: var(--green);">1</td></tr>
+          <tr><td>7</td><td>0111</td><td>0100</td><td style="color: var(--green);">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">Binary ↔ Gray Conversion</p>
+      <p class="bool-expr">
+        <span class="out">gray</span> = binary ^ (binary >> 1)
+      </p>
+      <p class="bool-expr" style="margin-top: 0.5rem;">
+        <span class="out">binary[n]</span> = gray[n] ^ gray[n+1] ^ ... ^ gray[MSB]
+      </p>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>FIFO depth must be power of 2!</strong> This ensures Gray code wraps correctly. A depth-16 FIFO with 4-bit pointers uses addresses 0-15, and 15→0 (0100→0000) changes only 1 bit.</p>
+    </div>
+  </section>
+
+  <!-- Full/Empty Detection -->
+  <section class="section" id="full-empty">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+      </div>
+      <h2 class="section-title">Full/Empty Detection</h2>
+      <a href="#full-empty" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The tricky part: detecting FULL and EMPTY using Gray-coded pointers that are synchronized (and thus delayed).</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card red">
+        <h5>EMPTY (read domain)</h5>
+        <p>FIFO is empty when read pointer equals write pointer:</p>
+        <div class="formula">empty = (rptr_gray == wptr_gray_sync)</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-dim);">Safe: synchronized wptr may be old → reports empty when actually has data (conservative)</p>
+      </div>
+      <div class="concept-card red">
+        <h5>FULL (write domain)</h5>
+        <p>FIFO is full when write pointer is one loop ahead:</p>
+        <div class="formula">// In Gray code, MSB-1 differs
+full = (wptr_gray[N:N-1] == ~rptr_sync[N:N-1])
+     &amp;&amp; (wptr_gray[N-2:0] == rptr_sync[N-2:0])</div>
+        <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-dim);">Safe: synchronized rptr may be old → reports full when has space (conservative)</p>
+      </div>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="120" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Pointer Positions (4-bit example)</text>
+        
+        <!-- FIFO slots -->
+        <rect x="80" y="45" width="340" height="30" rx="3" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        
+        <!-- Individual slots -->
+        <line x1="101" y1="45" x2="101" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="122" y1="45" x2="122" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="143" y1="45" x2="143" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="164" y1="45" x2="164" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="185" y1="45" x2="185" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="206" y1="45" x2="206" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="227" y1="45" x2="227" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="248" y1="45" x2="248" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="269" y1="45" x2="269" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="290" y1="45" x2="290" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="311" y1="45" x2="311" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="332" y1="45" x2="332" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="353" y1="45" x2="353" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="374" y1="45" x2="374" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <line x1="395" y1="45" x2="395" y2="75" stroke="var(--text-dim)" stroke-width="0.5"/>
+        
+        <!-- Labels -->
+        <text x="91" y="62" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">0</text>
+        <text x="407" y="62" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">15</text>
+        
+        <!-- Write pointer -->
+        <polygon points="200,40 206,28 212,40" fill="var(--blue)"/>
+        <text x="206" y="22" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">wptr=6</text>
+        
+        <!-- Read pointer -->
+        <polygon points="141,40 147,28 153,40" fill="var(--green)"/>
+        <text x="147" y="22" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">rptr=3</text>
+        
+        <!-- Data highlight -->
+        <rect x="143" y="46" width="63" height="28" fill="rgba(34,197,94,0.2)" rx="2"/>
+        
+        <!-- Legend -->
+        <text x="250" y="100" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">3 entries used (wptr - rptr = 3)</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- FIFO Sizing -->
+  <section class="section" id="sizing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">FIFO Sizing</h2>
+      <a href="#sizing" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>FIFO depth depends on the rate mismatch and burst characteristics. The goal: prevent overflow during peak write bursts and underflow during read bursts.</p>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Minimum FIFO Depth (steady state)</p>
+      <p class="bool-expr">
+        <span class="out">Depth</span> ≥ <span class="var">Burst_size</span> × (1 - <span class="var">f<sub>read</sub></span>/<span class="var">f<sub>write</sub></span>)
+      </p>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Consideration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>f<sub>write</sub> > f<sub>read</sub></td><td>FIFO fills; size for max burst duration</td></tr>
+          <tr><td>f<sub>write</sub> < f<sub>read</sub></td><td>FIFO drains; size for read latency</td></tr>
+          <tr><td>f<sub>write</sub> ≈ f<sub>read</sub></td><td>Small FIFO OK, just absorbs jitter</td></tr>
+          <tr><td>Bursty traffic</td><td>Add depth for burst length × duty cycle</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Example:</strong> 100MHz write clock, 80MHz read clock, 1000-word bursts. Rate mismatch = 1 - 80/100 = 0.2. Min depth = 1000 × 0.2 = 200 words → round up to 256 (power of 2).</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">async_fifo.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Asynchronous FIFO with Gray-coded pointers</span>
+<span class="kw">module</span> async_fifo #(
+    <span class="kw">parameter</span> DATA_WIDTH = 8,
+    <span class="kw">parameter</span> ADDR_WIDTH = 4   <span class="cmt">// Depth = 2^4 = 16</span>
+)(
+    <span class="cmt">// Write port</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>                  wclk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  wrst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  wen,
+    <span class="kw">input</span>  <span class="kw">wire</span> [DATA_WIDTH-1:0] wdata,
+    <span class="kw">output</span> <span class="kw">wire</span>                  full,
+    
+    <span class="cmt">// Read port</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>                  rclk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  rrst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  ren,
+    <span class="kw">output</span> <span class="kw">wire</span> [DATA_WIDTH-1:0] rdata,
+    <span class="kw">output</span> <span class="kw">wire</span>                  empty
+);
+
+    <span class="kw">localparam</span> DEPTH = 1 &lt;&lt; ADDR_WIDTH;
+
+    <span class="cmt">// Memory array</span>
+    <span class="kw">reg</span> [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+
+    <span class="cmt">// Pointers (extra bit for full/empty detection)</span>
+    <span class="kw">reg</span>  [ADDR_WIDTH:0] wptr_bin, wptr_gray;
+    <span class="kw">reg</span>  [ADDR_WIDTH:0] rptr_bin, rptr_gray;
+    
+    <span class="cmt">// Synchronized pointers</span>
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [ADDR_WIDTH:0] wptr_gray_sync [0:1];
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [ADDR_WIDTH:0] rptr_gray_sync [0:1];
+
+    <span class="cmt">//=========================================</span>
+    <span class="cmt">// WRITE DOMAIN</span>
+    <span class="cmt">//=========================================</span>
+    
+    <span class="kw">wire</span> [ADDR_WIDTH:0] wptr_bin_next = wptr_bin + (wen &amp; ~full);
+    <span class="kw">wire</span> [ADDR_WIDTH:0] wptr_gray_next = wptr_bin_next ^ (wptr_bin_next >> 1);
+    
+    <span class="kw">always</span> @(<span class="kw">posedge</span> wclk <span class="kw">or</span> <span class="kw">negedge</span> wrst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!wrst_n) <span class="kw">begin</span>
+            wptr_bin  &lt;= '0;
+            wptr_gray &lt;= '0;
+        <span class="kw">end else begin</span>
+            wptr_bin  &lt;= wptr_bin_next;
+            wptr_gray &lt;= wptr_gray_next;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Write to memory</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> wclk) <span class="kw">begin</span>
+        <span class="kw">if</span> (wen &amp;&amp; !full)
+            mem[wptr_bin[ADDR_WIDTH-1:0]] &lt;= wdata;
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Sync rptr to write domain</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> wclk <span class="kw">or</span> <span class="kw">negedge</span> wrst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!wrst_n) <span class="kw">begin</span>
+            rptr_gray_sync[0] &lt;= '0;
+            rptr_gray_sync[1] &lt;= '0;
+        <span class="kw">end else begin</span>
+            rptr_gray_sync[0] &lt;= rptr_gray;
+            rptr_gray_sync[1] &lt;= rptr_gray_sync[0];
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Full detection (compare Gray codes)</span>
+    <span class="kw">assign</span> full = (wptr_gray_next == {~rptr_gray_sync[1][ADDR_WIDTH:ADDR_WIDTH-1],
+                                       rptr_gray_sync[1][ADDR_WIDTH-2:0]});
+
+    <span class="cmt">//=========================================</span>
+    <span class="cmt">// READ DOMAIN</span>
+    <span class="cmt">//=========================================</span>
+    
+    <span class="kw">wire</span> [ADDR_WIDTH:0] rptr_bin_next = rptr_bin + (ren &amp; ~empty);
+    <span class="kw">wire</span> [ADDR_WIDTH:0] rptr_gray_next = rptr_bin_next ^ (rptr_bin_next >> 1);
+    
+    <span class="kw">always</span> @(<span class="kw">posedge</span> rclk <span class="kw">or</span> <span class="kw">negedge</span> rrst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rrst_n) <span class="kw">begin</span>
+            rptr_bin  &lt;= '0;
+            rptr_gray &lt;= '0;
+        <span class="kw">end else begin</span>
+            rptr_bin  &lt;= rptr_bin_next;
+            rptr_gray &lt;= rptr_gray_next;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Read from memory</span>
+    <span class="kw">assign</span> rdata = mem[rptr_bin[ADDR_WIDTH-1:0]];
+    
+    <span class="cmt">// Sync wptr to read domain</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> rclk <span class="kw">or</span> <span class="kw">negedge</span> rrst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rrst_n) <span class="kw">begin</span>
+            wptr_gray_sync[0] &lt;= '0;
+            wptr_gray_sync[1] &lt;= '0;
+        <span class="kw">end else begin</span>
+            wptr_gray_sync[0] &lt;= wptr_gray;
+            wptr_gray_sync[1] &lt;= wptr_gray_sync[0];
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Empty detection (pointers equal)</span>
+    <span class="kw">assign</span> empty = (rptr_gray == wptr_gray_sync[1]);
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">async_fifo.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Asynchronous FIFO (simplified)</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> async_fifo <span class="kw">is</span>
+    <span class="kw">generic</span> (
+        DATA_WIDTH : integer := 8;
+        ADDR_WIDTH : integer := 4
+    );
+    <span class="kw">port</span> (
+        <span class="cmt">-- Write port</span>
+        wclk   : <span class="kw">in</span>  std_logic;
+        wrst_n : <span class="kw">in</span>  std_logic;
+        wen    : <span class="kw">in</span>  std_logic;
+        wdata  : <span class="kw">in</span>  std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+        full   : <span class="kw">out</span> std_logic;
+        <span class="cmt">-- Read port</span>
+        rclk   : <span class="kw">in</span>  std_logic;
+        rrst_n : <span class="kw">in</span>  std_logic;
+        ren    : <span class="kw">in</span>  std_logic;
+        rdata  : <span class="kw">out</span> std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+        empty  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> async_fifo;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> async_fifo <span class="kw">is</span>
+    <span class="kw">constant</span> DEPTH : integer := 2**ADDR_WIDTH;
+    
+    <span class="kw">type</span> mem_array <span class="kw">is</span> <span class="kw">array</span>(0 <span class="kw">to</span> DEPTH-1) 
+        <span class="kw">of</span> std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> mem : mem_array;
+    
+    <span class="kw">signal</span> wptr_bin, wptr_gray : unsigned(ADDR_WIDTH <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> rptr_bin, rptr_gray : unsigned(ADDR_WIDTH <span class="kw">downto</span> 0);
+    
+    <span class="cmt">-- Binary to Gray conversion</span>
+    <span class="kw">function</span> bin2gray(bin : unsigned) <span class="kw">return</span> unsigned <span class="kw">is</span>
+    <span class="kw">begin</span>
+        <span class="kw">return</span> bin <span class="kw">xor</span> ('0' &amp; bin(bin'high <span class="kw">downto</span> 1));
+    <span class="kw">end function</span>;
+    
+<span class="kw">begin</span>
+    <span class="cmt">-- (Implementation continues similarly to Verilog)</span>
+    <span class="cmt">-- See full implementation in documentation</span>
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why Gray code for pointers?</strong> — Only 1 bit changes per increment, so even if sampling occurs during transition, the synchronized value is either the old or new value (both valid), never corrupted.</li>
+      <li><strong>Why power-of-2 depth?</strong> — Gray code property (1 bit change) only works when the counter wraps at powers of 2. Other depths cause multi-bit transitions at wrap.</li>
+      <li><strong>Why an extra pointer bit?</strong> — To distinguish full from empty. Without it, wptr == rptr could mean either. The MSB wrap-around tells us which.</li>
+      <li><strong>Is FULL/EMPTY pessimistic?</strong> — Yes! Due to synchronization delay, EMPTY may be reported when data exists, FULL when space exists. This is safe (prevents overflow/underflow).</li>
+      <li><strong>What's the latency?</strong> — 2-3 cycles for synchronized pointers + read latency. Data is available from RAM immediately once read is valid.</li>
+      <li><strong>How do you size a FIFO?</strong> — Consider rate mismatch, burst size, and worst-case scenarios. Add margin. Always use power of 2.</li>
+      <li><strong>Can you reset an async FIFO?</strong> — Yes, but carefully! Both domains need reset synchronizers. Reset pointers to 0 in both domains.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/clock-gating.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Clock Gating
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/' | relative_url }}">
+        Sequential Index
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

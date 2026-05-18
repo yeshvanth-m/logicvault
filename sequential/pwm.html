@@ -1,0 +1,467 @@
+---
+layout: null
+title: PWM Generator
+nav: sequential
+sidebar: pwm
+group: generators
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PWM Generator — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#principle">PWM Principle</a></li>
+      <li><a href="#types">PWM Types</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/index.html' | relative_url }}">Sequential</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">PWM Generator</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-amber">Modulation</span>
+    </div>
+    <h1 class="page-title">PWM Generator</h1>
+    <p class="page-subtitle">
+      Pulse Width Modulation — varies the duty cycle of a periodic signal to encode information or control average power.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Parameter</p>
+        <p class="qf-value">Duty Cycle</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Range</p>
+        <p class="qf-value">0% - 100%</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Resolution</p>
+        <p class="qf-value">N-bit counter</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Case</p>
+        <p class="qf-value">Motor, LED, DAC</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Principle -->
+  <section class="section" id="principle">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h2 class="section-title">PWM Principle</h2>
+      <a href="#principle" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Compare a counter value to a threshold. Output is HIGH when counter < threshold, LOW otherwise. Varying threshold changes duty cycle.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 570px;">
+        <rect width="520" height="200" fill="var(--surface2)" rx="8"/>
+        
+        <text x="260" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">PWM Generation</text>
+        
+        <!-- Counter sawtooth -->
+        <text x="30" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="8">counter</text>
+        <polyline points="80,100 130,40 130,100 180,40 180,100 230,40 230,100 280,40 280,100 330,40 330,100 380,40 380,100 430,40 430,100 480,40" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Threshold line -->
+        <line x1="80" y1="70" x2="480" y2="70" stroke="var(--amber)" stroke-width="2" stroke-dasharray="4,2"/>
+        <text x="490" y="75" fill="var(--amber)" font-family="var(--mono)" font-size="8">threshold</text>
+        
+        <!-- PWM output -->
+        <text x="30" y="145" fill="var(--green)" font-family="var(--mono)" font-size="8">pwm</text>
+        
+        <!-- 25% duty (threshold at 25% of range) - counter < threshold = high -->
+        <polyline points="80,150 80,130 105,130 105,150 130,150 130,130 155,130 155,150 180,150 180,130 205,130 205,150 230,150 230,130 255,130 255,150 280,150 280,130 305,130 305,150 330,150 330,130 355,130 355,150 380,150 380,130 405,130 405,150 430,150 430,130 455,130 455,150 480,150" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Period marker -->
+        <line x1="130" y1="160" x2="130" y2="175" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="180" y1="160" x2="180" y2="175" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="130" y1="172" x2="180" y2="172" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="155" y="185" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">Period</text>
+        
+        <!-- Duty cycle label -->
+        <rect x="105" y="120" width="25" height="35" fill="rgba(34,197,94,0.15)"/>
+        <text x="117" y="115" fill="var(--green)" font-family="var(--mono)" font-size="7" text-anchor="middle">T_on</text>
+        
+        <!-- Formula -->
+        <text x="260" y="195" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Duty = threshold / max_count × 100%</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>Resolution</h5>
+        <p>N-bit counter gives 2<sup>N</sup> duty cycle levels. 8-bit = 256 levels, 10-bit = 1024 levels.</p>
+      </div>
+      <div class="concept-card">
+        <h5>Frequency</h5>
+        <p>f<sub>pwm</sub> = f<sub>clk</sub> / 2<sup>N</sup>. Higher resolution = lower PWM frequency.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Types -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">PWM Types</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Edge-Aligned (Sawtooth)</h5>
+        <p>Counter counts up, resets at max. PWM edge aligned to period start. Simple, common.</p>
+        <div class="formula">▁▂▃▄▅▆▇█▁▂▃▄▅▆▇█
+────┐   ────┐</div>
+      </div>
+      <div class="concept-card green">
+        <h5>Center-Aligned (Triangle)</h5>
+        <p>Counter counts up then down. PWM centered in period. Symmetric, less harmonics.</p>
+        <div class="formula">▁▂▃▄▅▆▇█▇▆▅▄▃▂▁
+  ──────┐
+  ────────┐</div>
+      </div>
+      <div class="concept-card purple">
+        <h5>Phase-Correct</h5>
+        <p>Like center-aligned but maintains phase relationship across duty changes. Motor control.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Complementary</h5>
+        <p>Two outputs, one inverted. Dead-time insertion prevents shoot-through. H-bridge drivers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">pwm.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Edge-aligned PWM (basic)</span>
+<span class="kw">module</span> pwm_basic #(
+    <span class="kw">parameter</span> WIDTH = 8  <span class="cmt">// 8-bit = 256 levels</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] duty,    <span class="cmt">// 0=0%, 255=100%</span>
+    <span class="kw">output</span> <span class="kw">reg</span>              pwm_out
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] counter;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            counter &lt;= 0;
+            pwm_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            counter &lt;= counter + 1;  <span class="cmt">// Wraps at 2^WIDTH</span>
+            pwm_out &lt;= (counter &lt; duty);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Configurable period PWM</span>
+<span class="kw">module</span> pwm_config #(
+    <span class="kw">parameter</span> WIDTH = 16
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] period,  <span class="cmt">// Period in clocks</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] duty,    <span class="cmt">// Duty in clocks</span>
+    <span class="kw">output</span> <span class="kw">reg</span>              pwm_out
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] counter;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            counter &lt;= 0;
+            pwm_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (counter >= period - 1)
+                counter &lt;= 0;
+            <span class="kw">else</span>
+                counter &lt;= counter + 1;
+            
+            pwm_out &lt;= (counter &lt; duty);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Center-aligned PWM</span>
+<span class="kw">module</span> pwm_center #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] duty,
+    <span class="kw">output</span> <span class="kw">reg</span>              pwm_out
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] counter;
+    <span class="kw">reg</span>            dir;  <span class="cmt">// 0=up, 1=down</span>
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            counter &lt;= 0;
+            dir     &lt;= 1'b0;
+            pwm_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="cmt">// Triangle counter</span>
+            <span class="kw">if</span> (dir == 1'b0) <span class="kw">begin</span>  <span class="cmt">// Counting up</span>
+                <span class="kw">if</span> (counter == {WIDTH{1'b1}})
+                    dir &lt;= 1'b1;
+                <span class="kw">else</span>
+                    counter &lt;= counter + 1;
+            <span class="kw">end else begin</span>           <span class="cmt">// Counting down</span>
+                <span class="kw">if</span> (counter == 0)
+                    dir &lt;= 1'b0;
+                <span class="kw">else</span>
+                    counter &lt;= counter - 1;
+            <span class="kw">end</span>
+            
+            pwm_out &lt;= (counter &lt; duty);
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Complementary PWM with dead-time</span>
+<span class="kw">module</span> pwm_comp #(
+    <span class="kw">parameter</span> WIDTH = 8,
+    <span class="kw">parameter</span> DEAD_TIME = 4  <span class="cmt">// Clocks of dead-time</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] duty,
+    <span class="kw">output</span> <span class="kw">wire</span>             pwm_h,   <span class="cmt">// High-side</span>
+    <span class="kw">output</span> <span class="kw">wire</span>             pwm_l    <span class="cmt">// Low-side (complementary)</span>
+);
+
+    <span class="kw">reg</span> [WIDTH-1:0] counter;
+    <span class="kw">wire</span>           pwm_raw;
+    <span class="kw">reg</span> [7:0]      dead_cnt;
+    <span class="kw">reg</span>            pwm_h_r, pwm_l_r;
+    <span class="kw">reg</span>            pwm_prev;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            counter &lt;= 0;
+        <span class="kw">else</span>
+            counter &lt;= counter + 1;
+    <span class="kw">end</span>
+    
+    <span class="kw">assign</span> pwm_raw = (counter &lt; duty);
+
+    <span class="cmt">// Dead-time insertion</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            pwm_h_r  &lt;= 1'b0;
+            pwm_l_r  &lt;= 1'b0;
+            pwm_prev &lt;= 1'b0;
+            dead_cnt &lt;= 0;
+        <span class="kw">end else begin</span>
+            pwm_prev &lt;= pwm_raw;
+            
+            <span class="kw">if</span> (pwm_raw != pwm_prev) <span class="kw">begin</span>
+                <span class="cmt">// Edge detected - start dead-time</span>
+                dead_cnt &lt;= DEAD_TIME;
+                pwm_h_r  &lt;= 1'b0;
+                pwm_l_r  &lt;= 1'b0;
+            <span class="kw">end else if</span> (dead_cnt != 0) <span class="kw">begin</span>
+                dead_cnt &lt;= dead_cnt - 1;
+            <span class="kw">end else begin</span>
+                pwm_h_r &lt;= pwm_raw;
+                pwm_l_r &lt;= ~pwm_raw;
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> pwm_h = pwm_h_r;
+    <span class="kw">assign</span> pwm_l = pwm_l_r;
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">pwm.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Basic PWM generator</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> pwm_basic <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 8);
+    <span class="kw">port</span> (
+        clk     : <span class="kw">in</span>  std_logic;
+        rst_n   : <span class="kw">in</span>  std_logic;
+        duty    : <span class="kw">in</span>  std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        pwm_out : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> pwm_basic;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> pwm_basic <span class="kw">is</span>
+    <span class="kw">signal</span> counter : unsigned(WIDTH-1 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            counter &lt;= (<span class="kw">others</span> =&gt; '0');
+            pwm_out &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            counter &lt;= counter + 1;
+            <span class="kw">if</span> counter &lt; unsigned(duty) <span class="kw">then</span>
+                pwm_out &lt;= '1';
+            <span class="kw">else</span>
+                pwm_out &lt;= '0';
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+<span class="kw">end</span> rtl;
+
+<span class="cmt">-- Configurable period PWM</span>
+<span class="kw">entity</span> pwm_config <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 16);
+    <span class="kw">port</span> (
+        clk     : <span class="kw">in</span>  std_logic;
+        rst_n   : <span class="kw">in</span>  std_logic;
+        period  : <span class="kw">in</span>  std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        duty    : <span class="kw">in</span>  std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        pwm_out : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> pwm_config;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> pwm_config <span class="kw">is</span>
+    <span class="kw">signal</span> counter : unsigned(WIDTH-1 <span class="kw">downto</span> 0);
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            counter &lt;= (<span class="kw">others</span> =&gt; '0');
+            pwm_out &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> counter >= unsigned(period) - 1 <span class="kw">then</span>
+                counter &lt;= (<span class="kw">others</span> =&gt; '0');
+            <span class="kw">else</span>
+                counter &lt;= counter + 1;
+            <span class="kw">end if</span>;
+            
+            <span class="kw">if</span> counter &lt; unsigned(duty) <span class="kw">then</span>
+                pwm_out &lt;= '1';
+            <span class="kw">else</span>
+                pwm_out &lt;= '0';
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why use PWM for analog control?</strong> — Average voltage = V<sub>dd</sub> × duty. With LP filter, PWM becomes poor-man's DAC. Digital control of analog quantities.</li>
+      <li><strong>Resolution vs frequency trade-off?</strong> — Higher resolution = more counter bits = lower PWM frequency. f<sub>pwm</sub> = f<sub>clk</sub> / 2<sup>N</sup>.</li>
+      <li><strong>What is dead-time?</strong> — Delay between turning off one switch and turning on complementary switch. Prevents both being on simultaneously (shoot-through).</li>
+      <li><strong>Center-aligned vs edge-aligned?</strong> — Center-aligned produces less high-frequency harmonics (smoother). Important for motor drives to reduce noise.</li>
+      <li><strong>How does PWM drive a motor?</strong> — PWM to H-bridge. Average voltage proportional to duty. Low-pass filtering by motor inductance smooths the drive.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/freq-div.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Frequency Divider
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/lfsr.html' | relative_url }}">
+        LFSR
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

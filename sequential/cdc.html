@@ -1,0 +1,619 @@
+---
+layout: null
+title: Clock Domain Crossing (CDC)
+nav: sequential
+sidebar: cdc
+group: timing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clock Domain Crossing — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#single-bit">Single-Bit CDC</a></li>
+      <li><a href="#pulse-sync">Pulse Synchronization</a></li>
+      <li><a href="#multi-bit">Multi-Bit CDC</a></li>
+      <li><a href="#handshake">Handshake Protocol</a></li>
+      <li><a href="#gray-code">Gray Code Pointers</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Clock Domain Crossing</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-red">Critical</span>
+    </div>
+    <h1 class="page-title">Clock Domain Crossing (CDC)</h1>
+    <p class="page-subtitle">
+      When signals cross between clock domains, metastability and data coherency become critical concerns. Proper CDC techniques ensure reliable communication between asynchronous clock domains.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">1-bit Signal</p>
+        <p class="qf-value">2-FF Synchronizer</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Pulse Transfer</p>
+        <p class="qf-value">Toggle / Handshake</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Multi-bit Data</p>
+        <p class="qf-value">Gray code / FIFO</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Bulk Data</p>
+        <p class="qf-value">Async FIFO</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Single-Bit CDC -->
+  <section class="section" id="single-bit">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/></svg>
+      </div>
+      <h2 class="section-title">Single-Bit CDC (Level Signals)</h2>
+      <a href="#single-bit" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>For <strong>level signals</strong> (signals that stay at their new value for multiple clock cycles), a standard 2-FF synchronizer is sufficient.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="140" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Clock domain A -->
+        <rect x="30" y="20" width="120" height="100" rx="6" fill="rgba(220,38,38,0.1)" stroke="var(--red)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="90" y="38" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">clk_a domain</text>
+        
+        <!-- Clock domain B -->
+        <rect x="230" y="20" width="240" height="100" rx="6" fill="rgba(34,197,94,0.1)" stroke="var(--green)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="350" y="38" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">clk_b domain</text>
+        
+        <!-- Source FF -->
+        <rect x="55" y="55" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="85" y="78" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">FF_src</text>
+        
+        <!-- Sync FFs -->
+        <rect x="260" y="55" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="290" y="78" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">FF1</text>
+        
+        <rect x="360" y="55" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="390" y="78" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">FF2</text>
+        
+        <!-- Connections -->
+        <line x1="115" y1="75" x2="260" y2="75" stroke="var(--amber)" stroke-width="2" stroke-dasharray="5,3"/>
+        <text x="185" y="68" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">CDC path</text>
+        
+        <line x1="320" y1="75" x2="360" y2="75" stroke="var(--text-dim)" stroke-width="1.5"/>
+        <line x1="420" y1="75" x2="460" y2="75" stroke="var(--green)" stroke-width="2"/>
+        
+        <text x="445" y="68" fill="var(--green)" font-family="var(--mono)" font-size="8">safe</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Requirement:</strong> The signal must be stable for at least 2 destination clock cycles to guarantee capture. Short pulses can be missed!</p>
+    </div>
+  </section>
+
+  <!-- Pulse Synchronization -->
+  <section class="section" id="pulse-sync">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <h2 class="section-title">Pulse Synchronization</h2>
+      <a href="#pulse-sync" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Short pulses (single-cycle) can be missed by a 2-FF synchronizer if the destination clock is slower. Two solutions:</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>Toggle Synchronizer</h5>
+        <p>Convert pulse to toggle (level change), synchronize the level, then detect edge in destination domain. Works when source is faster than destination.</p>
+      </div>
+      <div class="concept-card">
+        <h5>Handshake Protocol</h5>
+        <p>Source sends request, waits for acknowledge before sending next. Guarantees no pulses lost, but adds latency.</p>
+      </div>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Toggle Synchronizer</text>
+        
+        <!-- Source domain -->
+        <rect x="30" y="35" width="130" height="130" rx="6" fill="rgba(220,38,38,0.1)" stroke="var(--red)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="95" y="52" fill="var(--red)" font-family="var(--mono)" font-size="8" text-anchor="middle">clk_a</text>
+        
+        <!-- Toggle FF -->
+        <rect x="55" y="65" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="95" y="85" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">Toggle FF</text>
+        
+        <text x="35" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">pulse</text>
+        <line x1="50" y1="85" x2="55" y2="85" stroke="var(--text-dim)" stroke-width="1.5"/>
+        
+        <!-- Destination domain -->
+        <rect x="190" y="35" width="280" height="130" rx="6" fill="rgba(34,197,94,0.1)" stroke="var(--green)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="330" y="52" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">clk_b</text>
+        
+        <!-- 2-FF sync -->
+        <rect x="210" y="65" width="60" height="40" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="240" y="88" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">2-FF</text>
+        
+        <!-- Edge detect -->
+        <rect x="300" y="65" width="80" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="340" y="88" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">Edge Detect</text>
+        
+        <!-- Connections -->
+        <line x1="135" y1="85" x2="210" y2="85" stroke="var(--amber)" stroke-width="2" stroke-dasharray="5,3"/>
+        <line x1="270" y1="85" x2="300" y2="85" stroke="var(--text-dim)" stroke-width="1.5"/>
+        <line x1="380" y1="85" x2="450" y2="85" stroke="var(--green)" stroke-width="2"/>
+        <text x="425" y="78" fill="var(--green)" font-family="var(--mono)" font-size="8">sync_pulse</text>
+        
+        <!-- Waveforms -->
+        <text x="95" y="125" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">toggle_q</text>
+        <polyline points="55,140 75,140 75,150 95,150 95,140 115,140 115,150 135,150" fill="none" stroke="var(--amber)" stroke-width="1.5"/>
+        
+        <text x="340" y="125" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">XOR output</text>
+        <polyline points="300,150 320,150 320,140 330,140 330,150 370,150 370,140 380,140 380,150 400,150" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Multi-Bit CDC -->
+  <section class="section" id="multi-bit">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Multi-Bit CDC Problem</h2>
+      <a href="#multi-bit" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p><strong>Never synchronize a multi-bit bus directly!</strong> Different bits may resolve at different times, creating corrupted intermediate values.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 140" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="140" fill="var(--surface2)" rx="8"/>
+        
+        <text x="225" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">The Multi-Bit CDC Problem</text>
+        
+        <!-- Before -->
+        <text x="80" y="45" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Source: 0111 → 1000</text>
+        
+        <rect x="30" y="55" width="100" height="70" rx="4" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="50" y="75" fill="var(--text)" font-family="var(--mono)" font-size="9">bit[3]: 0→1</text>
+        <text x="50" y="90" fill="var(--text)" font-family="var(--mono)" font-size="9">bit[2]: 1→0</text>
+        <text x="50" y="105" fill="var(--text)" font-family="var(--mono)" font-size="9">bit[1]: 1→0</text>
+        <text x="50" y="120" fill="var(--text)" font-family="var(--mono)" font-size="9">bit[0]: 1→0</text>
+        
+        <!-- Arrow -->
+        <path d="M 150 90 L 180 90" fill="none" stroke="var(--amber)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--amber)"/></marker></defs>
+        
+        <!-- Problem scenarios -->
+        <rect x="200" y="55" width="220" height="70" rx="4" fill="rgba(220,38,38,0.1)" stroke="var(--red)" stroke-width="1"/>
+        <text x="310" y="45" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">Possible captured values</text>
+        <text x="220" y="75" fill="var(--red)" font-family="var(--mono)" font-size="9">✗ 0000 (all bits late)</text>
+        <text x="220" y="92" fill="var(--red)" font-family="var(--mono)" font-size="9">✗ 1111 (bit 3 early, others late)</text>
+        <text x="220" y="109" fill="var(--red)" font-family="var(--mono)" font-size="9">✗ 1001 (bits 3,0 early)</text>
+        <text x="220" y="125" fill="var(--red)" font-family="var(--mono)" font-size="9">✗ Any combination!</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Solutions:</strong> (1) Gray code for counters (only 1 bit changes), (2) Handshake with MUX (freeze data during transfer), (3) Async FIFO for streaming data.</p>
+    </div>
+  </section>
+
+  <!-- Handshake Protocol -->
+  <section class="section" id="handshake">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2 class="section-title">Handshake Protocol</h2>
+      <a href="#handshake" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The handshake protocol safely transfers multi-bit data by ensuring the data is stable before being sampled.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="220" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">4-Phase Handshake</text>
+        
+        <!-- Timeline -->
+        <line x1="50" y1="200" x2="450" y2="200" stroke="var(--text-dim)" stroke-width="1"/>
+        
+        <!-- Phases -->
+        <text x="110" y="215" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Phase 1</text>
+        <text x="200" y="215" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Phase 2</text>
+        <text x="300" y="215" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Phase 3</text>
+        <text x="400" y="215" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Phase 4</text>
+        
+        <!-- Data signal -->
+        <text x="25" y="55" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">data</text>
+        <polyline points="50,60 90,60 100,45 400,45 410,60 450,60" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        <text x="250" y="40" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">VALID DATA</text>
+        
+        <!-- REQ signal -->
+        <text x="25" y="95" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">req</text>
+        <polyline points="50,100 110,100 120,85 300,85 310,100 450,100" fill="none" stroke="var(--red)" stroke-width="2"/>
+        
+        <!-- ACK signal -->
+        <text x="25" y="135" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">ack</text>
+        <polyline points="50,140 200,140 210,125 400,125 410,140 450,140" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Annotations -->
+        <line x1="120" y1="60" x2="120" y2="180" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="120" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">REQ↑</text>
+        
+        <line x1="210" y1="60" x2="210" y2="180" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="210" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">ACK↑</text>
+        
+        <line x1="310" y1="60" x2="310" y2="180" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="310" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">REQ↓</text>
+        
+        <line x1="410" y1="60" x2="410" y2="180" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="410" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">ACK↓</text>
+      </svg>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Action</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>REQ ↑</td><td>Source places data, asserts request</td></tr>
+          <tr><td>2</td><td>ACK ↑</td><td>Destination samples data, asserts acknowledge</td></tr>
+          <tr><td>3</td><td>REQ ↓</td><td>Source sees ACK, deasserts request</td></tr>
+          <tr><td>4</td><td>ACK ↓</td><td>Destination sees REQ low, deasserts acknowledge</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Gray Code -->
+  <section class="section" id="gray-code">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+      </div>
+      <h2 class="section-title">Gray Code for Pointers</h2>
+      <a href="#gray-code" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>For FIFO pointers and counters, <strong>Gray code</strong> ensures only one bit changes per increment — making 2-FF synchronization safe.</p>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Decimal</th>
+            <th>Binary</th>
+            <th>Gray</th>
+            <th>Bits Changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>000</td><td>000</td><td>—</td></tr>
+          <tr><td>1</td><td>001</td><td>001</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>2</td><td>010</td><td>011</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>3</td><td>011</td><td>010</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>4</td><td>100</td><td>110</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>5</td><td>101</td><td>111</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>6</td><td>110</td><td>101</td><td style="color: var(--green);">1 ✓</td></tr>
+          <tr><td>7</td><td>111</td><td>100</td><td style="color: var(--green);">1 ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1rem;">
+      <p class="bool-label">Binary to Gray conversion</p>
+      <p class="bool-expr">
+        <span class="out">gray</span> = binary ^ (binary >> 1)
+      </p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">cdc_modules.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Toggle Synchronizer (Pulse CDC)</span>
+<span class="kw">module</span> pulse_sync (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_src,
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_dst,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> pulse_in,    <span class="cmt">// Single-cycle pulse in src domain</span>
+    <span class="kw">output</span> <span class="kw">wire</span> pulse_out   <span class="cmt">// Single-cycle pulse in dst domain</span>
+);
+
+    <span class="cmt">// Source domain: convert pulse to toggle</span>
+    <span class="kw">reg</span> toggle_src;
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_src <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            toggle_src &lt;= 1'b0;
+        <span class="kw">else if</span> (pulse_in)
+            toggle_src &lt;= ~toggle_src;
+    <span class="kw">end</span>
+
+    <span class="cmt">// Destination domain: synchronize toggle</span>
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [2:0] sync_reg;  <span class="cmt">// 2 for sync + 1 for edge</span>
+    
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_dst <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            sync_reg &lt;= 3'b0;
+        <span class="kw">else</span>
+            sync_reg &lt;= {sync_reg[1:0], toggle_src};
+    <span class="kw">end</span>
+
+    <span class="cmt">// Edge detection (XOR of last two synced values)</span>
+    <span class="kw">assign</span> pulse_out = sync_reg[2] ^ sync_reg[1];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Handshake CDC for multi-bit data</span>
+<span class="kw">module</span> handshake_cdc #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="cmt">// Source domain</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk_src,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_src_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] data_in,
+    <span class="kw">input</span>  <span class="kw">wire</span>             valid_in,
+    <span class="kw">output</span> <span class="kw">wire</span>             ready_out,
+    
+    <span class="cmt">// Destination domain</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk_dst,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_dst_n,
+    <span class="kw">output</span> <span class="kw">reg</span>  [WIDTH-1:0] data_out,
+    <span class="kw">output</span> <span class="kw">wire</span>             valid_out
+);
+
+    <span class="cmt">// Source domain registers</span>
+    <span class="kw">reg</span> [WIDTH-1:0] data_hold;
+    <span class="kw">reg</span>             req_src;
+    
+    <span class="cmt">// Synchronized signals</span>
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [1:0] req_sync;
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [1:0] ack_sync;
+    
+    <span class="kw">reg</span> ack_dst;
+    
+    <span class="cmt">// Sync REQ to destination</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_dst <span class="kw">or</span> <span class="kw">negedge</span> rst_dst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_dst_n)
+            req_sync &lt;= 2'b0;
+        <span class="kw">else</span>
+            req_sync &lt;= {req_sync[0], req_src};
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Sync ACK to source</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_src <span class="kw">or</span> <span class="kw">negedge</span> rst_src_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_src_n)
+            ack_sync &lt;= 2'b0;
+        <span class="kw">else</span>
+            ack_sync &lt;= {ack_sync[0], ack_dst};
+    <span class="kw">end</span>
+    
+    <span class="cmt">// Source: hold data and manage request</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_src <span class="kw">or</span> <span class="kw">negedge</span> rst_src_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_src_n) <span class="kw">begin</span>
+            data_hold &lt;= '0;
+            req_src   &lt;= 1'b0;
+        <span class="kw">end else if</span> (valid_in &amp;&amp; ready_out) <span class="kw">begin</span>
+            data_hold &lt;= data_in;
+            req_src   &lt;= 1'b1;
+        <span class="kw">end else if</span> (ack_sync[1]) <span class="kw">begin</span>
+            req_src   &lt;= 1'b0;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="kw">assign</span> ready_out = ~req_src &amp;&amp; ~ack_sync[1];
+    
+    <span class="cmt">// Destination: capture data and manage ack</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk_dst <span class="kw">or</span> <span class="kw">negedge</span> rst_dst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_dst_n) <span class="kw">begin</span>
+            data_out &lt;= '0;
+            ack_dst  &lt;= 1'b0;
+        <span class="kw">end else if</span> (req_sync[1] &amp;&amp; !ack_dst) <span class="kw">begin</span>
+            data_out &lt;= data_hold;
+            ack_dst  &lt;= 1'b1;
+        <span class="kw">end else if</span> (!req_sync[1]) <span class="kw">begin</span>
+            ack_dst  &lt;= 1'b0;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+    
+    <span class="kw">assign</span> valid_out = req_sync[1] &amp;&amp; !ack_dst;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Gray code conversion functions</span>
+<span class="kw">function</span> [3:0] bin2gray;
+    <span class="kw">input</span> [3:0] bin;
+    bin2gray = bin ^ (bin >> 1);
+<span class="kw">endfunction</span>
+
+<span class="kw">function</span> [3:0] gray2bin;
+    <span class="kw">input</span> [3:0] gray;
+    gray2bin[3] = gray[3];
+    gray2bin[2] = gray[3] ^ gray[2];
+    gray2bin[1] = gray[3] ^ gray[2] ^ gray[1];
+    gray2bin[0] = gray[3] ^ gray[2] ^ gray[1] ^ gray[0];
+<span class="kw">endfunction</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">pulse_sync.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Toggle Synchronizer (Pulse CDC)</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> pulse_sync <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk_src   : <span class="kw">in</span>  std_logic;
+        clk_dst   : <span class="kw">in</span>  std_logic;
+        rst_n     : <span class="kw">in</span>  std_logic;
+        pulse_in  : <span class="kw">in</span>  std_logic;
+        pulse_out : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> pulse_sync;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> pulse_sync <span class="kw">is</span>
+    <span class="kw">signal</span> toggle_src : std_logic;
+    <span class="kw">signal</span> sync_reg   : std_logic_vector(2 <span class="kw">downto</span> 0);
+    
+    <span class="kw">attribute</span> ASYNC_REG : string;
+    <span class="kw">attribute</span> ASYNC_REG <span class="kw">of</span> sync_reg : <span class="kw">signal</span> <span class="kw">is</span> "TRUE";
+<span class="kw">begin</span>
+
+    <span class="cmt">-- Source: convert pulse to toggle</span>
+    <span class="kw">process</span>(clk_src, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            toggle_src &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk_src) <span class="kw">then</span>
+            <span class="kw">if</span> pulse_in = '1' <span class="kw">then</span>
+                toggle_src &lt;= <span class="kw">not</span> toggle_src;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Destination: synchronize and detect edge</span>
+    <span class="kw">process</span>(clk_dst, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            sync_reg &lt;= (others =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk_dst) <span class="kw">then</span>
+            sync_reg &lt;= sync_reg(1 <span class="kw">downto</span> 0) &amp; toggle_src;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    pulse_out &lt;= sync_reg(2) <span class="kw">xor</span> sync_reg(1);
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Can you synchronize a bus with 2-FF?</strong> — No! Different bits may be captured at different times. Use Gray code (for counters) or handshake (for arbitrary data) or async FIFO.</li>
+      <li><strong>What's special about Gray code?</strong> — Only 1 bit changes between consecutive values, making it safe to synchronize even if sampling occurs during transition.</li>
+      <li><strong>When to use toggle sync vs handshake?</strong> — Toggle sync: fast pulse transfer, no data payload. Handshake: slower but transfers multi-bit data safely.</li>
+      <li><strong>How to transfer data between clock domains?</strong> — For streaming: async FIFO. For single transfers: handshake protocol. For control signals: 2-FF sync with proper constraints.</li>
+      <li><strong>What's the latency of a 2-FF synchronizer?</strong> — 2-3 destination clock cycles (due to synchronization uncertainty plus FF delays).</li>
+      <li><strong>What if source clock is faster than destination?</strong> — Use toggle synchronizer for pulses, or ensure the signal holds long enough for the destination to capture it.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/metastability.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Metastability
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/setup-hold.html' | relative_url }}">
+        Setup & Hold Time
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

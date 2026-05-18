@@ -1,0 +1,474 @@
+---
+layout: null
+title: Pulse Generator
+nav: sequential
+sidebar: pulse-gen
+group: generators
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pulse Generator — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#types">Pulse Types</a></li>
+      <li><a href="#one-shot">One-Shot (Monostable)</a></li>
+      <li><a href="#edge-detect">Edge Detection</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/index.html' | relative_url }}">Sequential</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Pulse Generator</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Signal Conditioning</span>
+    </div>
+    <h1 class="page-title">Pulse Generator</h1>
+    <p class="page-subtitle">
+      Generates fixed-width output pulses from input edges. Used for triggering, timing, and signal conditioning.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Input</p>
+        <p class="qf-value">Edge / Level</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Output</p>
+        <p class="qf-value">Fixed-Width Pulse</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Control</p>
+        <p class="qf-value">Width Counter</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Case</p>
+        <p class="qf-value">Trigger, Strobe</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Types -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">Pulse Types</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Single-Cycle Pulse</h5>
+        <p>One clock cycle wide. Generated from edge detection. Most common for synchronous triggers.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Multi-Cycle Pulse</h5>
+        <p>Configurable width via counter. Used when downstream needs longer assertion time.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Retriggerable</h5>
+        <p>New trigger resets width counter. Output stays high while triggers keep coming.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Non-Retriggerable</h5>
+        <p>Ignores triggers while output is active. Fixed pulse regardless of input activity.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- One-Shot -->
+  <section class="section" id="one-shot">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">One-Shot (Monostable)</h2>
+      <a href="#one-shot" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">One-Shot Pulse Generator</text>
+        
+        <!-- Input trigger -->
+        <text x="30" y="60" fill="var(--blue)" font-family="var(--mono)" font-size="8">trigger</text>
+        <polyline points="70,65 120,65 120,45 140,45 140,65 300,65 300,45 320,45 320,65 450,65" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Output pulse (fixed width) -->
+        <text x="30" y="110" fill="var(--green)" font-family="var(--mono)" font-size="8">pulse</text>
+        <polyline points="70,115 120,115 120,95 200,95 200,115 300,115 300,95 380,95 380,115 450,115" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Width markers -->
+        <line x1="120" y1="125" x2="120" y2="140" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="200" y1="125" x2="200" y2="140" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="120" y1="137" x2="200" y2="137" stroke="var(--text-dim)" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <text x="160" y="155" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">N cycles</text>
+        
+        <line x1="300" y1="125" x2="300" y2="140" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="380" y1="125" x2="380" y2="140" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="300" y1="137" x2="380" y2="137" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="340" y="155" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">N cycles</text>
+        
+        <defs>
+          <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="var(--text-dim)" stroke-width="1"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Use Cases:</strong> Generate write strobes, trigger ADC conversions, create fixed-width reset pulses, debounced button edge pulses.</p>
+    </div>
+  </section>
+
+  <!-- Edge Detection -->
+  <section class="section" id="edge-detect">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h2 class="section-title">Edge Detection</h2>
+      <a href="#edge-detect" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Basic building block for pulse generation. Compares current and previous sample to detect transitions.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg" style="max-width: 450px;">
+        <rect width="400" height="120" fill="var(--surface2)" rx="8"/>
+        
+        <text x="200" y="20" fill="var(--text)" font-family="var(--mono)" font-size="9" font-weight="bold" text-anchor="middle">Edge Detector Circuit</text>
+        
+        <!-- Input -->
+        <text x="20" y="60" fill="var(--blue)" font-family="var(--mono)" font-size="8">in</text>
+        <line x1="35" y1="55" x2="80" y2="55" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- D FF -->
+        <rect x="80" y="40" width="50" height="35" rx="4" fill="var(--surface)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="105" y="62" fill="var(--purple)" font-family="var(--mono)" font-size="8" text-anchor="middle">D Q</text>
+        
+        <!-- Connection to inverter and AND -->
+        <line x1="130" y1="55" x2="180" y2="55" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="155" y="48" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">prev</text>
+        
+        <!-- Inverter -->
+        <circle cx="195" cy="55" r="10" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="195" y="59" fill="var(--amber)" font-family="var(--mono)" font-size="10" text-anchor="middle">!</text>
+        
+        <!-- AND gate -->
+        <rect x="230" y="35" width="50" height="40" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="255" y="60" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">&</text>
+        
+        <!-- Direct path from input to AND -->
+        <polyline points="60,55 60,75 220,75 220,65 230,65" fill="none" stroke="var(--blue)" stroke-width="1"/>
+        <text x="140" y="85" fill="var(--blue)" font-family="var(--mono)" font-size="7" text-anchor="middle">in (current)</text>
+        
+        <!-- Inverted prev to AND -->
+        <line x1="205" y1="55" x2="230" y2="50" stroke="var(--amber)" stroke-width="1"/>
+        
+        <!-- Output -->
+        <line x1="280" y1="55" x2="350" y2="55" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="320" y="48" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">posedge</text>
+        
+        <!-- Formula -->
+        <text x="200" y="108" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">posedge = in & ~prev</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">pulse_gen.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Single-cycle edge detector</span>
+<span class="kw">module</span> edge_detect (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> sig_in,
+    <span class="kw">output</span> <span class="kw">wire</span> posedge_out,
+    <span class="kw">output</span> <span class="kw">wire</span> negedge_out,
+    <span class="kw">output</span> <span class="kw">wire</span> anyedge_out
+);
+
+    <span class="kw">reg</span> sig_prev;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            sig_prev &lt;= 1'b0;
+        <span class="kw">else</span>
+            sig_prev &lt;= sig_in;
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> posedge_out = sig_in &amp; ~sig_prev;
+    <span class="kw">assign</span> negedge_out = ~sig_in &amp; sig_prev;
+    <span class="kw">assign</span> anyedge_out = sig_in ^ sig_prev;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Multi-cycle pulse generator (one-shot)</span>
+<span class="kw">module</span> pulse_gen #(
+    <span class="kw">parameter</span> WIDTH_BITS = 8   <span class="cmt">// Max pulse width = 2^8 = 256 cycles</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>                 clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                 rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>                 trigger,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH_BITS-1:0] pulse_width,  <span class="cmt">// 0 = 1 cycle</span>
+    <span class="kw">output</span> <span class="kw">reg</span>                  pulse_out,
+    <span class="kw">output</span> <span class="kw">wire</span>                 busy
+);
+
+    <span class="kw">reg</span> [WIDTH_BITS-1:0] count;
+    <span class="kw">reg</span>                  active;
+    <span class="kw">reg</span>                  trig_prev;
+    <span class="kw">wire</span>                 trig_edge;
+
+    <span class="kw">assign</span> trig_edge = trigger &amp; ~trig_prev;
+    <span class="kw">assign</span> busy = active;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            trig_prev &lt;= 1'b0;
+            count     &lt;= 0;
+            active    &lt;= 1'b0;
+            pulse_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            trig_prev &lt;= trigger;
+            
+            <span class="kw">if</span> (active) <span class="kw">begin</span>
+                <span class="kw">if</span> (count == 0) <span class="kw">begin</span>
+                    active    &lt;= 1'b0;
+                    pulse_out &lt;= 1'b0;
+                <span class="kw">end else begin</span>
+                    count &lt;= count - 1;
+                <span class="kw">end</span>
+            <span class="kw">end else if</span> (trig_edge) <span class="kw">begin</span>
+                active    &lt;= 1'b1;
+                pulse_out &lt;= 1'b1;
+                count     &lt;= pulse_width;
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Retriggerable pulse generator</span>
+<span class="kw">module</span> pulse_gen_retrig #(
+    <span class="kw">parameter</span> WIDTH_BITS = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>                 clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                 rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>                 trigger,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH_BITS-1:0] pulse_width,
+    <span class="kw">output</span> <span class="kw">reg</span>                  pulse_out
+);
+
+    <span class="kw">reg</span> [WIDTH_BITS-1:0] count;
+    <span class="kw">reg</span>                  trig_prev;
+    <span class="kw">wire</span>                 trig_edge;
+
+    <span class="kw">assign</span> trig_edge = trigger &amp; ~trig_prev;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            trig_prev &lt;= 1'b0;
+            count     &lt;= 0;
+            pulse_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            trig_prev &lt;= trigger;
+            
+            <span class="kw">if</span> (trig_edge) <span class="kw">begin</span>
+                <span class="cmt">// Reset counter on any trigger</span>
+                count     &lt;= pulse_width;
+                pulse_out &lt;= 1'b1;
+            <span class="kw">end else if</span> (count != 0) <span class="kw">begin</span>
+                count &lt;= count - 1;
+                <span class="kw">if</span> (count == 1)
+                    pulse_out &lt;= 1'b0;
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">pulse_gen.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Edge detector</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> edge_detect <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk         : <span class="kw">in</span>  std_logic;
+        rst_n       : <span class="kw">in</span>  std_logic;
+        sig_in      : <span class="kw">in</span>  std_logic;
+        posedge_out : <span class="kw">out</span> std_logic;
+        negedge_out : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> edge_detect;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> edge_detect <span class="kw">is</span>
+    <span class="kw">signal</span> prev : std_logic;
+<span class="kw">begin</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            prev &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            prev &lt;= sig_in;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    posedge_out &lt;= sig_in <span class="kw">and</span> (<span class="kw">not</span> prev);
+    negedge_out &lt;= (<span class="kw">not</span> sig_in) <span class="kw">and</span> prev;
+<span class="kw">end</span> rtl;
+
+<span class="cmt">-- Multi-cycle pulse generator</span>
+<span class="kw">entity</span> pulse_gen <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH_BITS : integer := 8);
+    <span class="kw">port</span> (
+        clk         : <span class="kw">in</span>  std_logic;
+        rst_n       : <span class="kw">in</span>  std_logic;
+        trigger     : <span class="kw">in</span>  std_logic;
+        pulse_width : <span class="kw">in</span>  std_logic_vector(WIDTH_BITS-1 <span class="kw">downto</span> 0);
+        pulse_out   : <span class="kw">out</span> std_logic;
+        busy        : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> pulse_gen;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> pulse_gen <span class="kw">is</span>
+    <span class="kw">signal</span> count     : unsigned(WIDTH_BITS-1 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> active    : std_logic;
+    <span class="kw">signal</span> trig_prev : std_logic;
+    <span class="kw">signal</span> trig_edge : std_logic;
+<span class="kw">begin</span>
+    trig_edge &lt;= trigger <span class="kw">and</span> (<span class="kw">not</span> trig_prev);
+    busy &lt;= active;
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            trig_prev &lt;= '0';
+            count &lt;= (<span class="kw">others</span> =&gt; '0');
+            active &lt;= '0';
+            pulse_out &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            trig_prev &lt;= trigger;
+            <span class="kw">if</span> active = '1' <span class="kw">then</span>
+                <span class="kw">if</span> count = 0 <span class="kw">then</span>
+                    active &lt;= '0';
+                    pulse_out &lt;= '0';
+                <span class="kw">else</span>
+                    count &lt;= count - 1;
+                <span class="kw">end if</span>;
+            <span class="kw">elsif</span> trig_edge = '1' <span class="kw">then</span>
+                active &lt;= '1';
+                pulse_out &lt;= '1';
+                count &lt;= unsigned(pulse_width);
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why use edge detection?</strong> — Converts level changes to single-cycle pulses. Essential for triggering single events from button presses or status changes.</li>
+      <li><strong>Retriggerable vs non-retriggerable?</strong> — Retriggerable resets timer on each trigger (extends pulse). Non-retriggerable ignores triggers while active (fixed width).</li>
+      <li><strong>How to stretch a pulse?</strong> — Use counter that loads on trigger edge, decrements each cycle, output high while count &gt; 0.</li>
+      <li><strong>What about input glitches?</strong> — Edge detector will produce spurious pulses. Consider synchronizer + debouncer before edge detection.</li>
+      <li><strong>Cross-clock pulse?</strong> — Use pulse synchronizer: stretch pulse in source domain, synchronize, then edge detect in destination domain.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/debouncer.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Debouncer
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/freq-div.html' | relative_url }}">
+        Frequency Divider
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

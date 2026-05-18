@@ -1,0 +1,462 @@
+---
+layout: null
+title: Register File
+nav: memory
+sidebar: register-file
+group: memory
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Register File — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#ports">Port Configurations</a></li>
+      <li><a href="#hazards">Read-After-Write Hazard</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/memory/sram.html' | relative_url }}">Memory</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Register File</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Memory</span>
+      <span class="badge badge-amber">Processor Core</span>
+    </div>
+    <h1 class="page-title">Register File</h1>
+    <p class="page-subtitle">
+      Small, fast multi-port memory used in CPU cores to store operands. Supports multiple simultaneous reads and writes for pipelined execution.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Size</p>
+        <p class="qf-value">8-128 registers</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Read Ports</p>
+        <p class="qf-value">2-6 typical</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Write Ports</p>
+        <p class="qf-value">1-2 typical</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Access</p>
+        <p class="qf-value">Same cycle R+W</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Architecture</h2>
+      <a href="#architecture" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg" style="max-width: 580px;">
+        <rect width="520" height="280" fill="var(--surface2)" rx="8"/>
+        
+        <text x="260" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">2-Read 1-Write Register File (32 registers)</text>
+        
+        <!-- Write port -->
+        <text x="30" y="60" fill="var(--blue)" font-family="var(--mono)" font-size="8">WAddr[4:0]</text>
+        <line x1="90" y1="55" x2="130" y2="55" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <text x="30" y="80" fill="var(--green)" font-family="var(--mono)" font-size="8">WData[31:0]</text>
+        <line x1="90" y1="75" x2="130" y2="75" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <text x="30" y="100" fill="var(--red)" font-family="var(--mono)" font-size="8">WE</text>
+        <line x1="50" y1="95" x2="130" y2="95" stroke="var(--red)" stroke-width="1.5"/>
+        
+        <!-- Write decoder -->
+        <rect x="130" y="40" width="50" height="75" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="155" y="80" fill="var(--blue)" font-family="var(--mono)" font-size="7" text-anchor="middle" transform="rotate(-90, 155, 80)">5-to-32 Dec</text>
+        
+        <!-- Register array -->
+        <rect x="200" y="40" width="150" height="180" rx="4" fill="rgba(147,51,234,0.1)" stroke="var(--purple)" stroke-width="1.5"/>
+        <text x="275" y="30" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">32 × 32-bit Registers</text>
+        
+        <!-- Individual registers -->
+        <rect x="215" y="55" width="120" height="18" rx="2" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <text x="275" y="68" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">R0 (hardwired to 0)</text>
+        
+        <rect x="215" y="78" width="120" height="18" rx="2" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <text x="275" y="91" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">R1</text>
+        
+        <rect x="215" y="101" width="120" height="18" rx="2" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <text x="275" y="114" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">R2</text>
+        
+        <text x="275" y="140" fill="var(--text-dim)" font-family="var(--mono)" font-size="10" text-anchor="middle">...</text>
+        
+        <rect x="215" y="150" width="120" height="18" rx="2" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <text x="275" y="163" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">R30</text>
+        
+        <rect x="215" y="173" width="120" height="18" rx="2" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="0.5"/>
+        <text x="275" y="186" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">R31</text>
+        
+        <!-- Read port A -->
+        <rect x="370" y="55" width="50" height="55" rx="4" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="395" y="85" fill="var(--amber)" font-family="var(--mono)" font-size="7" text-anchor="middle">MUX</text>
+        <text x="395" y="95" fill="var(--amber)" font-family="var(--mono)" font-size="7" text-anchor="middle">A</text>
+        
+        <line x1="420" y1="82" x2="490" y2="82" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="460" y="75" fill="var(--amber)" font-family="var(--mono)" font-size="8">RDataA</text>
+        
+        <line x1="395" y1="115" x2="395" y2="240" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="395" y1="240" x2="30" y2="240" stroke="var(--amber)" stroke-width="1"/>
+        <text x="60" y="250" fill="var(--amber)" font-family="var(--mono)" font-size="8">RAddrA[4:0]</text>
+        
+        <!-- Read port B -->
+        <rect x="370" y="125" width="50" height="55" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="395" y="155" fill="var(--green)" font-family="var(--mono)" font-size="7" text-anchor="middle">MUX</text>
+        <text x="395" y="165" fill="var(--green)" font-family="var(--mono)" font-size="7" text-anchor="middle">B</text>
+        
+        <line x1="420" y1="152" x2="490" y2="152" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="460" y="145" fill="var(--green)" font-family="var(--mono)" font-size="8">RDataB</text>
+        
+        <line x1="395" y1="185" x2="395" y2="260" stroke="var(--green)" stroke-width="1"/>
+        <line x1="395" y1="260" x2="30" y2="260" stroke="var(--green)" stroke-width="1"/>
+        <text x="60" y="270" fill="var(--green)" font-family="var(--mono)" font-size="8">RAddrB[4:0]</text>
+        
+        <!-- Connections -->
+        <line x1="180" y1="75" x2="200" y2="75" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="350" y1="82" x2="370" y2="82" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="350" y1="152" x2="370" y2="152" stroke="var(--text-dim)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>Write Path</h5>
+        <p><strong>Decoder</strong> selects which register to write. <strong>Write enable</strong> gates the clock to flip-flops. Data latched on clock edge.</p>
+      </div>
+      <div class="concept-card">
+        <h5>Read Path</h5>
+        <p><strong>Multiplexer</strong> selects register output. Can be asynchronous (combinational) or synchronous (registered output).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Port Configurations -->
+  <section class="section" id="ports">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+      </div>
+      <h2 class="section-title">Port Configurations</h2>
+      <a href="#ports" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Configuration</th>
+            <th>Ports</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1R1W</td><td>1 read, 1 write</td><td>Simple in-order CPUs</td></tr>
+          <tr><td>2R1W</td><td>2 read, 1 write</td><td>Standard RISC (rs1, rs2, rd)</td></tr>
+          <tr><td>3R1W</td><td>3 read, 1 write</td><td>FMA operations</td></tr>
+          <tr><td>2R2W</td><td>2 read, 2 write</td><td>Dual-issue cores</td></tr>
+          <tr><td>6R3W</td><td>6 read, 3 write</td><td>Superscalar OoO</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warning" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <p><strong>Area Impact:</strong> Each read port adds a full MUX tree. Each write port adds decoder logic. A 6R3W file can be 10× the area of 2R1W!</p>
+    </div>
+  </section>
+
+  <!-- RAW Hazard -->
+  <section class="section" id="hazards">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </div>
+      <h2 class="section-title">Read-After-Write Hazard</h2>
+      <a href="#hazards" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>What happens when you <strong>read and write the same register</strong> in the same cycle?</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card red">
+        <h5>Read-First (Old Value)</h5>
+        <p>Read completes before write. Reads return the <strong>old value</strong>. Simple but may need forwarding logic.</p>
+        <div class="formula">R1 = 5
+Write R1 ← 10, Read R1
+→ Returns 5</div>
+      </div>
+      <div class="concept-card green">
+        <h5>Write-First (New Value)</h5>
+        <p>Write completes before read. Reads return the <strong>new value</strong>. Requires internal bypass/forwarding.</p>
+        <div class="formula">R1 = 5
+Write R1 ← 10, Read R1
+→ Returns 10</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">regfile.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// 32x32 Register File: 2 read ports, 1 write port</span>
+<span class="cmt">// Read-first behavior (old value on RAW conflict)</span>
+<span class="kw">module</span> regfile_2r1w #(
+    <span class="kw">parameter</span> DATA_WIDTH = 32,
+    <span class="kw">parameter</span> ADDR_WIDTH = 5,      <span class="cmt">// 32 registers</span>
+    <span class="kw">parameter</span> ZERO_REG   = 1       <span class="cmt">// R0 hardwired to 0</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>                  clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  rst_n,
+    
+    <span class="cmt">// Read port A</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] raddr_a,
+    <span class="kw">output</span> <span class="kw">wire</span> [DATA_WIDTH-1:0] rdata_a,
+    
+    <span class="cmt">// Read port B</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] raddr_b,
+    <span class="kw">output</span> <span class="kw">wire</span> [DATA_WIDTH-1:0] rdata_b,
+    
+    <span class="cmt">// Write port</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>                  we,
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] waddr,
+    <span class="kw">input</span>  <span class="kw">wire</span> [DATA_WIDTH-1:0] wdata
+);
+
+    <span class="kw">localparam</span> NUM_REGS = 1 &lt;&lt; ADDR_WIDTH;
+    <span class="kw">reg</span> [DATA_WIDTH-1:0] regs [0:NUM_REGS-1];
+
+    <span class="kw">integer</span> i;
+
+    <span class="cmt">// Write logic</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            <span class="kw">for</span> (i = 0; i &lt; NUM_REGS; i = i + 1)
+                regs[i] &lt;= {DATA_WIDTH{1'b0}};
+        <span class="kw">end else if</span> (we) <span class="kw">begin</span>
+            <span class="cmt">// Don't write to R0 if ZERO_REG enabled</span>
+            <span class="kw">if</span> (!(ZERO_REG &amp;&amp; waddr == 0))
+                regs[waddr] &lt;= wdata;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Async read (combinational)</span>
+    <span class="kw">assign</span> rdata_a = (ZERO_REG &amp;&amp; raddr_a == 0) ? 
+                     {DATA_WIDTH{1'b0}} : regs[raddr_a];
+    <span class="kw">assign</span> rdata_b = (ZERO_REG &amp;&amp; raddr_b == 0) ? 
+                     {DATA_WIDTH{1'b0}} : regs[raddr_b];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Register File with write-first bypass</span>
+<span class="kw">module</span> regfile_bypass #(
+    <span class="kw">parameter</span> DATA_WIDTH = 32,
+    <span class="kw">parameter</span> ADDR_WIDTH = 5
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>                  clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>                  rst_n,
+    
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] raddr_a,
+    <span class="kw">output</span> <span class="kw">wire</span> [DATA_WIDTH-1:0] rdata_a,
+    
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] raddr_b,
+    <span class="kw">output</span> <span class="kw">wire</span> [DATA_WIDTH-1:0] rdata_b,
+    
+    <span class="kw">input</span>  <span class="kw">wire</span>                  we,
+    <span class="kw">input</span>  <span class="kw">wire</span> [ADDR_WIDTH-1:0] waddr,
+    <span class="kw">input</span>  <span class="kw">wire</span> [DATA_WIDTH-1:0] wdata
+);
+
+    <span class="kw">localparam</span> NUM_REGS = 1 &lt;&lt; ADDR_WIDTH;
+    <span class="kw">reg</span> [DATA_WIDTH-1:0] regs [0:NUM_REGS-1];
+
+    <span class="cmt">// Write logic</span>
+    <span class="kw">integer</span> i;
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            <span class="kw">for</span> (i = 0; i &lt; NUM_REGS; i = i + 1)
+                regs[i] &lt;= 0;
+        <span class="kw">end else if</span> (we &amp;&amp; waddr != 0) <span class="kw">begin</span>
+            regs[waddr] &lt;= wdata;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Read with bypass: if reading same addr as writing, return write data</span>
+    <span class="kw">wire</span> bypass_a = we &amp;&amp; (raddr_a == waddr) &amp;&amp; (waddr != 0);
+    <span class="kw">wire</span> bypass_b = we &amp;&amp; (raddr_b == waddr) &amp;&amp; (waddr != 0);
+
+    <span class="kw">assign</span> rdata_a = (raddr_a == 0) ? 0 :
+                     bypass_a ? wdata : regs[raddr_a];
+    <span class="kw">assign</span> rdata_b = (raddr_b == 0) ? 0 :
+                     bypass_b ? wdata : regs[raddr_b];
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">regfile.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- 32x32 Register File: 2 read, 1 write</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> regfile_2r1w <span class="kw">is</span>
+    <span class="kw">generic</span> (
+        DATA_WIDTH : integer := 32;
+        ADDR_WIDTH : integer := 5
+    );
+    <span class="kw">port</span> (
+        clk     : <span class="kw">in</span>  std_logic;
+        rst_n   : <span class="kw">in</span>  std_logic;
+        <span class="cmt">-- Read port A</span>
+        raddr_a : <span class="kw">in</span>  std_logic_vector(ADDR_WIDTH-1 <span class="kw">downto</span> 0);
+        rdata_a : <span class="kw">out</span> std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+        <span class="cmt">-- Read port B</span>
+        raddr_b : <span class="kw">in</span>  std_logic_vector(ADDR_WIDTH-1 <span class="kw">downto</span> 0);
+        rdata_b : <span class="kw">out</span> std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+        <span class="cmt">-- Write port</span>
+        we      : <span class="kw">in</span>  std_logic;
+        waddr   : <span class="kw">in</span>  std_logic_vector(ADDR_WIDTH-1 <span class="kw">downto</span> 0);
+        wdata   : <span class="kw">in</span>  std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> regfile_2r1w;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> regfile_2r1w <span class="kw">is</span>
+    <span class="kw">constant</span> NUM_REGS : integer := 2**ADDR_WIDTH;
+    <span class="kw">type</span> reg_array <span class="kw">is</span> <span class="kw">array</span>(0 <span class="kw">to</span> NUM_REGS-1) 
+        <span class="kw">of</span> std_logic_vector(DATA_WIDTH-1 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> regs : reg_array;
+<span class="kw">begin</span>
+
+    <span class="cmt">-- Write process</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            <span class="kw">for</span> i <span class="kw">in</span> 0 <span class="kw">to</span> NUM_REGS-1 <span class="kw">loop</span>
+                regs(i) &lt;= (<span class="kw">others</span> =&gt; '0');
+            <span class="kw">end loop</span>;
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> we = '1' <span class="kw">and</span> unsigned(waddr) /= 0 <span class="kw">then</span>
+                regs(to_integer(unsigned(waddr))) &lt;= wdata;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Async read with R0=0</span>
+    rdata_a &lt;= (<span class="kw">others</span> =&gt; '0') <span class="kw">when</span> unsigned(raddr_a) = 0
+               <span class="kw">else</span> regs(to_integer(unsigned(raddr_a)));
+    rdata_b &lt;= (<span class="kw">others</span> =&gt; '0') <span class="kw">when</span> unsigned(raddr_b) = 0
+               <span class="kw">else</span> regs(to_integer(unsigned(raddr_b)));
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why is R0 hardwired to zero?</strong> — Common in RISC ISAs (MIPS, RISC-V). Provides a constant zero without using an immediate. Simplifies comparisons and moves.</li>
+      <li><strong>Register file vs SRAM?</strong> — Register file: small, multi-port, very fast, flip-flop based. SRAM: larger, typically 1-2 ports, 6T cells. Register file is in critical path.</li>
+      <li><strong>How to handle RAW hazard?</strong> — Either forward from write port (write-first) or use pipeline bypass/forwarding from later stages.</li>
+      <li><strong>Why async reads?</strong> — Allows read in same cycle as decode. Read address comes from instruction bits; data needed immediately for execute stage.</li>
+      <li><strong>How does area scale with ports?</strong> — Read ports: N×log₂(depth) MUX. Write ports: decoder + enable logic per register. Multi-port can replicate entire array.</li>
+      <li><strong>What is register renaming?</strong> — OoO CPUs map architectural registers to larger physical register file. Eliminates false dependencies (WAR, WAW).</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/memory/rom.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        ROM
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/memory/' | relative_url }}">
+        Memory Index
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

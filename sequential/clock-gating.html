@@ -1,0 +1,554 @@
+---
+layout: null
+title: Clock Gating
+nav: sequential
+sidebar: clock-gating
+group: timing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clock Gating — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#why">Why Clock Gating</a></li>
+      <li><a href="#icg">ICG Cell</a></li>
+      <li><a href="#timing">Timing Considerations</a></li>
+      <li><a href="#patterns">Gating Patterns</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Clock Gating</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Power</span>
+    </div>
+    <h1 class="page-title">Clock Gating</h1>
+    <p class="page-subtitle">
+      The most effective technique for reducing dynamic power in synchronous designs. Clock gating stops the clock to idle flip-flops, eliminating unnecessary switching activity.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Power Savings</p>
+        <p class="qf-value">30-70%</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Implementation</p>
+        <p class="qf-value">ICG Cell</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Timing Critical</p>
+        <p class="qf-value">Enable setup</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Tool Support</p>
+        <p class="qf-value">Automatic</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Clock Gating -->
+  <section class="section" id="why">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <h2 class="section-title">Why Clock Gating?</h2>
+      <a href="#why" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>In CMOS circuits, <strong>dynamic power</strong> dominates: P = α × C × V² × f. The clock network consumes 30-50% of total dynamic power because:</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>Clock Network Issues</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Toggles every cycle (α = 1)</li>
+          <li>High capacitance (long wires, many FFs)</li>
+          <li>Drives every flip-flop</li>
+          <li>Cannot stop for idle modules</li>
+        </ul>
+      </div>
+      <div class="concept-card">
+        <h5>Clock Gating Benefits</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Stops clock to idle FFs</li>
+          <li>Reduces switching power</li>
+          <li>Eliminates unnecessary toggles</li>
+          <li>Can gate entire subsystems</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bool-box" style="margin-top: 1.5rem;">
+      <p class="bool-label">Dynamic Power Equation</p>
+      <p class="bool-expr">
+        <span class="out">P<sub>dynamic</sub></span> = <span class="var">α</span> × <span class="var">C</span> × <span class="var">V²</span> × <span class="var">f</span>
+      </p>
+      <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">α = switching activity, C = load capacitance, V = voltage, f = frequency</p>
+    </div>
+  </section>
+
+  <!-- ICG Cell -->
+  <section class="section" id="icg">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Integrated Clock Gating (ICG) Cell</h2>
+      <a href="#icg" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The standard approach uses a <strong>latch-based ICG cell</strong>. The latch captures the enable during the low phase, producing a glitch-free gated clock.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Latch-Based ICG Cell</text>
+        
+        <!-- Enable input -->
+        <text x="50" y="65" fill="var(--green)" font-family="var(--mono)" font-size="9">enable</text>
+        <line x1="85" y1="60" x2="130" y2="60" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Latch -->
+        <rect x="130" y="40" width="80" height="50" rx="4" fill="var(--surface)" stroke="var(--purple)" stroke-width="2"/>
+        <text x="170" y="65" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">Latch</text>
+        <text x="170" y="80" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">(low-active)</text>
+        
+        <!-- Clock to latch -->
+        <line x1="170" y1="110" x2="170" y2="90" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- AND gate -->
+        <path d="M 280 55 L 280 85 Q 310 70 280 55" fill="var(--surface)" stroke="var(--amber)" stroke-width="2"/>
+        <text x="288" y="75" fill="var(--text)" font-family="var(--mono)" font-size="8">&amp;</text>
+        
+        <!-- Latch to AND -->
+        <line x1="210" y1="60" x2="280" y2="63" stroke="var(--text-dim)" stroke-width="1.5"/>
+        
+        <!-- Clock input -->
+        <text x="50" y="135" fill="var(--blue)" font-family="var(--mono)" font-size="9">clk</text>
+        <line x1="70" y1="130" x2="120" y2="130" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Clock branch point -->
+        <circle cx="120" cy="130" r="3" fill="var(--blue)"/>
+        
+        <!-- Clock to AND -->
+        <line x1="120" y1="130" x2="250" y2="130" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="250" y1="130" x2="250" y2="77" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="250" y1="77" x2="280" y2="77" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Clock to latch -->
+        <line x1="120" y1="130" x2="120" y2="110" stroke="var(--blue)" stroke-width="1.5"/>
+        <line x1="120" y1="110" x2="170" y2="110" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Output -->
+        <line x1="310" y1="70" x2="380" y2="70" stroke="var(--amber)" stroke-width="2"/>
+        <text x="400" y="75" fill="var(--amber)" font-family="var(--mono)" font-size="9">gclk</text>
+        
+        <!-- Labels -->
+        <text x="170" y="155" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Enable sampled when clk=0</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Why a latch?</strong> The latch is transparent when clk=0, capturing enable. When clk goes high, the latch holds the enable value. The AND gate then produces a clean gated clock with no glitches.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">ICG Timing Diagram</text>
+        
+        <!-- Timeline -->
+        <line x1="60" y1="160" x2="450" y2="160" stroke="var(--text-dim)" stroke-width="1"/>
+        
+        <!-- Clock signal -->
+        <text x="25" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="9">clk</text>
+        <polyline points="60,60 90,60 90,40 130,40 130,60 170,60 170,40 210,40 210,60 250,60 250,40 290,40 290,60 330,60 330,40 370,40 370,60 410,60 410,40 450,40" fill="none" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Enable signal -->
+        <text x="25" y="90" fill="var(--green)" font-family="var(--mono)" font-size="9">en</text>
+        <polyline points="60,95 100,95 110,75 320,75 330,95 450,95" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Latched enable -->
+        <text x="25" y="120" fill="var(--purple)" font-family="var(--mono)" font-size="9">en_l</text>
+        <polyline points="60,125 130,125 130,105 370,105 370,125 450,125" fill="none" stroke="var(--purple)" stroke-width="2"/>
+        
+        <!-- Gated clock -->
+        <text x="25" y="150" fill="var(--amber)" font-family="var(--mono)" font-size="9">gclk</text>
+        <polyline points="60,155 130,155 170,155 170,135 210,135 210,155 250,155 250,135 290,135 290,155 330,155 330,135 370,135 370,155 410,155 450,155" fill="none" stroke="var(--amber)" stroke-width="2"/>
+        
+        <!-- Annotations -->
+        <text x="150" y="80" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">en captured here</text>
+        <line x1="130" y1="85" x2="130" y2="115" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="2,2"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Timing Considerations -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Timing Considerations</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Clock gating introduces new timing paths that must be analyzed:</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card purple">
+        <h5>Enable Setup Time</h5>
+        <p>Enable must be stable before the falling edge of clock (when latch becomes transparent). This is a setup constraint to the ICG.</p>
+      </div>
+      <div class="concept-card red">
+        <h5>Clock Skew</h5>
+        <p>Gated clock adds ICG delay. The clock tree must balance this to maintain skew requirements between gated and ungated FFs.</p>
+      </div>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Timing Check</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Enable Setup</td><td>Enable stable before clk↓ (to latch)</td></tr>
+          <tr><td>Enable Hold</td><td>Enable stable after clk↓</td></tr>
+          <tr><td>Clock-to-Gclk</td><td>ICG propagation delay</td></tr>
+          <tr><td>Min Pulse Width</td><td>Gated clock pulse must meet FF requirements</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Glitch hazard:</strong> If enable changes during clk=1, the AND gate can produce glitches on gclk. The latch prevents this by holding the enable value stable during clk=1.</p>
+    </div>
+  </section>
+
+  <!-- Gating Patterns -->
+  <section class="section" id="patterns">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">Clock Gating Patterns</h2>
+      <a href="#patterns" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>RTL-Inferred Gating</h5>
+        <p>Synthesis tools automatically insert ICG cells when they detect conditional register updates:</p>
+        <pre style="font-size: 0.75rem; margin-top: 0.5rem; background: var(--surface2); padding: 0.5rem; border-radius: 4px;"><span class="kw">if</span> (enable)
+    q &lt;= d;  <span class="cmt">// Tool inserts ICG</span></pre>
+      </div>
+      <div class="concept-card">
+        <h5>Module-Level Gating</h5>
+        <p>Gate the clock to entire modules when idle:</p>
+        <pre style="font-size: 0.75rem; margin-top: 0.5rem; background: var(--surface2); padding: 0.5rem; border-radius: 4px;"><span class="cmt">// Explicit ICG for module</span>
+icg u_icg (
+  .clk(clk),
+  .en(module_active),
+  .gclk(gclk_module)
+);</pre>
+      </div>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="140" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Hierarchical Clock Gating</text>
+        
+        <!-- Root clock -->
+        <text x="30" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="9">clk</text>
+        <line x1="50" y1="70" x2="90" y2="70" stroke="var(--blue)" stroke-width="2"/>
+        
+        <!-- Level 1 ICG -->
+        <rect x="90" y="55" width="50" height="30" rx="3" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="115" y="75" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">ICG</text>
+        
+        <!-- Level 2 ICGs -->
+        <rect x="200" y="35" width="40" height="25" rx="3" fill="var(--surface)" stroke="var(--amber)" stroke-width="1"/>
+        <text x="220" y="52" fill="var(--amber)" font-family="var(--mono)" font-size="7" text-anchor="middle">ICG</text>
+        
+        <rect x="200" y="80" width="40" height="25" rx="3" fill="var(--surface)" stroke="var(--amber)" stroke-width="1"/>
+        <text x="220" y="97" fill="var(--amber)" font-family="var(--mono)" font-size="7" text-anchor="middle">ICG</text>
+        
+        <!-- Modules -->
+        <rect x="280" y="25" width="70" height="25" rx="3" fill="rgba(59,130,246,0.2)" stroke="var(--blue)" stroke-width="1"/>
+        <text x="315" y="42" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">CPU</text>
+        
+        <rect x="380" y="25" width="70" height="25" rx="3" fill="rgba(59,130,246,0.2)" stroke="var(--blue)" stroke-width="1"/>
+        <text x="415" y="42" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">Cache</text>
+        
+        <rect x="280" y="70" width="70" height="25" rx="3" fill="rgba(34,197,94,0.2)" stroke="var(--green)" stroke-width="1"/>
+        <text x="315" y="87" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">DMA</text>
+        
+        <rect x="380" y="70" width="70" height="25" rx="3" fill="rgba(34,197,94,0.2)" stroke="var(--green)" stroke-width="1"/>
+        <text x="415" y="87" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">UART</text>
+        
+        <!-- Connections -->
+        <line x1="140" y1="70" x2="180" y2="70" stroke="var(--amber)" stroke-width="1.5"/>
+        <line x1="180" y1="47" x2="180" y2="92" stroke="var(--amber)" stroke-width="1.5"/>
+        <line x1="180" y1="47" x2="200" y2="47" stroke="var(--amber)" stroke-width="1.5"/>
+        <line x1="180" y1="92" x2="200" y2="92" stroke="var(--amber)" stroke-width="1.5"/>
+        
+        <line x1="240" y1="47" x2="280" y2="37" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="240" y1="47" x2="260" y2="47" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="260" y1="47" x2="260" y2="37" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="260" y1="37" x2="380" y2="37" stroke="var(--blue)" stroke-width="1"/>
+        
+        <line x1="240" y1="92" x2="280" y2="82" stroke="var(--green)" stroke-width="1"/>
+        <line x1="240" y1="92" x2="260" y2="92" stroke="var(--green)" stroke-width="1"/>
+        <line x1="260" y1="92" x2="260" y2="82" stroke="var(--green)" stroke-width="1"/>
+        <line x1="260" y1="82" x2="380" y2="82" stroke="var(--green)" stroke-width="1"/>
+        
+        <text x="165" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">sys_active</text>
+        <text x="220" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="7">cpu_en | periph_en</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">clock_gating.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Latch-based ICG Cell (behavioral model)</span>
+<span class="kw">module</span> icg_cell (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> enable,
+    <span class="kw">output</span> <span class="kw">wire</span> gclk
+);
+
+    <span class="kw">reg</span> enable_latch;
+
+    <span class="cmt">// Latch transparent when clk = 0 (low-active latch)</span>
+    <span class="kw">always</span> @(*) <span class="kw">begin</span>
+        <span class="kw">if</span> (!clk)
+            enable_latch &lt;= enable;
+    <span class="kw">end</span>
+
+    <span class="cmt">// AND gate produces gated clock</span>
+    <span class="kw">assign</span> gclk = clk &amp; enable_latch;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// RTL style that synthesis can auto-gate</span>
+<span class="kw">module</span> auto_gated_reg (
+    <span class="kw">input</span>  <span class="kw">wire</span>       clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>       rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>       enable,
+    <span class="kw">input</span>  <span class="kw">wire</span> [7:0] data_in,
+    <span class="kw">output</span> <span class="kw">reg</span>  [7:0] data_out
+);
+
+    <span class="cmt">// Synthesis tools will insert ICG for this pattern</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            data_out &lt;= 8'b0;
+        <span class="kw">else if</span> (enable)    <span class="cmt">// ← This condition triggers ICG insertion</span>
+            data_out &lt;= data_in;
+        <span class="cmt">// Implicit: else data_out holds</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Explicit ICG instantiation for module-level gating</span>
+<span class="kw">module</span> gated_subsystem (
+    <span class="kw">input</span>  <span class="kw">wire</span>       clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>       rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>       subsys_enable,
+    <span class="kw">input</span>  <span class="kw">wire</span> [7:0] data_in,
+    <span class="kw">output</span> <span class="kw">reg</span>  [7:0] data_out
+);
+
+    <span class="kw">wire</span> gclk;
+
+    <span class="cmt">// Explicit ICG for the entire subsystem</span>
+    icg_cell u_icg (
+        .clk    (clk),
+        .enable (subsys_enable),
+        .gclk   (gclk)
+    );
+
+    <span class="cmt">// All FFs in subsystem use gated clock</span>
+    <span class="kw">reg</span> [7:0] stage1, stage2;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> gclk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            stage1   &lt;= 8'b0;
+            stage2   &lt;= 8'b0;
+            data_out &lt;= 8'b0;
+        <span class="kw">end else begin</span>
+            stage1   &lt;= data_in;
+            stage2   &lt;= stage1;
+            data_out &lt;= stage2;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Test enable with scan (for DFT)</span>
+<span class="kw">module</span> icg_with_scan (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> enable,
+    <span class="kw">input</span>  <span class="kw">wire</span> test_mode,    <span class="cmt">// Force clock on during scan</span>
+    <span class="kw">output</span> <span class="kw">wire</span> gclk
+);
+
+    <span class="kw">wire</span> effective_enable = enable | test_mode;
+
+    icg_cell u_icg (
+        .clk    (clk),
+        .enable (effective_enable),
+        .gclk   (gclk)
+    );
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">icg_cell.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Latch-based ICG Cell</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> icg_cell <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk    : <span class="kw">in</span>  std_logic;
+        enable : <span class="kw">in</span>  std_logic;
+        gclk   : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> icg_cell;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> icg_cell <span class="kw">is</span>
+    <span class="kw">signal</span> enable_latch : std_logic;
+<span class="kw">begin</span>
+
+    <span class="cmt">-- Low-active latch (transparent when clk = '0')</span>
+    <span class="kw">process</span>(clk, enable)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> clk = '0' <span class="kw">then</span>
+            enable_latch &lt;= enable;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Gated clock output</span>
+    gclk &lt;= clk <span class="kw">and</span> enable_latch;
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why use a latch in ICG?</strong> — The latch holds the enable stable during clk=1, preventing glitches on the gated clock when enable changes.</li>
+      <li><strong>Why not just AND the clock with enable?</strong> — If enable changes while clk=1, you get glitches. The latch ensures enable is only sampled during clk=0.</li>
+      <li><strong>What's the power benefit?</strong> — Typically 30-70% dynamic power reduction by stopping clock to idle FFs. Eliminates clock tree switching for those FFs.</li>
+      <li><strong>What about static power?</strong> — Clock gating doesn't reduce leakage. For that, you need power gating (cutting VDD) or multi-threshold cells.</li>
+      <li><strong>How does synthesis auto-insert ICG?</strong> — Tools recognize if(enable) patterns and replace the mux-style feedback with an ICG cell, saving area and power.</li>
+      <li><strong>What about scan/test mode?</strong> — ICG cells need a test_mode OR with enable to force clocks on during scan testing.</li>
+      <li><strong>When shouldn't you use clock gating?</strong> — For FFs that update every cycle (no power benefit), or when gating overhead exceeds savings for small groups.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/reset.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Reset Design
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/fifo.html' | relative_url }}">
+        Async FIFO
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

@@ -611,3 +611,56 @@ pre.code-body {
 .port { color: #1a5fb0; }                    /* signal/port names */
 .num { color: #c56200; }                     /* numbers */
 .str { color: #059669; }                     /* strings */
+
+/* ── Concept Cards ──────────────────────────────────── */
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.concept-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.concept-card.blue   { border-left: 3px solid var(--blue); }
+.concept-card.green  { border-left: 3px solid var(--green); }
+.concept-card.amber  { border-left: 3px solid var(--amber); }
+.concept-card.purple { border-left: 3px solid var(--purple); }
+.concept-card.red    { border-left: 3px solid var(--red); }
+.concept-card h5 {
+  color: var(--green);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+.concept-card p {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin: 0;
+}
+.concept-card .formula {
+  font-family: var(--mono);
+  background: var(--surface2);
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* ── Warning Callout ────────────────────────────────── */
+.callout-warning {
+  background: #fdf3e3;
+  border: 1px solid #d4a96a;
+  color: var(--text-dim);
+  display: flex;
+  gap: 12px;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+.callout-warning svg { flex-shrink: 0; color: var(--amber); }
+.callout-warning strong { color: var(--text); }

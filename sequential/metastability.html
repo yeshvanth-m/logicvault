@@ -1,0 +1,446 @@
+---
+layout: null
+title: Metastability
+nav: sequential
+sidebar: metastability
+group: timing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Metastability — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#cause">What Causes It</a></li>
+      <li><a href="#resolution">Resolution Time</a></li>
+      <li><a href="#mtbf">MTBF Calculation</a></li>
+      <li><a href="#synchronizer">Synchronizer Design</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Metastability</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-red">Critical</span>
+    </div>
+    <h1 class="page-title">Metastability</h1>
+    <p class="page-subtitle">
+      When a flip-flop samples an input during its setup/hold window, the output can enter an unstable intermediate state. Understanding metastability is essential for reliable clock domain crossing design.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Cause</p>
+        <p class="qf-value">Setup/hold violation</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Result</p>
+        <p class="qf-value">Undefined output</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Solution</p>
+        <p class="qf-value">Synchronizers</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Metric</p>
+        <p class="qf-value">MTBF</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- What Causes It -->
+  <section class="section" id="cause">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+      </div>
+      <h2 class="section-title">What Causes Metastability</h2>
+      <a href="#cause" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Every flip-flop has a <strong>setup time</strong> (t<sub>su</sub>) and <strong>hold time</strong> (t<sub>h</sub>) — a window around the clock edge where the input must be stable. If the input transitions during this window:</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Clock edge -->
+        <line x1="250" y1="30" x2="250" y2="150" stroke="var(--green)" stroke-width="2" stroke-dasharray="5,3"/>
+        <text x="250" y="22" fill="var(--green)" font-family="var(--mono)" font-size="10" text-anchor="middle">Clock Edge</text>
+        
+        <!-- Setup time region -->
+        <rect x="180" y="50" width="70" height="30" fill="rgba(220,38,38,0.2)" stroke="var(--red)" stroke-width="1" rx="3"/>
+        <text x="215" y="70" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">t_su</text>
+        
+        <!-- Hold time region -->
+        <rect x="250" y="50" width="50" height="30" fill="rgba(220,38,38,0.2)" stroke="var(--red)" stroke-width="1" rx="3"/>
+        <text x="275" y="70" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">t_h</text>
+        
+        <!-- Metastability window label -->
+        <path d="M 180 45 L 180 40 L 300 40 L 300 45" fill="none" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="240" y="38" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">Metastability Window</text>
+        
+        <!-- Data signal - safe transition -->
+        <text x="50" y="105" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">Safe:</text>
+        <polyline points="100,110 160,110 170,100 300,100 310,110 400,110" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Data signal - violation -->
+        <text x="50" y="145" fill="var(--text-dim)" font-family="var(--mono)" font-size="9">Violation:</text>
+        <polyline points="100,150 220,150 240,140 280,140" fill="none" stroke="var(--red)" stroke-width="2"/>
+        <text x="290" y="143" fill="var(--red)" font-family="var(--mono)" font-size="9">✗ Metastable!</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>The Physics</h5>
+        <p>The FF's internal latch is a bistable circuit. During violation, neither stable state "wins" — the circuit hangs at an intermediate voltage between 0 and 1.</p>
+      </div>
+      <div class="concept-card">
+        <h5>The Problem</h5>
+        <p>This intermediate voltage may be interpreted as 0 by some gates and 1 by others, causing <strong>logic corruption</strong> and unpredictable behavior.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resolution Time -->
+  <section class="section" id="resolution">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Resolution Time</h2>
+      <a href="#resolution" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The metastable state doesn't last forever — thermal noise eventually pushes the output to a valid logic level. But <strong>how long</strong> this takes is probabilistic.</p>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">Probability of remaining metastable after time t</p>
+      <p class="bool-expr">
+        <span class="out">P(t)</span> = e<sup>-t/τ</sup>
+      </p>
+      <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">where τ is the resolution time constant (technology dependent, typically 20-100ps)</p>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Key insight:</strong> We can reduce the probability exponentially by giving more time to resolve. This is why multi-stage synchronizers work — each stage provides more resolution time.</p>
+    </div>
+  </section>
+
+  <!-- MTBF -->
+  <section class="section" id="mtbf">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">MTBF Calculation</h2>
+      <a href="#mtbf" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p><strong>Mean Time Between Failures</strong> (MTBF) quantifies reliability. Higher is better — we typically want MTBF > 100 years for production designs.</p>
+    </div>
+
+    <div class="bool-box">
+      <p class="bool-label">MTBF Formula</p>
+      <p class="bool-expr">
+        <span class="out">MTBF</span> = <span class="var">e<sup>t<sub>r</sub>/τ</sup></span> / (<span class="var">T<sub>0</sub></span> · <span class="var">f<sub>clk</sub></span> · <span class="var">f<sub>data</sub></span>)
+      </p>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+            <th>Typical Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>t<sub>r</sub></td><td>Resolution time (slack for synchronizer)</td><td>Clock period - t<sub>co</sub> - t<sub>su</sub></td></tr>
+          <tr><td>τ</td><td>Resolution time constant</td><td>20-100 ps</td></tr>
+          <tr><td>T<sub>0</sub></td><td>Metastability window</td><td>~setup + hold time</td></tr>
+          <tr><td>f<sub>clk</sub></td><td>Sampling clock frequency</td><td>Design dependent</td></tr>
+          <tr><td>f<sub>data</sub></td><td>Data transition frequency</td><td>Design dependent</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><strong>Example:</strong> At 500MHz with τ=50ps, a 2-FF synchronizer with 1ns resolution time gives MTBF ≈ 10<sup>8</sup> years. Adding a 3rd FF can increase this to 10<sup>15</sup> years!</p>
+    </div>
+  </section>
+
+  <!-- Synchronizer Design -->
+  <section class="section" id="synchronizer">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Synchronizer Design</h2>
+      <a href="#synchronizer" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The standard solution is a <strong>2-FF synchronizer</strong> — two flip-flops in series, both clocked by the destination domain.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 120" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="120" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Async input -->
+        <text x="30" y="55" fill="var(--red)" font-family="var(--mono)" font-size="10">async_in</text>
+        <line x1="80" y1="50" x2="120" y2="50" stroke="var(--red)" stroke-width="2"/>
+        
+        <!-- FF1 -->
+        <rect x="120" y="30" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="2"/>
+        <text x="155" y="50" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">FF1</text>
+        <text x="155" y="65" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(meta)</text>
+        
+        <!-- FF2 -->
+        <rect x="230" y="30" width="70" height="50" rx="4" fill="var(--surface)" stroke="var(--green)" stroke-width="2"/>
+        <text x="265" y="50" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle">FF2</text>
+        <text x="265" y="65" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(stable)</text>
+        
+        <!-- Connections -->
+        <line x1="190" y1="50" x2="230" y2="50" stroke="var(--amber)" stroke-width="2"/>
+        <text x="210" y="43" fill="var(--amber)" font-family="var(--mono)" font-size="8" text-anchor="middle">meta_q</text>
+        
+        <line x1="300" y1="50" x2="340" y2="50" stroke="var(--green)" stroke-width="2"/>
+        <text x="370" y="55" fill="var(--green)" font-family="var(--mono)" font-size="10">sync_out</text>
+        
+        <!-- Clock -->
+        <line x1="155" y1="95" x2="155" y2="80" stroke="var(--text-dim)" stroke-width="1.5"/>
+        <line x1="265" y1="95" x2="265" y2="80" stroke="var(--text-dim)" stroke-width="1.5"/>
+        <line x1="100" y1="95" x2="320" y2="95" stroke="var(--text-dim)" stroke-width="1.5"/>
+        <text x="210" y="110" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">dest_clk</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>FF1 (Metastable)</h5>
+        <p>May go metastable when sampling async input. Has one full clock cycle to resolve before FF2 samples.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>FF2 (Stable)</h5>
+        <p>By the time FF2 samples, FF1 has (probably) resolved. FF2 output is safe to use in destination logic.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Why 2 FFs?</strong> One FF gives time t<sub>r</sub> to resolve. Two FFs give 2×t<sub>r</sub>, reducing failure probability exponentially. Some designs use 3 FFs for extreme reliability.</p>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">synchronizer.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// 2-FF Synchronizer</span>
+<span class="kw">module</span> sync_2ff (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,        <span class="cmt">// Destination clock</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> async_in,   <span class="cmt">// Asynchronous input</span>
+    <span class="kw">output</span> <span class="kw">wire</span> sync_out    <span class="cmt">// Synchronized output</span>
+);
+
+    <span class="cmt">// Synchronizer chain - ASYNC_REG attribute for FPGA</span>
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [1:0] sync_reg;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            sync_reg &lt;= 2'b0;
+        <span class="kw">else</span>
+            sync_reg &lt;= {sync_reg[0], async_in};
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> sync_out = sync_reg[1];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// 3-FF Synchronizer (higher MTBF)</span>
+<span class="kw">module</span> sync_3ff (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> async_in,
+    <span class="kw">output</span> <span class="kw">wire</span> sync_out
+);
+
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [2:0] sync_reg;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            sync_reg &lt;= 3'b0;
+        <span class="kw">else</span>
+            sync_reg &lt;= {sync_reg[1:0], async_in};
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> sync_out = sync_reg[2];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Synchronizer with edge detection</span>
+<span class="kw">module</span> sync_pulse (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> async_in,
+    <span class="kw">output</span> <span class="kw">wire</span> sync_pulse  <span class="cmt">// One-cycle pulse on rising edge</span>
+);
+
+    <span class="kw">reg</span> [2:0] sync_reg;  <span class="cmt">// 2 for sync + 1 for edge detect</span>
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            sync_reg &lt;= 3'b0;
+        <span class="kw">else</span>
+            sync_reg &lt;= {sync_reg[1:0], async_in};
+    <span class="kw">end</span>
+
+    <span class="cmt">// Rising edge: was 0, now 1</span>
+    <span class="kw">assign</span> sync_pulse = sync_reg[1] &amp; ~sync_reg[2];
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">synchronizer.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- 2-FF Synchronizer</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> sync_2ff <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk       : <span class="kw">in</span>  std_logic;
+        rst_n     : <span class="kw">in</span>  std_logic;
+        async_in  : <span class="kw">in</span>  std_logic;
+        sync_out  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> sync_2ff;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> sync_2ff <span class="kw">is</span>
+    <span class="cmt">-- ASYNC_REG attribute for Xilinx</span>
+    <span class="kw">signal</span> sync_reg : std_logic_vector(1 <span class="kw">downto</span> 0);
+    <span class="kw">attribute</span> ASYNC_REG : string;
+    <span class="kw">attribute</span> ASYNC_REG <span class="kw">of</span> sync_reg : <span class="kw">signal</span> <span class="kw">is</span> "TRUE";
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            sync_reg &lt;= (others =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            sync_reg &lt;= sync_reg(0) &amp; async_in;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    sync_out &lt;= sync_reg(1);
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>What is metastability?</strong> — A state where FF output is at an intermediate voltage (neither 0 nor 1) due to setup/hold violation. It resolves probabilistically over time.</li>
+      <li><strong>Can metastability be eliminated?</strong> — No, but its probability can be reduced to negligible levels (MTBF > system lifetime) using synchronizers.</li>
+      <li><strong>Why 2 FFs, not 1?</strong> — One FF can go metastable. The second FF gives the first a full clock cycle to resolve before its output is sampled.</li>
+      <li><strong>When would you use 3 FFs?</strong> — For very high-frequency designs or safety-critical systems where even higher MTBF is needed.</li>
+      <li><strong>What's the ASYNC_REG attribute?</strong> — Tells synthesis tools to place synchronizer FFs close together, minimizing routing delay and maximizing resolution time.</li>
+      <li><strong>Can you synchronize a bus?</strong> — Not safely with just 2-FF sync! Use gray coding, handshake protocols, or async FIFOs for multi-bit data.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/seq-detector.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Sequence Detector
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/cdc.html' | relative_url }}">
+        Clock Domain Crossing
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

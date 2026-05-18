@@ -1,0 +1,510 @@
+---
+layout: null
+title: Reset Design
+nav: sequential
+sidebar: reset
+group: timing
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Reset Design — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#types">Reset Types</a></li>
+      <li><a href="#async-sync">Async Assert, Sync Deassert</a></li>
+      <li><a href="#reset-tree">Reset Distribution</a></li>
+      <li><a href="#reset-cdc">Reset Domain Crossing</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/' | relative_url }}">Sequential Logic</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Reset Design</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-red">Critical</span>
+    </div>
+    <h1 class="page-title">Reset Design</h1>
+    <p class="page-subtitle">
+      Proper reset design ensures reliable initialization and recovery. The "async assert, sync release" pattern is industry standard for robust reset handling.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Assertion</p>
+        <p class="qf-value">Asynchronous</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Deassertion</p>
+        <p class="qf-value">Synchronous</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Active Level</p>
+        <p class="qf-value">Usually Low</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Distribution</p>
+        <p class="qf-value">Reset Tree</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reset Types -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </div>
+      <h2 class="section-title">Reset Types</h2>
+      <a href="#types" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <h5>Synchronous Reset</h5>
+        <p>Reset sampled on clock edge. Cleaner for timing analysis but requires clock to be running. Can miss reset if clock is stopped.</p>
+        <pre style="font-size: 0.75rem; margin-top: 0.5rem; background: var(--surface2); padding: 0.5rem; border-radius: 4px;"><span class="kw">always</span> @(<span class="kw">posedge</span> clk)
+  <span class="kw">if</span> (!rst_n) q &lt;= 0;
+  <span class="kw">else</span> q &lt;= d;</pre>
+      </div>
+      <div class="concept-card">
+        <h5>Asynchronous Reset</h5>
+        <p>Reset takes effect immediately. Works without clock but can cause metastability on release. Uses dedicated FF reset pins.</p>
+        <pre style="font-size: 0.75rem; margin-top: 0.5rem; background: var(--surface2); padding: 0.5rem; border-radius: 4px;"><span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_n)
+  <span class="kw">if</span> (!rst_n) q &lt;= 0;
+  <span class="kw">else</span> q &lt;= d;</pre>
+      </div>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1.5rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Synchronous Reset</th>
+            <th>Asynchronous Reset</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Clock Required</td><td style="color: var(--red);">Yes</td><td style="color: var(--green);">No</td></tr>
+          <tr><td>Reset Latency</td><td>1 clock cycle</td><td>Immediate</td></tr>
+          <tr><td>Glitch Immunity</td><td style="color: var(--green);">Good</td><td style="color: var(--red);">Sensitive</td></tr>
+          <tr><td>Release Hazard</td><td style="color: var(--green);">None</td><td style="color: var(--red);">Metastability</td></tr>
+          <tr><td>Area</td><td>More logic gates</td><td>Uses FF reset pin</td></tr>
+          <tr><td>Timing Analysis</td><td style="color: var(--green);">Simpler</td><td>Need async paths</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Async Assert, Sync Deassert -->
+  <section class="section" id="async-sync">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Async Assert, Sync Release</h2>
+      <a href="#async-sync" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>The <strong>best practice</strong> combines advantages of both approaches: reset asserts immediately (async) but releases synchronously to prevent metastability.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="200" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Reset Synchronizer</text>
+        
+        <!-- External reset input -->
+        <text x="30" y="95" fill="var(--red)" font-family="var(--mono)" font-size="9">rst_n</text>
+        <line x1="60" y1="90" x2="100" y2="90" stroke="var(--red)" stroke-width="2"/>
+        
+        <!-- FF1 -->
+        <rect x="100" y="60" width="70" height="60" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="2"/>
+        <text x="135" y="85" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">FF1</text>
+        <text x="135" y="100" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">preset=1</text>
+        
+        <!-- D input tied high -->
+        <text x="90" y="75" fill="var(--green)" font-family="var(--mono)" font-size="8">1</text>
+        <line x1="95" y1="75" x2="100" y2="75" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <!-- FF2 -->
+        <rect x="220" y="60" width="70" height="60" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="2"/>
+        <text x="255" y="85" fill="var(--text)" font-family="var(--mono)" font-size="9" text-anchor="middle">FF2</text>
+        <text x="255" y="100" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">preset=1</text>
+        
+        <!-- Connection FF1 to FF2 -->
+        <line x1="170" y1="90" x2="220" y2="90" stroke="var(--text-dim)" stroke-width="1.5"/>
+        
+        <!-- Async reset connection -->
+        <line x1="80" y1="90" x2="80" y2="130" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="80" y1="130" x2="320" y2="130" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="135" y1="130" x2="135" y2="120" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="255" y1="130" x2="255" y2="120" stroke="var(--red)" stroke-width="1.5"/>
+        <text x="200" y="145" fill="var(--red)" font-family="var(--mono)" font-size="8" text-anchor="middle">async preset (active low reset)</text>
+        
+        <!-- Output -->
+        <line x1="290" y1="90" x2="360" y2="90" stroke="var(--green)" stroke-width="2"/>
+        <text x="390" y="95" fill="var(--green)" font-family="var(--mono)" font-size="10">rst_sync_n</text>
+        
+        <!-- Clock -->
+        <line x1="135" y1="175" x2="135" y2="120" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="255" y1="175" x2="255" y2="120" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="100" y1="175" x2="290" y2="175" stroke="var(--blue)" stroke-width="1"/>
+        <text x="195" y="188" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">clk</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card red">
+        <h5>On Reset Assert (rst_n → 0)</h5>
+        <p>Both FFs immediately preset to 1, causing rst_sync_n to go low. No clock needed — instant reset!</p>
+      </div>
+      <div class="concept-card green">
+        <h5>On Reset Release (rst_n → 1)</h5>
+        <p>FFs shift 1→1→output over two clock cycles. Synchronized release prevents metastability in downstream logic.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Why this works:</strong> The D inputs are tied to 1, so after reset releases, the FFs will eventually output 1 (rst_sync_n goes high). The 2-FF chain ensures this transition is clean and aligned to the clock.</p>
+    </div>
+  </section>
+
+  <!-- Reset Distribution -->
+  <section class="section" id="reset-tree">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v6m0 0l-3-3m3 3l3-3M6 12h12M6 12l3-3m-3 3l3 3m6-3l3-3m-3 3l3 3"/></svg>
+      </div>
+      <h2 class="section-title">Reset Distribution</h2>
+      <a href="#reset-tree" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>In large designs, reset must reach all FFs reliably. A <strong>reset tree</strong> (like a clock tree) ensures proper distribution with controlled skew.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 450 170" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="450" height="170" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Reset source -->
+        <rect x="185" y="15" width="80" height="30" rx="4" fill="var(--surface)" stroke="var(--red)" stroke-width="2"/>
+        <text x="225" y="35" fill="var(--red)" font-family="var(--mono)" font-size="9" text-anchor="middle">Reset Sync</text>
+        
+        <!-- Level 1 buffers -->
+        <polygon points="160,70 180,80 160,90" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <polygon points="270,70 290,80 270,90" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        
+        <!-- Level 2 buffers -->
+        <polygon points="80,115 100,125 80,135" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <polygon points="150,115 170,125 150,135" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <polygon points="280,115 300,125 280,135" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        <polygon points="350,115 370,125 350,135" fill="var(--surface)" stroke="var(--amber)" stroke-width="1.5"/>
+        
+        <!-- FFs at leaf -->
+        <rect x="25" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="55" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="125" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="155" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        
+        <rect x="255" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="285" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="355" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="385" y="150" width="25" height="15" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        
+        <!-- Connections -->
+        <line x1="225" y1="45" x2="225" y2="60" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="170" y1="60" x2="280" y2="60" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="170" y1="60" x2="170" y2="70" stroke="var(--red)" stroke-width="1.5"/>
+        <line x1="280" y1="60" x2="280" y2="70" stroke="var(--red)" stroke-width="1.5"/>
+        
+        <line x1="180" y1="80" x2="200" y2="80" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="200" y1="80" x2="200" y2="105" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="90" y1="105" x2="200" y2="105" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="90" y1="105" x2="90" y2="115" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="160" y1="105" x2="160" y2="115" stroke="var(--amber)" stroke-width="1"/>
+        
+        <line x1="290" y1="80" x2="310" y2="80" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="310" y1="80" x2="310" y2="105" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="290" y1="105" x2="360" y2="105" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="290" y1="105" x2="290" y2="115" stroke="var(--amber)" stroke-width="1"/>
+        <line x1="360" y1="105" x2="360" y2="115" stroke="var(--amber)" stroke-width="1"/>
+        
+        <text x="225" y="95" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Buffer tree balances skew</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p><strong>Caution:</strong> Large reset skew can cause issues! If reset releases at different times across blocks, signals between blocks may be undefined during the transition.</p>
+    </div>
+  </section>
+
+  <!-- Reset Domain Crossing -->
+  <section class="section" id="reset-cdc">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </div>
+      <h2 class="section-title">Reset Domain Crossing</h2>
+      <a href="#reset-cdc" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each clock domain needs its own reset synchronizer. A global async reset should be synchronized separately for each domain.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 160" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="160" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Global reset -->
+        <text x="30" y="85" fill="var(--red)" font-family="var(--mono)" font-size="9">rst_n</text>
+        <line x1="55" y1="80" x2="90" y2="80" stroke="var(--red)" stroke-width="2"/>
+        
+        <!-- Branch point -->
+        <circle cx="90" cy="80" r="3" fill="var(--red)"/>
+        <line x1="90" y1="40" x2="90" y2="120" stroke="var(--red)" stroke-width="1.5"/>
+        
+        <!-- Domain A sync -->
+        <rect x="110" y="20" width="100" height="45" rx="4" fill="rgba(59,130,246,0.1)" stroke="var(--blue)" stroke-width="1"/>
+        <text x="160" y="40" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">Reset Sync</text>
+        <text x="160" y="55" fill="var(--blue)" font-family="var(--mono)" font-size="8" text-anchor="middle">(clk_a)</text>
+        <line x1="90" y1="40" x2="110" y2="40" stroke="var(--red)" stroke-width="1.5"/>
+        
+        <!-- Domain B sync -->
+        <rect x="110" y="95" width="100" height="45" rx="4" fill="rgba(34,197,94,0.1)" stroke="var(--green)" stroke-width="1"/>
+        <text x="160" y="115" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">Reset Sync</text>
+        <text x="160" y="130" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">(clk_b)</text>
+        <line x1="90" y1="120" x2="110" y2="120" stroke="var(--red)" stroke-width="1.5"/>
+        
+        <!-- Domain A -->
+        <rect x="250" y="15" width="200" height="55" rx="6" fill="rgba(59,130,246,0.1)" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="350" y="35" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle">Clock Domain A</text>
+        <rect x="280" y="45" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="340" y="45" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <rect x="400" y="45" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <line x1="210" y1="42" x2="250" y2="42" stroke="var(--blue)" stroke-width="1.5"/>
+        
+        <!-- Domain B -->
+        <rect x="250" y="90" width="200" height="55" rx="6" fill="rgba(34,197,94,0.1)" stroke="var(--green)" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="350" y="110" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">Clock Domain B</text>
+        <rect x="280" y="120" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--green)" stroke-width="1"/>
+        <rect x="340" y="120" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--green)" stroke-width="1"/>
+        <rect x="400" y="120" width="40" height="20" rx="2" fill="var(--surface)" stroke="var(--green)" stroke-width="1"/>
+        <line x1="210" y1="117" x2="250" y2="117" stroke="var(--green)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">reset_sync.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Async Assert, Sync Release Reset Synchronizer</span>
+<span class="kw">module</span> reset_sync (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_async_n,   <span class="cmt">// Async reset input (active low)</span>
+    <span class="kw">output</span> <span class="kw">wire</span> rst_sync_n     <span class="cmt">// Sync reset output (active low)</span>
+);
+
+    <span class="cmt">// Two-stage synchronizer with async preset</span>
+    (* ASYNC_REG = "TRUE" *) <span class="kw">reg</span> [1:0] rst_sync_reg;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_async_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_async_n)
+            rst_sync_reg &lt;= 2'b00;    <span class="cmt">// Async assert (immediate)</span>
+        <span class="kw">else</span>
+            rst_sync_reg &lt;= {rst_sync_reg[0], 1'b1};  <span class="cmt">// Sync release</span>
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> rst_sync_n = rst_sync_reg[1];
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Multi-domain reset controller</span>
+<span class="kw">module</span> reset_controller (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_a,
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_b,
+    <span class="kw">input</span>  <span class="kw">wire</span> clk_c,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,         <span class="cmt">// Global async reset</span>
+    <span class="kw">output</span> <span class="kw">wire</span> rst_a_n,       <span class="cmt">// Sync reset for domain A</span>
+    <span class="kw">output</span> <span class="kw">wire</span> rst_b_n,       <span class="cmt">// Sync reset for domain B</span>
+    <span class="kw">output</span> <span class="kw">wire</span> rst_c_n        <span class="cmt">// Sync reset for domain C</span>
+);
+
+    reset_sync u_rst_a (
+        .clk         (clk_a),
+        .rst_async_n (rst_n),
+        .rst_sync_n  (rst_a_n)
+    );
+
+    reset_sync u_rst_b (
+        .clk         (clk_b),
+        .rst_async_n (rst_n),
+        .rst_sync_n  (rst_b_n)
+    );
+
+    reset_sync u_rst_c (
+        .clk         (clk_c),
+        .rst_async_n (rst_n),
+        .rst_sync_n  (rst_c_n)
+    );
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Example: Using synchronized reset in a module</span>
+<span class="kw">module</span> example_ff (
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_sync_n,    <span class="cmt">// From reset_sync</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> d,
+    <span class="kw">output</span> <span class="kw">reg</span>  q
+);
+
+    <span class="cmt">// Still use async reset in sensitivity for synthesis</span>
+    <span class="cmt">// The reset_sync ensures clean release</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or</span> <span class="kw">negedge</span> rst_sync_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_sync_n)
+            q &lt;= 1'b0;
+        <span class="kw">else</span>
+            q &lt;= d;
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">reset_sync.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Async Assert, Sync Release Reset Synchronizer</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> reset_sync <span class="kw">is</span>
+    <span class="kw">port</span> (
+        clk         : <span class="kw">in</span>  std_logic;
+        rst_async_n : <span class="kw">in</span>  std_logic;
+        rst_sync_n  : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> reset_sync;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> reset_sync <span class="kw">is</span>
+    <span class="kw">signal</span> rst_sync_reg : std_logic_vector(1 <span class="kw">downto</span> 0);
+    
+    <span class="kw">attribute</span> ASYNC_REG : string;
+    <span class="kw">attribute</span> ASYNC_REG <span class="kw">of</span> rst_sync_reg : <span class="kw">signal</span> <span class="kw">is</span> "TRUE";
+<span class="kw">begin</span>
+
+    <span class="kw">process</span>(clk, rst_async_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_async_n = '0' <span class="kw">then</span>
+            rst_sync_reg &lt;= "00";  <span class="cmt">-- Async assert</span>
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            rst_sync_reg &lt;= rst_sync_reg(0) &amp; '1';  <span class="cmt">-- Sync release</span>
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    rst_sync_n &lt;= rst_sync_reg(1);
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why async assert, sync release?</strong> — Async assert works without clock (can reset when clock is stopped). Sync release prevents metastability in downstream logic.</li>
+      <li><strong>What happens with pure async reset?</strong> — If reset releases near a clock edge, FFs may go metastable. Different FFs may capture different values.</li>
+      <li><strong>Why tie D input to 1 in the synchronizer?</strong> — Ensures reset eventually releases (FFs shift 1→1→out). Active-low reset means output=1 is "not reset".</li>
+      <li><strong>What about multiple clock domains?</strong> — Each domain needs its own reset synchronizer clocked by that domain's clock.</li>
+      <li><strong>Active high vs active low reset?</strong> — Both work. Active low (rst_n) is traditional because it uses preset pins. Just be consistent!</li>
+      <li><strong>What's reset recovery time?</strong> — Time for reset release to propagate through the synchronizer (2+ clock cycles for 2-FF sync).</li>
+      <li><strong>How to handle reset glitches?</strong> — Add a glitch filter (RC circuit) at the board level. The sync FFs provide some filtering too.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/setup-hold.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Setup & Hold Time
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/clock-gating.html' | relative_url }}">
+        Clock Gating
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

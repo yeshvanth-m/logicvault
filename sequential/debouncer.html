@@ -1,0 +1,416 @@
+---
+layout: null
+title: Debouncer
+nav: sequential
+sidebar: debouncer
+group: generators
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Debouncer — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#bounce">Switch Bounce</a></li>
+      <li><a href="#methods">Debounce Methods</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/index.html' | relative_url }}">Sequential</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Debouncer</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-amber">Input Conditioning</span>
+    </div>
+    <h1 class="page-title">Debouncer</h1>
+    <p class="page-subtitle">
+      Filters out rapid transitions (bounce) from mechanical switches and buttons. Produces a clean, stable output signal.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Problem</p>
+        <p class="qf-value">Switch Bounce</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Bounce Time</p>
+        <p class="qf-value">5-50 ms</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Method</p>
+        <p class="qf-value">Counter / SR</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use Case</p>
+        <p class="qf-value">Buttons, Switches</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bounce -->
+  <section class="section" id="bounce">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h2 class="section-title">Switch Bounce</h2>
+      <a href="#bounce" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>When a mechanical switch closes, the contacts physically bounce, creating rapid on-off transitions before settling. A fast digital system sees these as multiple presses!</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Switch Bounce Waveform</text>
+        
+        <!-- Axis -->
+        <line x1="50" y1="130" x2="450" y2="130" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="450" y="145" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">time</text>
+        
+        <!-- Ideal signal -->
+        <text x="30" y="60" fill="var(--green)" font-family="var(--mono)" font-size="8">Ideal</text>
+        <polyline points="60,65 150,65 150,45 400,45" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Actual bouncing signal -->
+        <text x="30" y="105" fill="var(--red)" font-family="var(--mono)" font-size="8">Actual</text>
+        <polyline points="60,110 150,110 150,90 155,110 160,90 167,110 173,90 180,110 185,90 195,90 195,110 200,90 210,90" fill="none" stroke="var(--red)" stroke-width="2"/>
+        <polyline points="210,90 400,90" fill="none" stroke="var(--red)" stroke-width="2"/>
+        
+        <!-- Bounce region marker -->
+        <rect x="150" y="75" width="60" height="45" rx="4" fill="rgba(239,68,68,0.1)" stroke="var(--red)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="180" y="135" fill="var(--red)" font-family="var(--mono)" font-size="7" text-anchor="middle">Bounce</text>
+        <text x="180" y="145" fill="var(--red)" font-family="var(--mono)" font-size="7" text-anchor="middle">~5-50ms</text>
+        
+        <!-- Press marker -->
+        <line x1="150" y1="150" x2="150" y2="160" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="150" y="170" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">Press</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-warning" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <p><strong>Why it matters:</strong> At 100 MHz, a 10ms bounce can create 1 million false edges! Counter-based debouncing is essential for reliable button input.</p>
+    </div>
+  </section>
+
+  <!-- Methods -->
+  <section class="section" id="methods">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">Debounce Methods</h2>
+      <a href="#methods" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Counter-Based</h5>
+        <p>Count consecutive samples at same level. Only change output when count reaches threshold.</p>
+        <div class="formula">if (input == output)
+  count = 0
+else
+  count++
+  if (count >= THRESHOLD)
+    output = input</div>
+      </div>
+      <div class="concept-card green">
+        <h5>Shift Register</h5>
+        <p>Sample input into shift register. Output high only when all bits are 1 (or all 0).</p>
+        <div class="formula">shift = {shift[N-2:0], in}
+out_high = &shift  // all 1s
+out_low = ~|shift  // all 0s</div>
+      </div>
+      <div class="concept-card purple">
+        <h5>Integrator</h5>
+        <p>Count up when input high, down when low. Output changes at thresholds. Bidirectional counting.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Two-Flip-Flop + Timer</h5>
+        <p>Synchronize input, then wait fixed time after any edge before sampling again.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">debouncer.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Counter-based debouncer</span>
+<span class="kw">module</span> debouncer #(
+    <span class="kw">parameter</span> COUNTER_BITS = 20  <span class="cmt">// ~10ms @ 100MHz</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> btn_in,          <span class="cmt">// Raw button input</span>
+    <span class="kw">output</span> <span class="kw">reg</span>  btn_out,         <span class="cmt">// Debounced output</span>
+    <span class="kw">output</span> <span class="kw">wire</span> btn_posedge,     <span class="cmt">// Rising edge pulse</span>
+    <span class="kw">output</span> <span class="kw">wire</span> btn_negedge      <span class="cmt">// Falling edge pulse</span>
+);
+
+    <span class="kw">reg</span> [COUNTER_BITS-1:0] count;
+    <span class="kw">reg</span>                    btn_sync1, btn_sync2;
+    <span class="kw">reg</span>                    btn_prev;
+
+    <span class="cmt">// Synchronizer (2 FF)</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            btn_sync1 &lt;= 1'b0;
+            btn_sync2 &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            btn_sync1 &lt;= btn_in;
+            btn_sync2 &lt;= btn_sync1;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Debounce counter</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            count   &lt;= 0;
+            btn_out &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (btn_sync2 == btn_out) <span class="kw">begin</span>
+                <span class="cmt">// Input matches output - reset counter</span>
+                count &lt;= 0;
+            <span class="kw">end else begin</span>
+                <span class="cmt">// Input differs - count up</span>
+                <span class="kw">if</span> (count == {COUNTER_BITS{1'b1}}) <span class="kw">begin</span>
+                    btn_out &lt;= btn_sync2;
+                    count   &lt;= 0;
+                <span class="kw">end else begin</span>
+                    count &lt;= count + 1;
+                <span class="kw">end</span>
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+    <span class="cmt">// Edge detection</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            btn_prev &lt;= 1'b0;
+        <span class="kw">else</span>
+            btn_prev &lt;= btn_out;
+    <span class="kw">end</span>
+
+    <span class="kw">assign</span> btn_posedge = btn_out &amp; ~btn_prev;
+    <span class="kw">assign</span> btn_negedge = ~btn_out &amp; btn_prev;
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Shift register debouncer (alternative)</span>
+<span class="kw">module</span> debouncer_shift #(
+    <span class="kw">parameter</span> STAGES = 8,
+    <span class="kw">parameter</span> PRESCALE = 20  <span class="cmt">// Slow sample rate</span>
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span> clk,
+    <span class="kw">input</span>  <span class="kw">wire</span> rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span> btn_in,
+    <span class="kw">output</span> <span class="kw">reg</span>  btn_out
+);
+
+    <span class="kw">reg</span> [PRESCALE-1:0]  prescaler;
+    <span class="kw">reg</span> [STAGES-1:0]    shift;
+    <span class="kw">wire</span>                sample_en;
+
+    <span class="cmt">// Prescaler for slow sampling</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n)
+            prescaler &lt;= 0;
+        <span class="kw">else</span>
+            prescaler &lt;= prescaler + 1;
+    <span class="kw">end</span>
+    
+    <span class="kw">assign</span> sample_en = (prescaler == 0);
+
+    <span class="cmt">// Shift register</span>
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            shift   &lt;= 0;
+            btn_out &lt;= 1'b0;
+        <span class="kw">end else if</span> (sample_en) <span class="kw">begin</span>
+            shift &lt;= {shift[STAGES-2:0], btn_in};
+            <span class="kw">if</span> (&amp;shift)        <span class="cmt">// All 1s</span>
+                btn_out &lt;= 1'b1;
+            <span class="kw">else if</span> (~|shift)  <span class="cmt">// All 0s</span>
+                btn_out &lt;= 1'b0;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">debouncer.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Counter-based debouncer</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+<span class="kw">use</span> IEEE.NUMERIC_STD.<span class="kw">all</span>;
+
+<span class="kw">entity</span> debouncer <span class="kw">is</span>
+    <span class="kw">generic</span> (
+        COUNTER_MAX : integer := 1000000  <span class="cmt">-- ~10ms @ 100MHz</span>
+    );
+    <span class="kw">port</span> (
+        clk         : <span class="kw">in</span>  std_logic;
+        rst_n       : <span class="kw">in</span>  std_logic;
+        btn_in      : <span class="kw">in</span>  std_logic;
+        btn_out     : <span class="kw">out</span> std_logic;
+        btn_posedge : <span class="kw">out</span> std_logic;
+        btn_negedge : <span class="kw">out</span> std_logic
+    );
+<span class="kw">end</span> debouncer;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> debouncer <span class="kw">is</span>
+    <span class="kw">signal</span> count     : integer <span class="kw">range</span> 0 <span class="kw">to</span> COUNTER_MAX;
+    <span class="kw">signal</span> sync1     : std_logic;
+    <span class="kw">signal</span> sync2     : std_logic;
+    <span class="kw">signal</span> debounced : std_logic;
+    <span class="kw">signal</span> prev      : std_logic;
+<span class="kw">begin</span>
+
+    <span class="cmt">-- Synchronizer</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            sync1 &lt;= '0';
+            sync2 &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            sync1 &lt;= btn_in;
+            sync2 &lt;= sync1;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Debounce counter</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            count &lt;= 0;
+            debounced &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> sync2 = debounced <span class="kw">then</span>
+                count &lt;= 0;
+            <span class="kw">else</span>
+                <span class="kw">if</span> count = COUNTER_MAX <span class="kw">then</span>
+                    debounced &lt;= sync2;
+                    count &lt;= 0;
+                <span class="kw">else</span>
+                    count &lt;= count + 1;
+                <span class="kw">end if</span>;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    <span class="cmt">-- Edge detection</span>
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            prev &lt;= '0';
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            prev &lt;= debounced;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+    btn_out &lt;= debounced;
+    btn_posedge &lt;= debounced <span class="kw">and</span> (<span class="kw">not</span> prev);
+    btn_negedge &lt;= (<span class="kw">not</span> debounced) <span class="kw">and</span> prev;
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why synchronize first?</strong> — Button is asynchronous to clock. Must pass through 2-FF synchronizer to avoid metastability before debounce logic.</li>
+      <li><strong>How to size the counter?</strong> — Typical bounce is 5-50ms. Counter should be &gt; worst-case bounce time. At 100MHz: 20-bit counter ≈ 10ms.</li>
+      <li><strong>Shift register vs counter?</strong> — Shift register needs fewer bits but samples at fixed rate. Counter is more flexible but needs more bits.</li>
+      <li><strong>Can debouncer handle glitches?</strong> — Yes, any pulse shorter than debounce time is filtered. But primary purpose is switch bounce.</li>
+      <li><strong>What about release bounce?</strong> — Same mechanism. Debouncer handles both press and release transitions identically.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/counter-sync.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Sync Counter
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/pulse-gen.html' | relative_url }}">
+        Pulse Generator
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

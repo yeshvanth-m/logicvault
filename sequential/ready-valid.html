@@ -1,0 +1,520 @@
+---
+layout: null
+title: Ready/Valid Handshake
+nav: sequential
+sidebar: ready-valid
+group: dataflow
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ready/Valid Handshake — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#protocol">Protocol Rules</a></li>
+      <li><a href="#timing">Timing Diagrams</a></li>
+      <li><a href="#variants">Protocol Variants</a></li>
+      <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/sequential/index.html' | relative_url }}">Sequential</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Ready/Valid Handshake</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Sequential</span>
+      <span class="badge badge-green">Interface Protocol</span>
+    </div>
+    <h1 class="page-title">Ready/Valid Handshake</h1>
+    <p class="page-subtitle">
+      Standard flow control protocol for transferring data between producer and consumer. Handles backpressure and ensures reliable data transfer.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Signals</p>
+        <p class="qf-value">valid, ready, data</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Transfer</p>
+        <p class="qf-value">valid & ready</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Backpressure</p>
+        <p class="qf-value">ready = 0</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Standards</p>
+        <p class="qf-value">AXI, AXI-Stream</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Protocol -->
+  <section class="section" id="protocol">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h2 class="section-title">Protocol Rules</h2>
+      <a href="#protocol" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 150" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="500" height="150" fill="var(--surface2)" rx="8"/>
+        
+        <text x="250" y="22" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Ready/Valid Interface</text>
+        
+        <!-- Producer -->
+        <rect x="50" y="50" width="120" height="70" rx="6" fill="var(--surface)" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="110" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle">Producer</text>
+        <text x="110" y="92" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(Source)</text>
+        
+        <!-- Consumer -->
+        <rect x="330" y="50" width="120" height="70" rx="6" fill="var(--surface)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="390" y="75" fill="var(--green)" font-family="var(--mono)" font-size="10" text-anchor="middle">Consumer</text>
+        <text x="390" y="92" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(Sink)</text>
+        
+        <!-- Valid signal (producer → consumer) -->
+        <line x1="170" y1="65" x2="330" y2="65" stroke="var(--amber)" stroke-width="2"/>
+        <polygon points="325,60 335,65 325,70" fill="var(--amber)"/>
+        <text x="250" y="58" fill="var(--amber)" font-family="var(--mono)" font-size="9" text-anchor="middle">valid</text>
+        
+        <!-- Data signal -->
+        <line x1="170" y1="85" x2="330" y2="85" stroke="var(--purple)" stroke-width="2"/>
+        <polygon points="325,80 335,85 325,90" fill="var(--purple)"/>
+        <text x="250" y="78" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">data[]</text>
+        
+        <!-- Ready signal (consumer → producer) -->
+        <line x1="330" y1="105" x2="170" y2="105" stroke="var(--green)" stroke-width="2"/>
+        <polygon points="175,100 165,105 175,110" fill="var(--green)"/>
+        <text x="250" y="118" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle">ready</text>
+        
+        <!-- Transfer condition -->
+        <text x="250" y="140" fill="var(--text-dim)" font-family="var(--mono)" font-size="9" text-anchor="middle">Transfer occurs when: valid=1 AND ready=1</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card amber">
+        <h5>Producer Rules</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Assert <code>valid</code> when data is available</li>
+          <li>Hold <code>data</code> stable while <code>valid=1</code></li>
+          <li>Keep <code>valid=1</code> until <code>ready=1</code> seen</li>
+          <li><code>valid</code> must NOT depend on <code>ready</code></li>
+        </ul>
+      </div>
+      <div class="concept-card green">
+        <h5>Consumer Rules</h5>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Assert <code>ready</code> when able to accept</li>
+          <li>Sample <code>data</code> when both signals high</li>
+          <li><code>ready</code> MAY depend on <code>valid</code></li>
+          <li>Can deassert <code>ready</code> for backpressure</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warning" style="margin-top: 1rem;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <p><strong>Critical:</strong> Valid must NOT wait for ready before asserting! This prevents deadlock where both sides wait for the other.</p>
+    </div>
+  </section>
+
+  <!-- Timing -->
+  <section class="section" id="timing">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <h2 class="section-title">Timing Diagrams</h2>
+      <a href="#timing" class="section-anchor">#</a>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 570px;">
+        <rect width="520" height="200" fill="var(--surface2)" rx="8"/>
+        
+        <text x="260" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Ready/Valid Timing (Various Scenarios)</text>
+        
+        <!-- Clock -->
+        <text x="30" y="50" fill="var(--text-dim)" font-family="var(--mono)" font-size="8">clk</text>
+        <polyline points="60,55 80,55 80,40 100,40 100,55 120,55 120,40 140,40 140,55 160,55 160,40 180,40 180,55 200,55 200,40 220,40 220,55 240,55 240,40 260,40 260,55 280,55 280,40 300,40 300,55 320,55 320,40 340,40 340,55 360,55 360,40 380,40 380,55 400,55 400,40 420,40 420,55 440,55 440,40 460,40 460,55 480,55" fill="none" stroke="var(--blue)" stroke-width="1"/>
+        
+        <!-- Cycle markers -->
+        <text x="90" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">1</text>
+        <text x="130" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">2</text>
+        <text x="170" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">3</text>
+        <text x="210" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">4</text>
+        <text x="250" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">5</text>
+        <text x="290" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">6</text>
+        <text x="330" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">7</text>
+        <text x="370" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">8</text>
+        <text x="410" y="35" fill="var(--text-dim)" font-family="var(--mono)" font-size="6" text-anchor="middle">9</text>
+        
+        <!-- Valid -->
+        <text x="30" y="80" fill="var(--amber)" font-family="var(--mono)" font-size="8">valid</text>
+        <polyline points="60,85 100,85 100,70 220,70 220,85 280,85 280,70 340,70 340,85 400,85 400,70 460,70 460,85 480,85" fill="none" stroke="var(--amber)" stroke-width="2"/>
+        
+        <!-- Ready -->
+        <text x="30" y="110" fill="var(--green)" font-family="var(--mono)" font-size="8">ready</text>
+        <polyline points="60,115 140,115 140,100 180,100 180,115 220,115 220,100 260,100 260,115 340,115 340,100 380,100 380,115 420,115 420,100 480,100" fill="none" stroke="var(--green)" stroke-width="2"/>
+        
+        <!-- Data -->
+        <text x="30" y="145" fill="var(--purple)" font-family="var(--mono)" font-size="8">data</text>
+        <rect x="100" y="135" width="60" height="18" fill="rgba(147,51,234,0.2)" stroke="var(--purple)" stroke-width="1"/>
+        <text x="130" y="147" fill="var(--purple)" font-family="var(--mono)" font-size="7" text-anchor="middle">D0</text>
+        <rect x="160" y="135" width="60" height="18" fill="rgba(147,51,234,0.2)" stroke="var(--purple)" stroke-width="1"/>
+        <text x="190" y="147" fill="var(--purple)" font-family="var(--mono)" font-size="7" text-anchor="middle">D1</text>
+        <rect x="280" y="135" width="60" height="18" fill="rgba(147,51,234,0.2)" stroke="var(--purple)" stroke-width="1"/>
+        <text x="310" y="147" fill="var(--purple)" font-family="var(--mono)" font-size="7" text-anchor="middle">D2</text>
+        <rect x="400" y="135" width="60" height="18" fill="rgba(147,51,234,0.2)" stroke="var(--purple)" stroke-width="1"/>
+        <text x="430" y="147" fill="var(--purple)" font-family="var(--mono)" font-size="7" text-anchor="middle">D3</text>
+        
+        <!-- Transfer markers -->
+        <circle cx="160" cy="95" r="6" fill="rgba(34,197,94,0.3)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="160" y="98" fill="var(--green)" font-family="var(--mono)" font-size="6" text-anchor="middle">✓</text>
+        
+        <circle cx="240" cy="95" r="6" fill="rgba(34,197,94,0.3)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="240" y="98" fill="var(--green)" font-family="var(--mono)" font-size="6" text-anchor="middle">✓</text>
+        
+        <circle cx="360" cy="95" r="6" fill="rgba(34,197,94,0.3)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="360" y="98" fill="var(--green)" font-family="var(--mono)" font-size="6" text-anchor="middle">✓</text>
+        
+        <circle cx="440" cy="95" r="6" fill="rgba(34,197,94,0.3)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="440" y="98" fill="var(--green)" font-family="var(--mono)" font-size="6" text-anchor="middle">✓</text>
+        
+        <!-- Annotations -->
+        <text x="130" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">wait for ready</text>
+        <text x="310" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">back-to-back</text>
+        <text x="430" y="175" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">immediate</text>
+        
+        <!-- Legend -->
+        <text x="260" y="192" fill="var(--green)" font-family="var(--mono)" font-size="8" text-anchor="middle">✓ = Transfer occurs (valid &amp; ready both high)</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Variants -->
+  <section class="section" id="variants">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h2 class="section-title">Protocol Variants</h2>
+      <a href="#variants" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap" style="margin-top: 1rem;">
+      <table class="truth-table">
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>Names</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>AXI4</td><td>VALID, READY</td><td>Standard ARM protocol for SoCs</td></tr>
+          <tr><td>AXI-Stream</td><td>TVALID, TREADY</td><td>Streaming data, adds TLAST</td></tr>
+          <tr><td>Avalon-ST</td><td>valid, ready</td><td>Intel FPGA streaming</td></tr>
+          <tr><td>Wishbone</td><td>STB, ACK</td><td>Strobe/acknowledge variant</td></tr>
+          <tr><td>req/ack</td><td>req, ack</td><td>Generic handshake</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RTL -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog / VHDL)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-tabs">
+      <button class="ctab active" onclick="switchCode(this,'verilog')">Verilog</button>
+      <button class="ctab" onclick="switchCode(this,'vhdl')">VHDL</button>
+    </div>
+
+    <div class="code-panel active" id="panel-verilog">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">Verilog</span>
+          <span class="code-filename">ready_valid.v</span>
+          <button class="code-copy" onclick="copyCode(this,'verilog-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="verilog-code"><span class="cmt">// Simple producer (source)</span>
+<span class="kw">module</span> producer #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    <span class="kw">input</span>  <span class="kw">wire</span>             start,       <span class="cmt">// External trigger</span>
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] data_in,     <span class="cmt">// Data to send</span>
+    
+    <span class="cmt">// Ready/Valid interface (output)</span>
+    <span class="kw">output</span> <span class="kw">reg</span>              out_valid,
+    <span class="kw">input</span>  <span class="kw">wire</span>             out_ready,
+    <span class="kw">output</span> <span class="kw">reg</span>  [WIDTH-1:0] out_data
+);
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            out_valid &lt;= 1'b0;
+            out_data  &lt;= 0;
+        <span class="kw">end else begin</span>
+            <span class="kw">if</span> (out_valid &amp;&amp; out_ready) <span class="kw">begin</span>
+                <span class="cmt">// Transfer complete - can load new or go idle</span>
+                out_valid &lt;= start;  <span class="cmt">// Immediate next if start</span>
+                out_data  &lt;= data_in;
+            <span class="kw">end else if</span> (!out_valid &amp;&amp; start) <span class="kw">begin</span>
+                <span class="cmt">// New data to send</span>
+                out_valid &lt;= 1'b1;
+                out_data  &lt;= data_in;
+            <span class="kw">end</span>
+            <span class="cmt">// Note: holds valid until ready seen</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Simple consumer (sink)</span>
+<span class="kw">module</span> consumer #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    
+    <span class="cmt">// Ready/Valid interface (input)</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>             in_valid,
+    <span class="kw">output</span> <span class="kw">wire</span>             in_ready,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] in_data,
+    
+    <span class="cmt">// Output to downstream</span>
+    <span class="kw">output</span> <span class="kw">reg</span>  [WIDTH-1:0] data_out,
+    <span class="kw">output</span> <span class="kw">reg</span>              data_valid
+);
+
+    <span class="kw">reg</span> busy;
+    
+    <span class="cmt">// Ready when not busy</span>
+    <span class="kw">assign</span> in_ready = !busy;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            busy       &lt;= 1'b0;
+            data_out   &lt;= 0;
+            data_valid &lt;= 1'b0;
+        <span class="kw">end else begin</span>
+            data_valid &lt;= 1'b0;  <span class="cmt">// Default</span>
+            
+            <span class="kw">if</span> (in_valid &amp;&amp; in_ready) <span class="kw">begin</span>
+                <span class="cmt">// Accept data</span>
+                data_out   &lt;= in_data;
+                data_valid &lt;= 1'b1;
+                busy       &lt;= 1'b1;  <span class="cmt">// Simulate processing</span>
+            <span class="kw">end</span>
+            
+            <span class="kw">if</span> (busy)
+                busy &lt;= 1'b0;  <span class="cmt">// One cycle "busy"</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Pipeline register with ready/valid</span>
+<span class="kw">module</span> pipe_stage_rv #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span>  <span class="kw">wire</span>             clk,
+    <span class="kw">input</span>  <span class="kw">wire</span>             rst_n,
+    
+    <span class="cmt">// Upstream (input)</span>
+    <span class="kw">input</span>  <span class="kw">wire</span>             in_valid,
+    <span class="kw">output</span> <span class="kw">wire</span>             in_ready,
+    <span class="kw">input</span>  <span class="kw">wire</span> [WIDTH-1:0] in_data,
+    
+    <span class="cmt">// Downstream (output)</span>
+    <span class="kw">output</span> <span class="kw">reg</span>              out_valid,
+    <span class="kw">input</span>  <span class="kw">wire</span>             out_ready,
+    <span class="kw">output</span> <span class="kw">reg</span>  [WIDTH-1:0] out_data
+);
+
+    <span class="cmt">// Ready if downstream ready OR we have no data</span>
+    <span class="kw">assign</span> in_ready = out_ready | ~out_valid;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk <span class="kw">or negedge</span> rst_n) <span class="kw">begin</span>
+        <span class="kw">if</span> (!rst_n) <span class="kw">begin</span>
+            out_valid &lt;= 1'b0;
+            out_data  &lt;= 0;
+        <span class="kw">end else if</span> (in_ready) <span class="kw">begin</span>
+            <span class="cmt">// Can accept: pass through or clear</span>
+            out_valid &lt;= in_valid;
+            out_data  &lt;= in_data;
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span>
+
+<span class="cmt">// Check for proper handshake (simulation only)</span>
+<span class="kw">module</span> rv_checker #(
+    <span class="kw">parameter</span> WIDTH = 8
+)(
+    <span class="kw">input</span> <span class="kw">wire</span>             clk,
+    <span class="kw">input</span> <span class="kw">wire</span>             valid,
+    <span class="kw">input</span> <span class="kw">wire</span>             ready,
+    <span class="kw">input</span> <span class="kw">wire</span> [WIDTH-1:0] data
+);
+
+    <span class="kw">reg</span>            prev_valid;
+    <span class="kw">reg</span> [WIDTH-1:0] prev_data;
+
+    <span class="kw">always</span> @(<span class="kw">posedge</span> clk) <span class="kw">begin</span>
+        prev_valid &lt;= valid;
+        prev_data  &lt;= data;
+        
+        <span class="cmt">// Check: valid must not drop without ready</span>
+        <span class="kw">if</span> (prev_valid &amp;&amp; !valid &amp;&amp; !ready) <span class="kw">begin</span>
+            $error("Valid dropped without handshake!");
+        <span class="kw">end</span>
+        
+        <span class="cmt">// Check: data must be stable while valid</span>
+        <span class="kw">if</span> (prev_valid &amp;&amp; valid &amp;&amp; !ready) <span class="kw">begin</span>
+            <span class="kw">if</span> (prev_data !== data) <span class="kw">begin</span>
+                $error("Data changed while waiting for ready!");
+            <span class="kw">end</span>
+        <span class="kw">end</span>
+    <span class="kw">end</span>
+
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+
+    <div class="code-panel" id="panel-vhdl">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-lang">VHDL</span>
+          <span class="code-filename">ready_valid.vhd</span>
+          <button class="code-copy" onclick="copyCode(this,'vhdl-code')">Copy</button>
+        </div>
+        <pre class="code-body" id="vhdl-code"><span class="cmt">-- Pipeline stage with ready/valid</span>
+<span class="kw">library</span> IEEE;
+<span class="kw">use</span> IEEE.STD_LOGIC_1164.<span class="kw">all</span>;
+
+<span class="kw">entity</span> pipe_stage_rv <span class="kw">is</span>
+    <span class="kw">generic</span> (WIDTH : integer := 8);
+    <span class="kw">port</span> (
+        clk       : <span class="kw">in</span>  std_logic;
+        rst_n     : <span class="kw">in</span>  std_logic;
+        <span class="cmt">-- Upstream</span>
+        in_valid  : <span class="kw">in</span>  std_logic;
+        in_ready  : <span class="kw">out</span> std_logic;
+        in_data   : <span class="kw">in</span>  std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+        <span class="cmt">-- Downstream</span>
+        out_valid : <span class="kw">out</span> std_logic;
+        out_ready : <span class="kw">in</span>  std_logic;
+        out_data  : <span class="kw">out</span> std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0)
+    );
+<span class="kw">end</span> pipe_stage_rv;
+
+<span class="kw">architecture</span> rtl <span class="kw">of</span> pipe_stage_rv <span class="kw">is</span>
+    <span class="kw">signal</span> valid_r  : std_logic;
+    <span class="kw">signal</span> data_r   : std_logic_vector(WIDTH-1 <span class="kw">downto</span> 0);
+    <span class="kw">signal</span> ready_i  : std_logic;
+<span class="kw">begin</span>
+
+    ready_i &lt;= out_ready <span class="kw">or</span> (<span class="kw">not</span> valid_r);
+    in_ready &lt;= ready_i;
+    out_valid &lt;= valid_r;
+    out_data &lt;= data_r;
+
+    <span class="kw">process</span>(clk, rst_n)
+    <span class="kw">begin</span>
+        <span class="kw">if</span> rst_n = '0' <span class="kw">then</span>
+            valid_r &lt;= '0';
+            data_r &lt;= (<span class="kw">others</span> =&gt; '0');
+        <span class="kw">elsif</span> rising_edge(clk) <span class="kw">then</span>
+            <span class="kw">if</span> ready_i = '1' <span class="kw">then</span>
+                valid_r &lt;= in_valid;
+                data_r &lt;= in_data;
+            <span class="kw">end if</span>;
+        <span class="kw">end if</span>;
+    <span class="kw">end process</span>;
+
+<span class="kw">end</span> rtl;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m0 4h.01"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <ul class="interview-list">
+      <li><strong>Why can't valid wait for ready?</strong> — Creates deadlock! Both sides would wait forever. Producer must assert valid independently of ready.</li>
+      <li><strong>What is backpressure?</strong> — Consumer asserting ready=0 to pause the producer. Data stays valid; producer waits.</li>
+      <li><strong>Bubble vs backpressure?</strong> — Bubble = valid=0 (no data). Backpressure = ready=0 (consumer full). Both stall pipeline but different causes.</li>
+      <li><strong>What's a skid buffer?</strong> — Extra register to maintain throughput during backpressure. Stores one item when downstream stalls.</li>
+      <li><strong>How to verify handshake?</strong> — Check valid doesn't drop without ready, data stable while waiting, no X/Z on control signals.</li>
+      <li><strong>AXI vs AXI-Stream?</strong> — AXI: memory-mapped with address/data channels. AXI-Stream: streaming data, no address, simpler.</li>
+    </ul>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/sequential/pipeline.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Pipeline
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/sequential/fifo.html' | relative_url }}">
+        FIFO
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>
