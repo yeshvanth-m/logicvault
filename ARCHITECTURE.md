@@ -167,3 +167,156 @@ New structure (component references):
 - Implement search functionality
 - Add breadcrumb component
 - Support for different sidebar configurations per section
+
+---
+
+## Jekyll Page Conventions
+
+LogicVault uses Jekyll for static site generation. **This section is critical for AI agents and contributors.**
+
+### Front Matter Structure
+
+Every HTML page requires YAML front matter at the top:
+
+```yaml
+---
+layout: null
+nav: page-name        # Unique identifier for topbar active state
+sidebar: page-name    # Unique identifier for sidebar active state
+group: section-name   # MUST match sidebar section name (see table below)
+---
+```
+
+### Group Values (CRITICAL)
+
+The `group` value in front matter **MUST** match the sidebar section heading. This controls which section auto-expands when viewing the page.
+
+| Category | group value | Sidebar Section |
+|----------|-------------|-----------------|
+| Logic Gates | gates | Logic Gates |
+| Boolean Algebra | boolean | Boolean Algebra |
+| Arithmetic | arithmetic | Arithmetic |
+| Routing | routing | Routing & Selection |
+| Codec | codec | Encoder / Decoder |
+| EDC | edc | Error Handling |
+| Timing & Sync | timing | Timing & Sync |
+| Memory | memory | Memory |
+| Data Flow | dataflow | Data Flow & Pipelines |
+| Generators | generators | Pulse & Signal Generators |
+
+**Common Mistake:** Using `group: sequential` for all sequential pages. This won't work - each page needs the specific group matching its sidebar section.
+
+### CSS Classes Reference
+
+#### Concept Cards
+Use CSS classes, **never inline styles**:
+
+```html
+<!-- CORRECT -->
+<div class="concept-card blue">...</div>
+<div class="concept-card green">...</div>
+<div class="concept-card amber">...</div>
+<div class="concept-card purple">...</div>
+<div class="concept-card red">...</div>
+
+<!-- WRONG - Don't use inline styles -->
+<div class="concept-card" style="border-left: 3px solid var(--blue);">...</div>
+```
+
+#### Code/Formula Display Inside Cards
+Use `<div class="formula">`, **not `<pre>`**:
+
+```html
+<!-- CORRECT -->
+<div class="concept-card blue">
+  <h4>Title</h4>
+  <div class="formula">Y = A ⊕ B</div>
+</div>
+
+<!-- WRONG - pre tag doesn't style correctly inside cards -->
+<div class="concept-card blue">
+  <h4>Title</h4>
+  <pre>Y = A ⊕ B</pre>
+</div>
+```
+
+#### Code Panels (Standalone)
+```html
+<div class="code-panel">
+  <pre>// Verilog code here</pre>
+</div>
+```
+
+#### Callouts
+```html
+<div class="callout-warning">
+  <strong>⚠️ Warning:</strong> Important note here.
+</div>
+
+<div class="callout-info">
+  <strong>ℹ️ Info:</strong> Additional information.
+</div>
+```
+
+#### Badges
+```html
+<span class="badge green">Combinational</span>
+<span class="badge blue">Sequential</span>
+<span class="badge amber">N-bit</span>
+```
+
+### Sidebar Structure
+
+Located in `_includes/sidebar.html`. Each section follows this pattern:
+
+```html
+<div class="nav-section" data-group="groupname">
+  <div class="nav-section-title">Section Title</div>
+  <a href="{{root}}path/page.html" class="nav-item" data-nav="page-name">Page Name</a>
+</div>
+```
+
+The `data-group` attribute **must** match the `group` front matter value.
+
+### Directory Structure
+
+```
+logicvault/
+├── _includes/          # Reusable components (sidebar.html, topbar.html)
+├── _layouts/           # Jekyll layouts (gate.html, arithmetic.html, etc.)
+├── _docs/              # Markdown source files (if using Jekyll collections)
+├── assets/
+│   ├── css/main.css    # All styles - concept cards, code panels, etc.
+│   └── js/             # Component loader, main.js
+├── gates/              # Gate pages (and.html, or.html, etc.)
+├── arithmetic/         # Arithmetic circuit pages
+├── boolean/            # Boolean algebra pages
+├── routing/            # Multiplexer, demux, tristate pages
+├── codec/              # Encoder/decoder pages
+├── edc/                # Error detection/correction pages
+├── _template.html      # Template for new pages
+└── ARCHITECTURE.md     # This file
+```
+
+### Common Pitfalls (For AI Agents)
+
+1. **Wrong group value** - Always check the sidebar section name
+2. **Inline styles on concept cards** - Use CSS classes instead
+3. **Using `<pre>` inside concept cards** - Use `<div class="formula">` instead
+4. **Path issues** - Use `{{root}}` for paths in includes
+5. **Missing front matter** - Every page needs `layout`, `nav`, `sidebar`, `group`
+
+### CSS Variables
+
+Defined in `assets/css/main.css`:
+
+```css
+--blue: #4a9eff;
+--green: #4ade80;
+--amber: #fbbf24;
+--purple: #a78bfa;
+--red: #f87171;
+--bg: #0f172a;
+--card: #1e293b;
+--text: #f1f5f9;
+```
