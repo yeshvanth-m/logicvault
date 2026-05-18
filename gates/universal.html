@@ -1,0 +1,599 @@
+---
+layout: null
+title: Universal Gates
+nav: gates
+sidebar: universal
+group: gates
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Universal Gates — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+<style>
+  .impl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .impl-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+  }
+  .impl-card h4 {
+    font-size: 0.9rem;
+    color: var(--green);
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .impl-card .gate-count {
+    font-size: 0.75rem;
+    background: var(--surface2);
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .impl-card .formula {
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--text);
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  .impl-card .explain {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .impl-diagram {
+    margin-top: 1rem;
+    text-align: center;
+  }
+  .impl-diagram svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+  .compare-table th, .compare-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table th {
+    background: var(--surface2);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .compare-table tr:hover {
+    background: var(--surface);
+  }
+  .winner {
+    color: var(--green);
+    font-weight: 600;
+  }
+  .loser {
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="main" id="main-content">
+
+  <!-- On-page TOC -->
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#what-is-universal">What Makes a Gate Universal?</a></li>
+      <li><a href="#nand-impl">Implementations Using NAND</a></li>
+      <li><a href="#nor-impl">Implementations Using NOR</a></li>
+      <li><a href="#xor-impl">XOR from Universal Gates</a></li>
+      <li><a href="#comparison">NAND vs NOR Comparison</a></li>
+      <li><a href="#why-nand">Why NAND Wins in CMOS</a></li>
+      <li><a href="#practical">Practical Applications</a></li>
+    </ul>
+  </aside>
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="./">Logic Gates</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Universal Gates</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-green">Fundamental Concept</span>
+      <span class="badge badge-orange">NAND &amp; NOR</span>
+    </div>
+    <h1 class="page-title">Universal Gates</h1>
+    <p class="page-subtitle">
+      A universal gate can implement any Boolean function using only copies of itself. NAND and NOR are the two universal gates — entire processors can be built using just one of them.
+    </p>
+  </div>
+
+  <!-- What Makes a Gate Universal -->
+  <section class="section" id="what-is-universal">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <h2 class="section-title">What Makes a Gate Universal?</h2>
+      <a href="#what-is-universal" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>A gate is <strong>universal</strong> (or <strong>functionally complete</strong>) if it can implement the three fundamental Boolean operations:</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">NOT (Inversion)</p>
+        <p class="qf-value">A'</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">AND (Conjunction)</p>
+        <p class="qf-value">A · B</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">OR (Disjunction)</p>
+        <p class="qf-value">A + B</p>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>With these three operations, you can express <strong>any</strong> Boolean function (this is called <em>functional completeness</em>). AND, OR, NOT individually are NOT universal — but NAND alone, or NOR alone, can create all three.</p>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>The power of universal gates:</strong> Manufacturing just one gate type simplifies IC fabrication. The Apollo Guidance Computer used ~5,600 NOR gates exclusively.</p>
+    </div>
+  </section>
+
+  <!-- Implementations Using NAND -->
+  <section class="section" id="nand-impl">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Implementations Using NAND</h2>
+      <a href="#nand-impl" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Every basic gate can be constructed using only NAND gates:</p>
+    </div>
+
+    <div class="impl-grid">
+      <!-- NOT from NAND -->
+      <div class="impl-card">
+        <h4>NOT from NAND <span class="gate-count">1 gate</span></h4>
+        <div class="formula">A' = (A · A)'</div>
+        <p class="explain">Connect both inputs of a NAND gate together. When A=0, output=1. When A=1, output=0.</p>
+        <div class="impl-diagram">
+          <svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="80" fill="var(--surface2)" rx="8"/>
+            <!-- Input line -->
+            <line x1="20" y1="40" x2="60" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <text x="15" y="44" fill="var(--text)" font-family="var(--mono)" font-size="12">A</text>
+            <!-- Fork to both inputs -->
+            <circle cx="60" cy="40" r="3" fill="var(--text)"/>
+            <line x1="60" y1="40" x2="60" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="40" x2="60" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="25" x2="80" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="55" x2="80" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <!-- NAND symbol -->
+            <path d="M80 15 L80 65 L110 65 A25 25 0 0 0 110 15 Z" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <circle cx="138" cy="40" r="5" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <!-- Output -->
+            <line x1="143" y1="40" x2="180" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <text x="165" y="35" fill="var(--green)" font-family="var(--mono)" font-size="12">A'</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- AND from NAND -->
+      <div class="impl-card">
+        <h4>AND from NAND <span class="gate-count">2 gates</span></h4>
+        <div class="formula">A · B = ((A · B)')'</div>
+        <p class="explain">NAND the inputs, then invert the result using another NAND (with tied inputs).</p>
+        <div class="impl-diagram">
+          <svg viewBox="0 0 280 80" xmlns="http://www.w3.org/2000/svg">
+            <rect width="280" height="80" fill="var(--surface2)" rx="8"/>
+            <!-- Inputs -->
+            <line x1="15" y1="25" x2="40" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="15" y1="55" x2="40" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <text x="5" y="29" fill="var(--text)" font-family="var(--mono)" font-size="11">A</text>
+            <text x="5" y="59" fill="var(--text)" font-family="var(--mono)" font-size="11">B</text>
+            <!-- First NAND -->
+            <path d="M40 15 L40 65 L70 65 A25 25 0 0 0 70 15 Z" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <circle cx="98" cy="40" r="5" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <!-- Wire between NANDs -->
+            <line x1="103" y1="40" x2="130" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <circle cx="130" cy="40" r="3" fill="var(--text)"/>
+            <line x1="130" y1="40" x2="130" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="130" y1="40" x2="130" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <line x1="130" y1="25" x2="150" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="130" y1="55" x2="150" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <!-- Second NAND (inverter) -->
+            <path d="M150 15 L150 65 L180 65 A25 25 0 0 0 180 15 Z" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <circle cx="208" cy="40" r="5" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <!-- Output -->
+            <line x1="213" y1="40" x2="260" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <text x="235" y="35" fill="var(--green)" font-family="var(--mono)" font-size="11">A·B</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- OR from NAND -->
+      <div class="impl-card">
+        <h4>OR from NAND <span class="gate-count">3 gates</span></h4>
+        <div class="formula">A + B = (A' · B')' = ((A·A)' · (B·B)')'</div>
+        <p class="explain">By De Morgan's law: invert both inputs (2 NANDs as inverters), then NAND the results.</p>
+        <div class="impl-diagram">
+          <svg viewBox="0 0 320 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="100" fill="var(--surface2)" rx="8"/>
+            <!-- Input A -->
+            <line x1="15" y1="30" x2="40" y2="30" stroke="var(--text)" stroke-width="2"/>
+            <text x="5" y="34" fill="var(--text)" font-family="var(--mono)" font-size="11">A</text>
+            <circle cx="40" cy="30" r="2" fill="var(--text)"/>
+            <line x1="40" y1="30" x2="40" y2="20" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="30" x2="40" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="20" x2="55" y2="20" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="40" x2="55" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <!-- First inverter NAND -->
+            <path d="M55 10 L55 50 L75 50 A20 20 0 0 0 75 10 Z" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+            <circle cx="98" cy="30" r="4" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+            
+            <!-- Input B -->
+            <line x1="15" y1="70" x2="40" y2="70" stroke="var(--text)" stroke-width="2"/>
+            <text x="5" y="74" fill="var(--text)" font-family="var(--mono)" font-size="11">B</text>
+            <circle cx="40" cy="70" r="2" fill="var(--text)"/>
+            <line x1="40" y1="70" x2="40" y2="60" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="70" x2="40" y2="80" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="60" x2="55" y2="60" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="80" x2="55" y2="80" stroke="var(--text)" stroke-width="2"/>
+            <!-- Second inverter NAND -->
+            <path d="M55 50 L55 90 L75 90 A20 20 0 0 0 75 50 Z" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+            <circle cx="98" cy="70" r="4" fill="none" stroke="var(--green)" stroke-width="1.5"/>
+            
+            <!-- Connect to final NAND -->
+            <line x1="102" y1="30" x2="140" y2="35" stroke="var(--text)" stroke-width="2"/>
+            <line x1="102" y1="70" x2="140" y2="65" stroke="var(--text)" stroke-width="2"/>
+            <!-- Final NAND -->
+            <path d="M140 25 L140 75 L180 75 A25 25 0 0 0 180 25 Z" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <circle cx="208" cy="50" r="5" fill="none" stroke="var(--green)" stroke-width="2"/>
+            <!-- Output -->
+            <line x1="213" y1="50" x2="300" y2="50" stroke="var(--text)" stroke-width="2"/>
+            <text x="255" y="45" fill="var(--green)" font-family="var(--mono)" font-size="11">A+B</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- BUF from NAND -->
+      <div class="impl-card">
+        <h4>BUF from NAND <span class="gate-count">2 gates</span></h4>
+        <div class="formula">A = ((A·A)'·(A·A)')' = (A')'</div>
+        <p class="explain">Two inverters in series: invert then invert again. Output equals input.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Implementations Using NOR -->
+  <section class="section" id="nor-impl">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+      </div>
+      <h2 class="section-title">Implementations Using NOR</h2>
+      <a href="#nor-impl" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Every basic gate can also be constructed using only NOR gates:</p>
+    </div>
+
+    <div class="impl-grid">
+      <!-- NOT from NOR -->
+      <div class="impl-card">
+        <h4>NOT from NOR <span class="gate-count">1 gate</span></h4>
+        <div class="formula">A' = (A + A)'</div>
+        <p class="explain">Connect both inputs of a NOR gate together. Same principle as NAND inverter.</p>
+        <div class="impl-diagram">
+          <svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="80" fill="var(--surface2)" rx="8"/>
+            <!-- Input line -->
+            <line x1="20" y1="40" x2="60" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <text x="15" y="44" fill="var(--text)" font-family="var(--mono)" font-size="12">A</text>
+            <!-- Fork to both inputs -->
+            <circle cx="60" cy="40" r="3" fill="var(--text)"/>
+            <line x1="60" y1="40" x2="60" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="40" x2="60" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="25" x2="80" y2="25" stroke="var(--text)" stroke-width="2"/>
+            <line x1="60" y1="55" x2="80" y2="55" stroke="var(--text)" stroke-width="2"/>
+            <!-- NOR symbol (curved back) -->
+            <path d="M75 15 Q90 40 75 65 Q110 55 130 40 Q110 25 75 15" fill="none" stroke="var(--blue)" stroke-width="2"/>
+            <circle cx="135" cy="40" r="5" fill="none" stroke="var(--blue)" stroke-width="2"/>
+            <!-- Output -->
+            <line x1="140" y1="40" x2="180" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <text x="165" y="35" fill="var(--blue)" font-family="var(--mono)" font-size="12">A'</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- OR from NOR -->
+      <div class="impl-card">
+        <h4>OR from NOR <span class="gate-count">2 gates</span></h4>
+        <div class="formula">A + B = ((A + B)')'</div>
+        <p class="explain">NOR the inputs, then invert the result using another NOR (with tied inputs).</p>
+      </div>
+
+      <!-- AND from NOR -->
+      <div class="impl-card">
+        <h4>AND from NOR <span class="gate-count">3 gates</span></h4>
+        <div class="formula">A · B = (A' + B')' = ((A+A)' + (B+B)')'</div>
+        <p class="explain">By De Morgan's law: invert both inputs (2 NORs as inverters), then NOR the results.</p>
+        <div class="impl-diagram">
+          <svg viewBox="0 0 320 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="100" fill="var(--surface2)" rx="8"/>
+            <!-- Input A -->
+            <line x1="15" y1="30" x2="40" y2="30" stroke="var(--text)" stroke-width="2"/>
+            <text x="5" y="34" fill="var(--text)" font-family="var(--mono)" font-size="11">A</text>
+            <circle cx="40" cy="30" r="2" fill="var(--text)"/>
+            <line x1="40" y1="30" x2="40" y2="20" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="30" x2="40" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="20" x2="55" y2="20" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="40" x2="55" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <!-- First inverter NOR -->
+            <path d="M50 10 Q65 30 50 50 Q85 40 100 30 Q85 20 50 10" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+            <circle cx="103" cy="30" r="3" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+            
+            <!-- Input B -->
+            <line x1="15" y1="70" x2="40" y2="70" stroke="var(--text)" stroke-width="2"/>
+            <text x="5" y="74" fill="var(--text)" font-family="var(--mono)" font-size="11">B</text>
+            <circle cx="40" cy="70" r="2" fill="var(--text)"/>
+            <line x1="40" y1="70" x2="40" y2="60" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="70" x2="40" y2="80" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="60" x2="55" y2="60" stroke="var(--text)" stroke-width="2"/>
+            <line x1="40" y1="80" x2="55" y2="80" stroke="var(--text)" stroke-width="2"/>
+            <!-- Second inverter NOR -->
+            <path d="M50 50 Q65 70 50 90 Q85 80 100 70 Q85 60 50 50" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+            <circle cx="103" cy="70" r="3" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+            
+            <!-- Connect to final NOR -->
+            <line x1="106" y1="30" x2="145" y2="40" stroke="var(--text)" stroke-width="2"/>
+            <line x1="106" y1="70" x2="145" y2="60" stroke="var(--text)" stroke-width="2"/>
+            <!-- Final NOR -->
+            <path d="M140 25 Q160 50 140 75 Q190 60 210 50 Q190 40 140 25" fill="none" stroke="var(--blue)" stroke-width="2"/>
+            <circle cx="215" cy="50" r="5" fill="none" stroke="var(--blue)" stroke-width="2"/>
+            <!-- Output -->
+            <line x1="220" y1="50" x2="300" y2="50" stroke="var(--text)" stroke-width="2"/>
+            <text x="255" y="45" fill="var(--blue)" font-family="var(--mono)" font-size="11">A·B</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- BUF from NOR -->
+      <div class="impl-card">
+        <h4>BUF from NOR <span class="gate-count">2 gates</span></h4>
+        <div class="formula">A = ((A+A)'+(A+A)')' = (A')'</div>
+        <p class="explain">Two inverters in series: invert then invert again.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- XOR Implementations -->
+  <section class="section" id="xor-impl">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <h2 class="section-title">XOR from Universal Gates</h2>
+      <a href="#xor-impl" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>XOR is critical for arithmetic (adders) and parity. Here's how to build it:</p>
+    </div>
+
+    <div class="impl-grid">
+      <div class="impl-card">
+        <h4>XOR from NAND <span class="gate-count">4 gates</span></h4>
+        <div class="formula">A ⊕ B = ((A·(A·B)')·(B·(A·B)')'</div>
+        <p class="explain">Classic 4-NAND XOR: NAND A&B, then NAND result with A and with B separately, then NAND those outputs.</p>
+      </div>
+      <div class="impl-card">
+        <h4>XOR from NOR <span class="gate-count">5 gates</span></h4>
+        <div class="formula">A ⊕ B = ((A+B)' + (A'+B')')'</div>
+        <p class="explain">Requires more gates than NAND implementation due to NOR's structure.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Table -->
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+      </div>
+      <h2 class="section-title">Gate Count Comparison</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <div class="tt-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Target Gate</th>
+            <th>Using NAND</th>
+            <th>Using NOR</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>NOT</td>
+            <td>1 gate</td>
+            <td>1 gate</td>
+            <td>Tie</td>
+          </tr>
+          <tr>
+            <td>AND</td>
+            <td class="winner">2 gates</td>
+            <td class="loser">3 gates</td>
+            <td class="winner">NAND</td>
+          </tr>
+          <tr>
+            <td>OR</td>
+            <td class="loser">3 gates</td>
+            <td class="winner">2 gates</td>
+            <td class="winner">NOR</td>
+          </tr>
+          <tr>
+            <td>NAND</td>
+            <td class="winner">1 gate</td>
+            <td class="loser">4 gates</td>
+            <td class="winner">NAND</td>
+          </tr>
+          <tr>
+            <td>NOR</td>
+            <td class="loser">4 gates</td>
+            <td class="winner">1 gate</td>
+            <td class="winner">NOR</td>
+          </tr>
+          <tr>
+            <td>XOR</td>
+            <td class="winner">4 gates</td>
+            <td class="loser">5 gates</td>
+            <td class="winner">NAND</td>
+          </tr>
+          <tr>
+            <td>XNOR</td>
+            <td class="winner">5 gates</td>
+            <td class="loser">5 gates</td>
+            <td>Tie</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Why NAND Wins -->
+  <section class="section" id="why-nand">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <h2 class="section-title">Why NAND Wins in CMOS</h2>
+      <a href="#why-nand" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Despite both being universal, <strong>NAND is strongly preferred</strong> in modern CMOS design:</p>
+    </div>
+
+    <div class="qf-grid" style="margin: 1.5rem 0;">
+      <div class="qf-card">
+        <p class="qf-label">NAND Advantage</p>
+        <p class="qf-value">Parallel PMOS</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">PMOS transistors in parallel = fast pull-up to VDD. Series NMOS handles pull-down.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">NOR Disadvantage</p>
+        <p class="qf-value">Series PMOS</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">PMOS transistors in series = slow pull-up. PMOS is already ~2-3× slower than NMOS.</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Result</p>
+        <p class="qf-value">NAND 2× faster</p>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">Typical 2-input NAND is roughly twice as fast as equivalent NOR in same process.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18h6m-3-3v3m-7-6a7 7 0 1 1 14 0 7 7 0 0 1-14 0z"/></svg>
+      <p><strong>Standard cell libraries:</strong> Modern cell libraries are NAND-heavy. Complex cells like AOI21 (AND-OR-Invert) and OAI21 (OR-AND-Invert) are optimized around NAND-style topology.</p>
+    </div>
+  </section>
+
+  <!-- Practical Applications -->
+  <section class="section" id="practical">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <h2 class="section-title">Practical Applications</h2>
+      <a href="#practical" class="section-anchor">#</a>
+    </div>
+
+    <div class="impl-grid">
+      <div class="impl-card">
+        <h4>Apollo Guidance Computer (1966)</h4>
+        <p class="explain">Built entirely from ~5,600 3-input NOR gates. NOR was chosen because it was more reliable to manufacture with early IC technology. Redundancy and simplicity trumped speed.</p>
+      </div>
+      <div class="impl-card">
+        <h4>Modern ASIC/FPGA</h4>
+        <p class="explain">Technology mapping converts RTL into NAND-dominant standard cells. Synthesis tools automatically restructure logic to minimize area and maximize speed using NAND-based cells.</p>
+      </div>
+      <div class="impl-card">
+        <h4>Flash Memory (NAND Flash)</h4>
+        <p class="explain">NAND flash uses series-connected transistors (like NAND gate's NMOS network). This allows higher density than NOR flash, which uses parallel transistors.</p>
+      </div>
+      <div class="impl-card">
+        <h4>TTL Logic Families</h4>
+        <p class="explain">7400 series: 7400 = Quad NAND, 7402 = Quad NOR. NAND gates are more common in TTL because they're faster and cheaper to manufacture.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/gates/xnor.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        XNOR Gate
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/gates/' | relative_url }}">
+        All Gates
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

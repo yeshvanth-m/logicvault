@@ -353,10 +353,28 @@ group: boolean
     <div class="example-box">
       <h4>Example 2: Using Complement + Distribution</h4>
       <div class="step">F = A·B + A·B' + A'·B</div>
-      <div class="step">F = A·(B + B') + A'·B <span class="step-label">// factor A from first two terms</span></div>
-      <div class="step">F = A·1 + A'·B <span class="step-label">// B + B' = 1</span></div>
-      <div class="step">F = A + A'·B <span class="step-label">// identity law</span></div>
-      <div class="step">F = A + B <span class="step-label">// redundancy theorem!</span></div>
+      <div class="step">F = A·(B + B') + A'·B <span class="step-label">// factor A (distributive law)</span></div>
+      <div class="step">F = A·1 + A'·B <span class="step-label">// complement law: B + B' = 1</span></div>
+      <div class="step">F = A + A'·B <span class="step-label">// identity law: A·1 = A</span></div>
+      <div class="step">F = A + B <span class="step-label">// redundancy theorem (proof below)</span></div>
+    </div>
+
+    <div class="example-box" style="border-left-color: var(--blue);">
+      <h4>Proof: A + A'·B = A + B (Redundancy Theorem)</h4>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.75rem;"><strong>Method 1: Using OR distribution (shorter)</strong></p>
+      <div class="step">A + A'·B</div>
+      <div class="step">= (A + A')·(A + B) <span class="step-label">// OR distributes over AND: X + Y·Z = (X+Y)·(X+Z)</span></div>
+      <div class="step">= 1·(A + B) <span class="step-label">// complement law: A + A' = 1</span></div>
+      <div class="step">= A + B <span class="step-label">// identity law ∎</span></div>
+      
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin: 1rem 0 0.75rem 0;"><strong>Method 2: Using AND distribution (step-by-step)</strong></p>
+      <div class="step">A + A'·B</div>
+      <div class="step">= A·1 + A'·B <span class="step-label">// identity law: A = A·1</span></div>
+      <div class="step">= A·(1 + B) + A'·B <span class="step-label">// null law: 1 = 1 + B</span></div>
+      <div class="step">= A + A·B + A'·B <span class="step-label">// distributive law: A·(1 + B) = A + A·B</span></div>
+      <div class="step">= A + B·(A + A') <span class="step-label">// distributive law: A·B + A'·B = B·(A + A')</span></div>
+      <div class="step">= A + B·1 <span class="step-label">// complement law: A + A' = 1</span></div>
+      <div class="step">= A + B <span class="step-label">// identity law: B·1 = B ∎</span></div>
     </div>
 
     <div class="example-box">
