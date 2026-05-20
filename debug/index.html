@@ -1,0 +1,156 @@
+---
+layout: null
+title: Debug Interfaces
+nav: debug
+sidebar: debug-index
+group: debug
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Debug Interfaces — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">Debug Interfaces</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Category</span>
+    </div>
+    <h1 class="page-title">Debug Interfaces</h1>
+    <p class="page-subtitle">
+      Protocols and hardware for chip debug, test, and programming — from boundary scan testing to modern on-chip debug.
+    </p>
+  </div>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <h2 class="section-title">Overview</h2>
+    </div>
+
+    <div class="prose">
+      <p>Debug interfaces are essential for IC development, production testing, and field debugging. They provide external access to internal chip state, memory, and control registers.</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>On-Chip Debug</h5>
+        <p>Halt the CPU, set breakpoints, read registers, single-step through code. Essential for firmware development.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Memory Access</h5>
+        <p>Read and write RAM, flash, and peripheral registers without CPU involvement. Used for flash programming.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Boundary Scan</h5>
+        <p>Test PCB connections by controlling and observing I/O pins. Detects solder defects without physical probes.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Trace</h5>
+        <p>Stream real-time execution data (program counter, data values) for performance analysis and debugging.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <h2 class="section-title">Debug Protocols</h2>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Protocol</th><th>Wires</th><th>Use Case</th><th>Learn More</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>JTAG (IEEE 1149.1)</strong></td>
+            <td>4-5</td>
+            <td>Universal: boundary scan + debug for any architecture</td>
+            <td><a href="{{ '/debug/jtag.html' | relative_url }}">JTAG →</a></td>
+          </tr>
+          <tr>
+            <td><strong>SWD</strong></td>
+            <td>2</td>
+            <td>ARM Cortex debug — compact, fast, low pin count</td>
+            <td><a href="{{ '/debug/swd.html' | relative_url }}">SWD →</a></td>
+          </tr>
+          <tr>
+            <td><strong>BIST</strong></td>
+            <td>On-chip</td>
+            <td>Self-test using LFSR/MISR for manufacturing test</td>
+            <td><a href="{{ '/debug/bist.html' | relative_url }}">BIST →</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h2 class="section-title">Quick Comparison</h2>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Feature</th><th>JTAG</th><th>SWD</th><th>BIST</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Signals</strong></td><td>TCK, TMS, TDI, TDO, (TRST)</td><td>SWCLK, SWDIO</td><td>On-chip only</td></tr>
+          <tr><td><strong>Daisy Chain</strong></td><td>✅ Yes</td><td>❌ No</td><td>❌ N/A</td></tr>
+          <tr><td><strong>Boundary Scan</strong></td><td>✅ Yes (IEEE 1149.1)</td><td>❌ No</td><td>❌ No</td></tr>
+          <tr><td><strong>Architecture</strong></td><td>Any (ARM, RISC-V, FPGA, etc.)</td><td>ARM only</td><td>Any</td></tr>
+          <tr><td><strong>Self-Test</strong></td><td>Via RUNBIST instruction</td><td>❌ No</td><td>✅ Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Home
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/debug/jtag.html' | relative_url }}">
+        JTAG
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/components.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

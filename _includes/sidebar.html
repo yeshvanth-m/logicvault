@@ -189,4 +189,20 @@
     </div>
   </div>
 
+  <!-- DEBUG INTERFACES -->
+  <div class="nav-section">
+    <span class="nav-section-label">Debug & Test</span>
+
+    <button class="nav-group-toggle{% if page.group == 'debug' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>Debug Interfaces</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'debug' %} open{% endif %}">
+      <a href="{{ '/debug/index.html' | relative_url }}" class="nav-item{% if page.sidebar == 'debug-index' %} active{% endif %}">Overview</a>
+      <a href="{{ '/debug/jtag.html' | relative_url }}" class="nav-item{% if page.sidebar == 'jtag' %} active{% endif %}">JTAG</a>
+      <a href="{{ '/debug/swd.html' | relative_url }}" class="nav-item{% if page.sidebar == 'swd' %} active{% endif %}">SWD</a>
+      <a href="{{ '/debug/bist.html' | relative_url }}" class="nav-item{% if page.sidebar == 'bist' %} active{% endif %}">BIST</a>
+    </div>
+  </div>
+
 </nav>

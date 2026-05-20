@@ -333,6 +333,57 @@ table.truth-table {
 .truth-table tbody td.val-0 { color: var(--text-faint); }
 .truth-table tbody td.out-col { border-left: 1px solid var(--border2); }
 
+/* ── Info Table (General Purpose) ───────────────────── */
+.table-responsive {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  margin: 1rem 0 1.5rem 0;
+}
+table.info-table {
+  width: 100%; 
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  min-width: 400px;
+}
+.info-table thead th {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: .02em;
+}
+.info-table tbody td {
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.info-table tbody td strong {
+  color: var(--text);
+}
+.info-table tbody td code {
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--blue);
+}
+.info-table tbody tr:last-child td { border-bottom: none; }
+.info-table tbody tr:hover td { background: var(--surface2); }
+.info-table a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.info-table a:hover {
+  text-decoration: underline;
+}
+
 /* ── Boolean Expression ─────────────────────────────── */
 .bool-box {
   background: var(--surface);

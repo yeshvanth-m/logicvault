@@ -1,0 +1,704 @@
+---
+layout: null
+title: SWD - Serial Wire Debug
+nav: debug
+sidebar: swd
+group: debug
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SWD (Serial Wire Debug) — LogicVault</title>
+<link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
+</head>
+<body>
+
+{% include topbar.html %}
+
+<div class="layout">
+{% include sidebar.html %}
+
+<main class="main" id="main-content">
+
+  <aside class="toc" aria-label="On this page">
+    <p class="toc-label">On this page</p>
+    <ul class="toc-items" id="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#signals">Interface Signals</a></li>
+      <li><a href="#protocol">Protocol Basics</a></li>
+      <li><a href="#packets">Packet Format</a></li>
+      <li><a href="#operations">Read/Write Operations</a></li>
+      <li><a href="#dp-ap">DP and AP Registers</a></li>
+      <li><a href="#jtag-switch">JTAG ↔ SWD Switching</a></li>
+      <li><a href="#comparison">JTAG vs SWD</a></li>
+      <li><a href="#verilog">RTL (Verilog)</a></li>
+      <li><a href="#interview">Interview Notes</a></li>
+    </ul>
+  </aside>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ '/' | relative_url }}">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ '/debug/index.html' | relative_url }}">Debug Interfaces</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">SWD</span>
+  </nav>
+
+  <div class="page-header" id="overview">
+    <div class="page-header-meta">
+      <span class="badge badge-blue">Debug Interface</span>
+      <span class="badge badge-green">ARM ADIv5</span>
+    </div>
+    <h1 class="page-title">SWD (Serial Wire Debug)</h1>
+    <p class="page-subtitle">
+      ARM's 2-wire alternative to JTAG. Provides full debug access using only clock and bidirectional data lines. Standard on all Cortex-M microcontrollers.
+    </p>
+  </div>
+
+  <section id="quick-facts">
+    <div class="qf-grid">
+      <div class="qf-card">
+        <p class="qf-label">Standard</p>
+        <p class="qf-value">ARM ADIv5/v6</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Signals</p>
+        <p class="qf-value">2 wires</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Speed</p>
+        <p class="qf-value">Up to 50+ MHz</p>
+      </div>
+      <div class="qf-card">
+        <p class="qf-label">Use</p>
+        <p class="qf-value">Debug Only</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interface Signals -->
+  <section class="section" id="signals">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>
+      </div>
+      <h2 class="section-title">Interface Signals</h2>
+      <a href="#signals" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>SWD uses just 2 signals — dramatically simpler than JTAG's 4-5 wires. This reduces PCB area, connector size, and cost.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px;">
+        <rect width="500" height="180" fill="var(--surface2)" rx="8"/>
+        
+        <!-- Debug Probe -->
+        <rect x="50" y="50" width="100" height="80" rx="6" fill="var(--amber)" fill-opacity="0.2" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="100" y="80" fill="var(--amber)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Debug Probe</text>
+        <text x="100" y="95" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">ST-Link</text>
+        <text x="100" y="108" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">J-Link</text>
+        
+        <!-- Target MCU -->
+        <rect x="300" y="50" width="150" height="80" rx="6" fill="var(--blue)" fill-opacity="0.2" stroke="var(--blue)" stroke-width="1.5"/>
+        <text x="375" y="75" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Target MCU</text>
+        <text x="375" y="92" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Cortex-M</text>
+        <text x="375" y="105" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">SW-DP</text>
+        
+        <!-- SWCLK -->
+        <line x1="150" y1="75" x2="300" y2="75" stroke="var(--green)" stroke-width="2.5"/>
+        <text x="225" y="68" fill="var(--green)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">SWCLK</text>
+        <polygon points="290,75 280,70 280,80" fill="var(--green)"/>
+        
+        <!-- SWDIO -->
+        <line x1="150" y1="105" x2="300" y2="105" stroke="var(--purple)" stroke-width="2.5"/>
+        <text x="225" y="120" fill="var(--purple)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">SWDIO</text>
+        <polygon points="290,105 280,100 280,110" fill="var(--purple)"/>
+        <polygon points="160,105 170,100 170,110" fill="var(--purple)"/>
+        <text x="225" y="135" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(bidirectional)</text>
+        
+        <!-- Ground reference -->
+        <text x="250" y="165" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">+ GND reference (always needed)</text>
+      </svg>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Signal</th><th>Direction</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>SWCLK</strong></td><td>In (to target)</td><td>Clock signal from debug probe. Data sampled on rising edge.</td></tr>
+          <tr><td><strong>SWDIO</strong></td><td>Bidirectional</td><td>Data line. Host drives during request, target drives during response.</td></tr>
+          <tr><td><strong>GND</strong></td><td>—</td><td>Ground reference (required for signal integrity)</td></tr>
+          <tr><td><strong>SWO</strong></td><td>Out (optional)</td><td>Serial Wire Output for trace data (uses JTAG TDO pin)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout-info">
+      <strong>Pin Sharing:</strong> SWD shares pins with JTAG — SWCLK = TCK, SWDIO = TMS. Most Cortex-M chips support both protocols on the same pins.
+    </div>
+  </section>
+
+  <!-- Protocol Basics -->
+  <section class="section" id="protocol">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      </div>
+      <h2 class="section-title">Protocol Basics</h2>
+      <a href="#protocol" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>SWD is a <strong>packet-based protocol</strong> with defined request/response phases. Unlike JTAG's state machine, SWD uses explicit turnaround cycles when SWDIO direction changes.</p>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Host → Target</h5>
+        <p>Host (debugger) drives SWDIO during request packet: 8-bit header specifying read/write, DP/AP, and address.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Turnaround</h5>
+        <p>One SWCLK cycle where both sides release SWDIO. Prevents bus contention during direction change.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Target → Host</h5>
+        <p>Target drives SWDIO during ACK (3 bits) and optionally RDATA (32 bits + parity).</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Idle</h5>
+        <p>Host drives SWDIO low between transactions. At least 8 idle cycles recommended between packets.</p>
+      </div>
+    </div>
+
+    <h3>Line Reset</h3>
+    <div class="prose">
+      <p>SWD line reset: drive SWDIO high for at least <strong>50 SWCLK cycles</strong>, then drive low for 2 cycles. This resets the SW-DP state machine.</p>
+    </div>
+  </section>
+
+  <!-- Packet Format -->
+  <section class="section" id="packets">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      </div>
+      <h2 class="section-title">Packet Format</h2>
+      <a href="#packets" class="section-anchor">#</a>
+    </div>
+
+    <h3>Request Packet (Host → Target)</h3>
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 550 100" xmlns="http://www.w3.org/2000/svg" style="max-width: 550px;">
+        <rect width="550" height="100" fill="var(--surface2)" rx="8"/>
+        
+        <text x="275" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">SWD Request Packet (8 bits)</text>
+        
+        <!-- Bit boxes -->
+        <rect x="30" y="40" width="50" height="35" fill="var(--blue)" fill-opacity="0.2" stroke="var(--blue)" stroke-width="1"/>
+        <text x="55" y="62" fill="var(--blue)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Start</text>
+        <text x="55" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">1</text>
+        
+        <rect x="85" y="40" width="60" height="35" fill="var(--green)" fill-opacity="0.2" stroke="var(--green)" stroke-width="1"/>
+        <text x="115" y="62" fill="var(--green)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">APnDP</text>
+        <text x="115" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">0=DP, 1=AP</text>
+        
+        <rect x="150" y="40" width="55" height="35" fill="var(--amber)" fill-opacity="0.2" stroke="var(--amber)" stroke-width="1"/>
+        <text x="177" y="62" fill="var(--amber)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">RnW</text>
+        <text x="177" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">0=W, 1=R</text>
+        
+        <rect x="210" y="40" width="100" height="35" fill="var(--purple)" fill-opacity="0.2" stroke="var(--purple)" stroke-width="1"/>
+        <text x="260" y="62" fill="var(--purple)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">A[3:2]</text>
+        <text x="260" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">Register addr</text>
+        
+        <rect x="315" y="40" width="55" height="35" fill="var(--red)" fill-opacity="0.2" stroke="var(--red)" stroke-width="1"/>
+        <text x="342" y="62" fill="var(--red)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Parity</text>
+        <text x="342" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">XOR bits</text>
+        
+        <rect x="375" y="40" width="50" height="35" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="400" y="62" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Stop</text>
+        <text x="400" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">0</text>
+        
+        <rect x="430" y="40" width="50" height="35" fill="var(--surface)" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="455" y="62" fill="var(--text)" font-family="var(--mono)" font-size="10" text-anchor="middle" font-weight="bold">Park</text>
+        <text x="455" y="85" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">1</text>
+      </svg>
+    </div>
+
+    <h3>ACK Response (Target → Host)</h3>
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>ACK Value</th><th>Name</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>001</code></td><td><strong>OK</strong></td><td>Transaction successful. Data follows for reads.</td></tr>
+          <tr><td><code>010</code></td><td><strong>WAIT</strong></td><td>Target not ready. Retry transaction.</td></tr>
+          <tr><td><code>100</code></td><td><strong>FAULT</strong></td><td>Error occurred. Check CTRL/STAT register for details.</td></tr>
+          <tr><td><code>111</code></td><td><strong>NO RESPONSE</strong></td><td>Protocol error or target disconnected. Line reset needed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Complete Transaction</h3>
+    <div class="code-panel">
+      <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                      SWD Read Transaction                       │
+├──────────┬─────┬─────────┬─────┬───────────────────┬───────────┤
+│ Request  │ Trn │   ACK   │ Trn │      RDATA        │  Parity   │
+│ 8 bits   │ 1   │ 3 bits  │ 1   │     32 bits       │   1 bit   │
+├──────────┼─────┼─────────┼─────┼───────────────────┼───────────┤
+│  Host →  │  ↔  │ ← Target│  ↔  │    ← Target       │ ← Target  │
+└──────────┴─────┴─────────┴─────┴───────────────────┴───────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      SWD Write Transaction                      │
+├──────────┬─────┬─────────┬─────┬───────────────────┬───────────┤
+│ Request  │ Trn │   ACK   │ Trn │      WDATA        │  Parity   │
+│ 8 bits   │ 1   │ 3 bits  │ 1   │     32 bits       │   1 bit   │
+├──────────┼─────┼─────────┼─────┼───────────────────┼───────────┤
+│  Host →  │  ↔  │ ← Target│  ↔  │    Host →         │  Host →   │
+└──────────┴─────┴─────────┴─────┴───────────────────┴───────────┘
+
+Trn = Turnaround cycle (both sides release line)</pre>
+    </div>
+  </section>
+
+  <!-- Read/Write Operations -->
+  <section class="section" id="operations">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <h2 class="section-title">Read/Write Operations</h2>
+      <a href="#operations" class="section-anchor">#</a>
+    </div>
+
+    <h3>Example: Read IDCODE</h3>
+    <div class="code-panel">
+      <pre>
+// Read IDCODE from DP register A[3:2] = 0x0
+// Request: Start=1, APnDP=0, RnW=1, A=00, Parity, Stop=0, Park=1
+
+Request packet:  1 0 1 00 1 0 1  = 0xA5
+                 │ │ │ ── │ │ └─ Park
+                 │ │ │    │ └─── Stop  
+                 │ │ │    └───── Parity (XOR of bits 1-4)
+                 │ │ └────────── A[3:2] = 00
+                 │ └──────────── RnW = 1 (Read)
+                 └────────────── APnDP = 0 (DP)
+
+SWCLK:  ─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌─┐┌───────── ...
+SWDIO:  ─1─0─1─0─0─1─0─1─│trn│ACK│─RDATA──│P│
+
+Response: ACK = 001 (OK)
+          RDATA = 32-bit IDCODE value
+          Parity = XOR of all RDATA bits</pre>
+    </div>
+
+    <h3>Example: Write to AP</h3>
+    <div class="code-panel">
+      <pre>
+// Write to AP register (e.g., TAR = Transfer Address Register)
+// Request: Start=1, APnDP=1, RnW=0, A=01 (TAR), Parity, Stop=0, Park=1
+
+Request:  1 1 0 01 0 0 1  = 0x8B
+          │ │ │ ── │ │ └─ Park
+          │ │ │    │ └─── Stop
+          │ │ │    └───── Parity
+          │ │ └────────── A[3:2] = 01 (TAR register)
+          │ └──────────── RnW = 0 (Write)
+          └────────────── APnDP = 1 (AP access)
+
+After ACK, host sends:
+  - 32-bit WDATA (address to write to TAR)
+  - 1-bit parity</pre>
+    </div>
+  </section>
+
+  <!-- DP and AP Registers -->
+  <section class="section" id="dp-ap">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+      </div>
+      <h2 class="section-title">DP and AP Registers</h2>
+      <a href="#dp-ap" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>SWD accesses two types of registers: <strong>Debug Port (DP)</strong> for protocol control, and <strong>Access Port (AP)</strong> for memory/peripheral access.</p>
+    </div>
+
+    <h3>Debug Port (DP) Registers</h3>
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>A[3:2]</th><th>Read</th><th>Write</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>0x0</code></td><td>IDCODE</td><td>ABORT</td><td>Read: Device ID. Write: Abort stuck transactions.</td></tr>
+          <tr><td><code>0x1</code></td><td>CTRL/STAT</td><td>CTRL/STAT</td><td>Control/status: power, errors, transaction results.</td></tr>
+          <tr><td><code>0x2</code></td><td>RESEND</td><td>SELECT</td><td>Read: Repeat last data. Write: Select AP and bank.</td></tr>
+          <tr><td><code>0x3</code></td><td>RDBUFF</td><td>—</td><td>Read: Buffered AP read result. Triggers actual read.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Access Port (AP) Registers — AHB-AP Example</h3>
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>A[3:2]</th><th>Register</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>0x0</code></td><td>CSW</td><td>Control/Status: size, auto-increment, etc.</td></tr>
+          <tr><td><code>0x1</code></td><td>TAR</td><td>Transfer Address Register (memory address to access)</td></tr>
+          <tr><td><code>0x2</code></td><td>—</td><td>Reserved</td></tr>
+          <tr><td><code>0x3</code></td><td>DRW</td><td>Data Read/Write (actual memory data)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Memory Read Sequence</h3>
+    <div class="code-panel">
+      <pre>
+// Read 32 bits from memory address 0x20000000
+
+1. SELECT: Write to DP SELECT register
+   - Select AHB-AP (APSEL = 0)
+   - Select bank 0
+
+2. CSW: Write to AP CSW register  
+   - Set Size = Word (32-bit)
+   - Enable auto-increment if reading multiple words
+
+3. TAR: Write to AP TAR register
+   - Write address: 0x20000000
+
+4. DRW: Read from AP DRW register
+   - First read returns previous data (posted read)
+   - Must read RDBUFF to get actual result
+
+5. RDBUFF: Read from DP RDBUFF
+   - Returns actual memory value at 0x20000000</pre>
+    </div>
+
+    <div class="callout-info">
+      <strong>Posted Reads:</strong> AP reads are posted — the first DRW read triggers the memory access but returns stale data. Read RDBUFF (or do another DRW read) to get actual data.
+    </div>
+  </section>
+
+  <!-- JTAG/SWD Switching -->
+  <section class="section" id="jtag-switch">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+      </div>
+      <h2 class="section-title">JTAG ↔ SWD Switching</h2>
+      <a href="#jtag-switch" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Most ARM devices with SWD also support JTAG on the same pins. A special sequence switches between protocols.</p>
+    </div>
+
+    <h3>Switch from JTAG to SWD</h3>
+    <div class="code-panel">
+      <pre>
+1. Send at least 50 TCK cycles with TMS=1 (JTAG line reset)
+2. Send 16-bit JTAG-to-SWD sequence: 0xE79E (LSB first)
+3. Send at least 50 SWCLK cycles with SWDIO=1 (SWD line reset)
+4. Send 8 idle cycles (SWDIO=0)
+5. Read IDCODE to verify SWD mode
+
+Sequence on wire:
+TCK/SWCLK:  ────────────────────────────────────────────
+TMS/SWDIO:  1111...1111 0111100111100111 1111...1111 00000000
+            ← 50+ ones → ←── 0xE79E ──→  ← 50+ ones → ← idle →</pre>
+    </div>
+
+    <h3>Switch from SWD to JTAG</h3>
+    <div class="code-panel">
+      <pre>
+1. Send at least 50 SWCLK cycles with SWDIO=1 (SWD line reset)
+2. Send 16-bit SWD-to-JTAG sequence: 0xE73C (LSB first)
+3. Send at least 5 TCK cycles with TMS=1 (JTAG reset)
+4. Perform normal JTAG operations</pre>
+    </div>
+  </section>
+
+  <!-- Comparison -->
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h2 class="section-title">JTAG vs SWD Comparison</h2>
+      <a href="#comparison" class="section-anchor">#</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Feature</th><th>JTAG</th><th>SWD</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Wires</strong></td><td>4-5 (TCK, TMS, TDI, TDO, TRST)</td><td>2 (SWCLK, SWDIO)</td></tr>
+          <tr><td><strong>Daisy Chain</strong></td><td>✅ Multiple devices on one interface</td><td>❌ Single device only</td></tr>
+          <tr><td><strong>Boundary Scan</strong></td><td>✅ Full IEEE 1149.1 support</td><td>❌ Debug only</td></tr>
+          <tr><td><strong>Speed</strong></td><td>Typically slower (more bits per transaction)</td><td>Faster for debug operations</td></tr>
+          <tr><td><strong>Cost</strong></td><td>More pins, larger connector</td><td>Fewer pins, smaller connector</td></tr>
+          <tr><td><strong>Architecture</strong></td><td>Any (ARM, RISC-V, x86, etc.)</td><td>ARM only</td></tr>
+          <tr><td><strong>Trace</strong></td><td>Separate trace port or ETM</td><td>SWO pin (limited trace)</td></tr>
+          <tr><td><strong>Protocol</strong></td><td>State machine based</td><td>Packet based</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card green">
+        <h5>Use SWD When...</h5>
+        <p>ARM Cortex target, space-constrained design, only debug needed, cost-sensitive product, single chip on board.</p>
+      </div>
+      <div class="concept-card blue">
+        <h5>Use JTAG When...</h5>
+        <p>Non-ARM target (RISC-V, FPGA, DSP), multiple chips to debug, need boundary scan for PCB test, legacy requirement.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verilog -->
+  <section class="section" id="verilog">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+      </div>
+      <h2 class="section-title">RTL (Verilog)</h2>
+      <a href="#verilog" class="section-anchor">#</a>
+    </div>
+
+    <div class="code-panel">
+      <pre>
+// ═══════════════════════════════════════════════════════
+// SWD Protocol Decoder (Simplified)
+// ═══════════════════════════════════════════════════════
+module swd_decoder (
+    input  wire        swclk,
+    input  wire        rst_n,
+    input  wire        swdio_in,
+    output reg         swdio_out,
+    output reg         swdio_oe,    // Output enable
+    output reg  [31:0] rdata,
+    output reg         rdata_valid,
+    input  wire [31:0] wdata,
+    output reg  [1:0]  addr,        // A[3:2]
+    output reg         ap_ndp,      // 0=DP, 1=AP
+    output reg         rnw,         // 0=Write, 1=Read
+    output reg         request_valid
+);
+
+// States
+localparam IDLE     = 4'd0;
+localparam REQUEST  = 4'd1;
+localparam TURNAROUND1 = 4'd2;
+localparam ACK      = 4'd3;
+localparam TURNAROUND2 = 4'd4;
+localparam DATA     = 4'd5;
+localparam PARITY   = 4'd6;
+
+reg [3:0] state;
+reg [5:0] bit_cnt;
+reg [7:0] request_reg;
+reg [31:0] data_reg;
+reg parity_calc;
+
+// Request packet fields
+wire start_bit  = request_reg[0];
+wire apndp_bit  = request_reg[1];
+wire rnw_bit    = request_reg[2];
+wire [1:0] addr_bits = request_reg[4:3];
+wire parity_bit = request_reg[5];
+wire stop_bit   = request_reg[6];
+wire park_bit   = request_reg[7];
+
+// Parity check
+wire parity_ok = (parity_bit == (apndp_bit ^ rnw_bit ^ addr_bits[0] ^ addr_bits[1]));
+
+always @(posedge swclk or negedge rst_n) begin
+    if (!rst_n) begin
+        state <= IDLE;
+        bit_cnt <= 0;
+        swdio_out <= 1'b0;
+        swdio_oe <= 1'b0;
+        request_valid <= 1'b0;
+        rdata_valid <= 1'b0;
+    end else begin
+        case (state)
+            IDLE: begin
+                swdio_oe <= 1'b0;
+                request_valid <= 1'b0;
+                rdata_valid <= 1'b0;
+                if (swdio_in == 1'b1) begin  // Start bit
+                    state <= REQUEST;
+                    bit_cnt <= 1;
+                    request_reg[0] <= 1'b1;
+                end
+            end
+            
+            REQUEST: begin
+                request_reg[bit_cnt] <= swdio_in;
+                if (bit_cnt == 7) begin
+                    state <= TURNAROUND1;
+                    bit_cnt <= 0;
+                end else begin
+                    bit_cnt <= bit_cnt + 1;
+                end
+            end
+            
+            TURNAROUND1: begin
+                // Both sides release line
+                swdio_oe <= 1'b0;
+                state <= ACK;
+                bit_cnt <= 0;
+                // Decode request
+                ap_ndp <= apndp_bit;
+                rnw <= rnw_bit;
+                addr <= addr_bits;
+                request_valid <= parity_ok && start_bit && !stop_bit && park_bit;
+            end
+            
+            ACK: begin
+                swdio_oe <= 1'b1;  // Target drives
+                case (bit_cnt)
+                    0: swdio_out <= 1'b1;  // ACK[0] = OK
+                    1: swdio_out <= 1'b0;  // ACK[1]
+                    2: begin
+                        swdio_out <= 1'b0; // ACK[2]
+                        state <= TURNAROUND2;
+                        bit_cnt <= 0;
+                    end
+                endcase
+                if (bit_cnt < 3) bit_cnt <= bit_cnt + 1;
+            end
+            
+            TURNAROUND2: begin
+                swdio_oe <= 1'b0;
+                state <= DATA;
+                bit_cnt <= 0;
+                parity_calc <= 0;
+            end
+            
+            DATA: begin
+                if (rnw) begin
+                    // Read: target drives data
+                    swdio_oe <= 1'b1;
+                    swdio_out <= rdata[bit_cnt];
+                    parity_calc <= parity_calc ^ rdata[bit_cnt];
+                end else begin
+                    // Write: host drives data
+                    swdio_oe <= 1'b0;
+                    data_reg[bit_cnt] <= swdio_in;
+                    parity_calc <= parity_calc ^ swdio_in;
+                end
+                
+                if (bit_cnt == 31) begin
+                    state <= PARITY;
+                    bit_cnt <= 0;
+                end else begin
+                    bit_cnt <= bit_cnt + 1;
+                end
+            end
+            
+            PARITY: begin
+                if (rnw) begin
+                    swdio_out <= parity_calc;
+                    rdata_valid <= 1'b1;
+                end else begin
+                    // Check parity for write
+                    if (swdio_in == parity_calc) begin
+                        rdata <= data_reg;  // Store received write data
+                        rdata_valid <= 1'b1;
+                    end
+                end
+                state <= IDLE;
+                swdio_oe <= 1'b0;
+            end
+            
+            default: state <= IDLE;
+        endcase
+    end
+end
+
+endmodule</pre>
+    </div>
+  </section>
+
+  <!-- Interview Notes -->
+  <section class="section" id="interview">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <h2 class="section-title">Interview Notes</h2>
+      <a href="#interview" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Q: How many wires does SWD need?</h5>
+        <p>2 wires: SWCLK (clock) and SWDIO (bidirectional data). Plus GND reference.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Q: What is a turnaround cycle?</h5>
+        <p>One clock cycle where both host and target release SWDIO. Prevents bus contention when direction changes.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Q: What are the ACK responses?</h5>
+        <p>OK (001), WAIT (010), FAULT (100). WAIT means retry, FAULT means check error registers.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Q: What is a posted read?</h5>
+        <p>AP reads are pipelined. First DRW read initiates transfer but returns previous data. Read RDBUFF for actual result.</p>
+      </div>
+      <div class="concept-card red">
+        <h5>Q: How to switch JTAG→SWD?</h5>
+        <p>50+ clocks with TMS=1, then 16-bit sequence 0xE79E, then 50+ clocks with SWDIO=1, then idle cycles.</p>
+      </div>
+      <div class="concept-card blue">
+        <h5>Q: SWD vs JTAG advantage?</h5>
+        <p>SWD: Fewer pins (2 vs 4-5), faster for debug. JTAG: Supports daisy-chain, boundary scan, non-ARM devices.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <div>
+      <a href="{{ '/debug/jtag.html' | relative_url }}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        JTAG
+      </a>
+    </div>
+    <span class="page-footer-edit">Edit this page on GitHub</span>
+    <div>
+      <a href="{{ '/debug/index.html' | relative_url }}">
+        Debug Index
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </footer>
+
+</main>
+</div>
+
+<script src="{{ '/assets/js/components.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+</body>
+</html>

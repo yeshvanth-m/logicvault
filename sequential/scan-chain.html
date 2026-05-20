@@ -28,7 +28,12 @@ group: timing
       <li><a href="#overview">Overview</a></li>
       <li><a href="#concept">Scan Concept</a></li>
       <li><a href="#architecture">Scan Architecture</a></li>
+      <li><a href="#faults">Fault Models</a></li>
+      <li><a href="#test-flow">Test Flow</a></li>
+      <li><a href="#atpg">ATPG</a></li>
+      <li><a href="#compression">Scan Compression</a></li>
       <li><a href="#insertion">Scan Insertion</a></li>
+      <li><a href="#rules">Design Rules</a></li>
       <li><a href="#verilog">RTL (Verilog / VHDL)</a></li>
       <li><a href="#interview">Interview Notes</a></li>
     </ul>
@@ -212,6 +217,295 @@ group: timing
     </div>
   </section>
 
+  <!-- Fault Models -->
+  <section class="section" id="faults">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h2 class="section-title">Fault Models</h2>
+      <a href="#faults" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Scan testing detects manufacturing defects by modeling them as <strong>faults</strong>. Different fault models target different physical defect types.</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Fault Model</th><th>Description</th><th>Detects</th><th>Pattern Count</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Stuck-at (SA)</strong></td>
+            <td>Node permanently at 0 (SA0) or 1 (SA1)</td>
+            <td>Opens, shorts to VDD/GND</td>
+            <td>Baseline</td>
+          </tr>
+          <tr>
+            <td><strong>Transition (TF)</strong></td>
+            <td>Node can't transition 0→1 (slow-to-rise) or 1→0 (slow-to-fall)</td>
+            <td>Resistive defects, weak transistors</td>
+            <td>~2× SA</td>
+          </tr>
+          <tr>
+            <td><strong>Path Delay</strong></td>
+            <td>Cumulative delay on critical paths exceeds spec</td>
+            <td>Speed-limiting defects</td>
+            <td>Variable</td>
+          </tr>
+          <tr>
+            <td><strong>Bridging</strong></td>
+            <td>Short between two nodes (AND or OR bridge)</td>
+            <td>Metal shorts</td>
+            <td>~10× SA</td>
+          </tr>
+          <tr>
+            <td><strong>IDDQ</strong></td>
+            <td>Elevated quiescent current indicates defect</td>
+            <td>Gate oxide defects, stuck-on transistors</td>
+            <td>Few patterns</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="concept-grid" style="margin-top: 1rem;">
+      <div class="concept-card blue">
+        <h5>Stuck-at-0 (SA0)</h5>
+        <p>To detect SA0 at node X: drive X=1 and propagate to output. If stuck, output stays wrong.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Stuck-at-1 (SA1)</h5>
+        <p>To detect SA1 at node X: drive X=0 and propagate to output. If stuck, output stays wrong.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Transition Faults</h5>
+        <p>Require at-speed testing: launch edge → capture edge within one clock cycle. Detects timing defects SA misses.</p>
+      </div>
+      <div class="concept-card red">
+        <h5>Fault Coverage Target</h5>
+        <p>Production: >95% stuck-at, >90% transition. Below this, defective parts escape to customers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Test Flow -->
+  <section class="section" id="test-flow">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h2 class="section-title">Scan Test Flow</h2>
+      <a href="#test-flow" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Each test pattern involves three phases: <strong>Shift In</strong>, <strong>Capture</strong>, and <strong>Shift Out</strong>. For transition faults, two capture cycles provide the launch-capture sequence.</p>
+    </div>
+
+    <div class="code-panel">
+      <pre>
+// Basic Scan Test Sequence (Stuck-at Testing)
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  Phase 1: SHIFT IN                                          │
+  │  scan_en = 1                                                │
+  │  Clock N times (N = chain length)                           │
+  │  Pattern shifts in via scan_in                              │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │  Phase 2: CAPTURE                                           │
+  │  scan_en = 0                                                │
+  │  One functional clock cycle                                 │
+  │  Combinational logic evaluates, results captured in FFs    │
+  └─────────────────────────────────────────────────────────────┘
+                              ↓
+  ┌─────────────────────────────────────────────────────────────┐
+  │  Phase 3: SHIFT OUT                                         │
+  │  scan_en = 1                                                │
+  │  Clock N times                                              │
+  │  Compare scan_out with expected values (on ATE)             │
+  │  (Simultaneously shift in next pattern)                     │
+  └─────────────────────────────────────────────────────────────┘
+
+
+// Transition Fault Testing (At-Speed)
+// Requires two capture edges: LAUNCH and CAPTURE
+
+Method 1: Launch-Off-Shift (LOS)
+  - Last shift clock = launch edge
+  - First capture clock = capture edge
+  - Timing: shift_clk → (1 cycle) → capture_clk
+
+Method 2: Launch-Off-Capture (LOC) / Broadside
+  - scan_en goes low
+  - First capture clock = launch edge  
+  - Second capture clock = capture edge
+  - More coverage, but needs 2 capture cycles
+
+// Timing Diagram (LOS):
+           ___     ___     ___     ___     ___
+  clk   __|   |___|   |___|   |___|   |___|   |__
+          shift   shift   LAUNCH  CAPTURE
+                           ↑         ↑
+        __________________|         |
+  scan_en                  |_________|
+                          
+        Pattern in FFs → Transition → Capture response</pre>
+    </div>
+  </section>
+
+  <!-- ATPG -->
+  <section class="section" id="atpg">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h2 class="section-title">ATPG (Automatic Test Pattern Generation)</h2>
+      <a href="#atpg" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>ATPG tools automatically create test patterns that detect modeled faults. The D-algorithm and PODEM are classic algorithms; modern tools use advanced techniques for compression and coverage.</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Tool</th><th>Vendor</th><th>Features</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>TetraMAX</strong></td><td>Synopsys</td><td>Industry standard, compression, diagnosis</td></tr>
+          <tr><td><strong>Modus</strong></td><td>Cadence</td><td>Hierarchical ATPG, low-power patterns</td></tr>
+          <tr><td><strong>Tessent</strong></td><td>Siemens EDA</td><td>Cell-aware ATPG, IJTAG integration</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-panel" style="margin-top: 1rem;">
+      <pre>
+// ATPG Fundamentals
+
+1. FAULT ACTIVATION
+   - Set input values to create opposite logic at fault site
+   - SA0 fault: must drive node to logic 1
+   - SA1 fault: must drive node to logic 0
+
+2. FAULT PROPAGATION  
+   - Sensitize path from fault site to observable output
+   - Non-controlling values on side inputs
+   - D or D' (fault effect) propagates through gates
+
+3. JUSTIFICATION
+   - Work backward to find primary input values
+   - That produce required internal values
+
+// Example: Detect SA0 fault on wire W
+
+     A ──┐                
+         │ AND ── W ── ...─── output
+     B ──┘       ↑
+              SA0 here
+
+  To detect: A=1, B=1 → W should be 1
+             If SA0, W stays 0 → propagates as error
+
+// ATPG Report Metrics:
+  - Test Coverage: (detected faults / total faults) × 100%
+  - Pattern Count: number of test vectors generated
+  - ATPG Untestables (AU): faults that cannot be tested
+    - Tied signals, redundant logic, blocked paths
+  - Fault classes: DS (detected), PT (possibly tested),
+                   UD (undetected), AU (ATPG untestable)</pre>
+    </div>
+  </section>
+
+  <!-- Scan Compression -->
+  <section class="section" id="compression">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      </div>
+      <h2 class="section-title">Scan Compression</h2>
+      <a href="#compression" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Modern SoCs have millions of scan flip-flops. Without compression, test data volume and time are prohibitive. Compression reduces both by 10-100×.</p>
+    </div>
+
+    <div class="diagram-box" style="margin: 1.5rem 0; text-align: center;">
+      <svg viewBox="0 0 580 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 600px;">
+        <rect width="580" height="200" fill="var(--surface2)" rx="8"/>
+        
+        <text x="290" y="20" fill="var(--text)" font-family="var(--mono)" font-size="10" font-weight="bold" text-anchor="middle">Scan Compression Architecture</text>
+        
+        <!-- Decompressor -->
+        <rect x="40" y="60" width="100" height="80" rx="4" fill="var(--green)" fill-opacity="0.2" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="90" y="90" fill="var(--green)" font-family="var(--mono)" font-size="9" text-anchor="middle" font-weight="bold">Decompressor</text>
+        <text x="90" y="105" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(LFSR/XOR)</text>
+        <text x="90" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">4 → 64 chains</text>
+        
+        <!-- Scan Chains -->
+        <rect x="180" y="50" width="220" height="100" rx="4" fill="var(--surface)" stroke="var(--blue)" stroke-width="1"/>
+        <text x="290" y="70" fill="var(--blue)" font-family="var(--mono)" font-size="9" text-anchor="middle" font-weight="bold">Internal Scan Chains</text>
+        
+        <line x1="195" y1="90" x2="385" y2="90" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="195" y1="105" x2="385" y2="105" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="195" y1="120" x2="385" y2="120" stroke="var(--text-dim)" stroke-width="1"/>
+        <line x1="195" y1="135" x2="385" y2="135" stroke="var(--text-dim)" stroke-width="1"/>
+        <text x="290" y="148" fill="var(--text-dim)" font-family="var(--mono)" font-size="7" text-anchor="middle">64 chains × 1000 FFs each</text>
+        
+        <!-- Compressor -->
+        <rect x="440" y="60" width="100" height="80" rx="4" fill="var(--amber)" fill-opacity="0.2" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="490" y="90" fill="var(--amber)" font-family="var(--mono)" font-size="9" text-anchor="middle" font-weight="bold">Compressor</text>
+        <text x="490" y="105" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">(XOR tree)</text>
+        <text x="490" y="120" fill="var(--text-dim)" font-family="var(--mono)" font-size="8" text-anchor="middle">64 → 4 outputs</text>
+        
+        <!-- Connections -->
+        <line x1="140" y1="100" x2="180" y2="100" stroke="var(--green)" stroke-width="1.5"/>
+        <line x1="400" y1="100" x2="440" y2="100" stroke="var(--amber)" stroke-width="1.5"/>
+        
+        <!-- External I/O -->
+        <text x="20" y="104" fill="var(--green)" font-family="var(--mono)" font-size="8">4 SI</text>
+        <line x1="35" y1="100" x2="40" y2="100" stroke="var(--green)" stroke-width="1.5"/>
+        
+        <line x1="540" y1="100" x2="560" y2="100" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="562" y="104" fill="var(--amber)" font-family="var(--mono)" font-size="8">4 SO</text>
+        
+        <!-- Compression ratio -->
+        <rect x="200" y="165" width="180" height="25" rx="4" fill="rgba(139,92,246,0.15)"/>
+        <text x="290" y="182" fill="var(--purple)" font-family="var(--mono)" font-size="9" text-anchor="middle">Compression Ratio: 16× (64÷4)</text>
+      </svg>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card green">
+        <h5>Decompressor</h5>
+        <p>Expands few external scan inputs to many internal chains. LFSR-based or combinational XOR network.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Compressor</h5>
+        <p>XOR tree compresses many chain outputs to few pins. Must handle unknown (X) values gracefully.</p>
+      </div>
+      <div class="concept-card blue">
+        <h5>X-Tolerance</h5>
+        <p>X-masking or X-blocking prevents unknowns from corrupting signature. Critical for real silicon.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Benefits</h5>
+        <p>10-100× less test data, 10-100× faster test time, same or better fault coverage.</p>
+      </div>
+    </div>
+
+    <div class="callout-info" style="margin-top: 1rem;">
+      <strong>💡 Commercial Solutions:</strong> Synopsys DFTMAX, Cadence Modus, Siemens Tessent — all provide compression with X-tolerance and diagnosis support.
+    </div>
+  </section>
+
   <!-- Scan Insertion -->
   <section class="section" id="insertion">
     <div class="section-header">
@@ -254,6 +548,100 @@ group: timing
         <h5>Clock Domains</h5>
         <p>Each clock domain typically has separate scan chains. Cross-domain FFs need special handling.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- Design Rules -->
+  <section class="section" id="rules">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h2 class="section-title">Scan Design Rules</h2>
+      <a href="#rules" class="section-anchor">#</a>
+    </div>
+
+    <div class="prose">
+      <p>Violating DFT rules reduces fault coverage or causes test failures. EDA tools flag violations; fix them before tapeout.</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="info-table">
+        <thead>
+          <tr><th>Rule</th><th>Violation</th><th>Impact</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>No async set/reset during scan</strong></td>
+            <td>Async signals active in test mode</td>
+            <td>FFs reset during shift, data lost</td>
+            <td>Gate async signals with test_mode</td>
+          </tr>
+          <tr>
+            <td><strong>Single clock per chain</strong></td>
+            <td>Multi-clock FFs in same chain</td>
+            <td>Shift corruption, hold violations</td>
+            <td>Separate chains per clock domain</td>
+          </tr>
+          <tr>
+            <td><strong>No combinational loops</strong></td>
+            <td>Feedback without FF</td>
+            <td>Oscillation, simulation hang</td>
+            <td>Break loop with FF</td>
+          </tr>
+          <tr>
+            <td><strong>No gated clocks in scan</strong></td>
+            <td>Clock gating active during shift</td>
+            <td>Some FFs don't shift</td>
+            <td>Bypass clock gates in test mode</td>
+          </tr>
+          <tr>
+            <td><strong>No tristate on scan path</strong></td>
+            <td>Tristate buffer in scan chain</td>
+            <td>Bus contention or floating</td>
+            <td>Use MUX instead of tristate</td>
+          </tr>
+          <tr>
+            <td><strong>Balanced chain lengths</strong></td>
+            <td>Chains differ by >10%</td>
+            <td>Inefficient test time</td>
+            <td>Re-stitch chains to balance</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-panel" style="margin-top: 1rem;">
+      <pre>
+// Common Violation: Async Reset Active During Scan
+
+// BAD: Reset clears FFs during shift!
+always @(posedge clk or negedge rst_n)
+    if (!rst_n) q <= 0;  // ← Fires during scan if rst_n=0
+    else q <= d;
+
+// GOOD: Gate reset with test_mode
+wire rst_gated = rst_n | test_mode;  // Disable reset in test
+always @(posedge clk or negedge rst_gated)
+    if (!rst_gated) q <= 0;
+    else q <= d;
+
+
+// Common Violation: Clock Gating Active in Test
+
+// BAD: Gated clock stops shifting!
+assign gclk = clk & enable;  // ← If enable=0, chain breaks
+
+// GOOD: Bypass in test mode
+assign gclk = clk & (enable | scan_en);  // Force clock during scan
+
+// OR use ICG (Integrated Clock Gating) cell:
+ICG u_icg (
+    .clk(clk),
+    .en(enable),
+    .te(scan_en),    // Test enable bypasses gate
+    .gclk(gclk)
+);</pre>
     </div>
   </section>
 
@@ -474,15 +862,74 @@ group: timing
       <a href="#interview" class="section-anchor">#</a>
     </div>
 
-    <ul class="interview-list">
-      <li><strong>Why is scan needed?</strong> — Sequential circuits hard to test: can't easily set internal states. Scan provides controllability (shift in) and observability (shift out).</li>
-      <li><strong>What are stuck-at faults?</strong> — Manufacturing defects causing a node to be permanently stuck at 0 (SA0) or 1 (SA1). Most common fault model.</li>
-      <li><strong>What is ATPG?</strong> — Automatic Test Pattern Generation. Creates input vectors that detect specific faults. Trade-off: pattern count vs coverage.</li>
-      <li><strong>Scan overhead?</strong> — Area: MUX per FF (~5-15%). Performance: extra MUX delay in timing path. Power: scan chain toggles during test.</li>
-      <li><strong>What is fault coverage?</strong> — Percentage of modeled faults detected by test patterns. Target >95% for production quality.</li>
-      <li><strong>Shift vs capture?</strong> — Shift: scan_en=1, chain acts as shift register. Capture: scan_en=0, one normal clock to capture response.</li>
-      <li><strong>What is compression?</strong> — Reduces test data volume. Compressors/decompressors at scan I/O reduce test time and ATE memory.</li>
-    </ul>
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5>Q: Why is scan needed?</h5>
+        <p>Sequential circuits hard to test without DFT. Scan provides controllability (shift in any state) and observability (shift out all states).</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Q: Stuck-at vs transition faults?</h5>
+        <p>Stuck-at: node stuck at 0/1 (static). Transition: can't switch fast enough (timing). Transition tests catch defects SA misses.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Q: LOS vs LOC testing?</h5>
+        <p>LOS: launch from last shift, faster but less coverage. LOC: launch from capture, extra cycle but better transition coverage.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Q: What is ATPG?</h5>
+        <p>Auto Test Pattern Generation. Creates patterns to detect faults. Goal: maximize coverage, minimize pattern count.</p>
+      </div>
+      <div class="concept-card red">
+        <h5>Q: Scan compression ratio?</h5>
+        <p>Ratio of internal chains to external pins. 64 chains / 4 pins = 16× compression. Reduces test time proportionally.</p>
+      </div>
+      <div class="concept-card blue">
+        <h5>Q: X-tolerance in compression?</h5>
+        <p>Unknowns (X) can corrupt XOR compressor output. X-masking, X-blocking, or X-bounding prevents this.</p>
+      </div>
+      <div class="concept-card green">
+        <h5>Q: Fault coverage targets?</h5>
+        <p>Stuck-at: >95%. Transition: >90%. Lower means defective chips escape. Balance coverage vs test cost.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5>Q: Why gate resets in test mode?</h5>
+        <p>Async resets can fire during scan shift, clearing data. Gate with test_mode signal to prevent.</p>
+      </div>
+      <div class="concept-card purple">
+        <h5>Q: Scan chain length trade-off?</h5>
+        <p>Long chains: fewer pins, slower test. Short chains: more pins, faster. Balance based on pin budget and test time.</p>
+      </div>
+      <div class="concept-card red">
+        <h5>Q: ATPG untestable faults?</h5>
+        <p>Tied signals, redundant logic, blocked paths. Review for possible design issues or accept if truly unreachable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Related Topics -->
+  <section class="section" id="related">
+    <div class="section-header">
+      <div class="section-icon">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <h2 class="section-title">Related Topics</h2>
+      <a href="#related" class="section-anchor">#</a>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card blue">
+        <h5><a href="{{ '/debug/jtag.html' | relative_url }}">JTAG</a></h5>
+        <p>IEEE 1149.1 boundary scan. JTAG controls scan chains via TAP controller. EXTEST, INTEST instructions.</p>
+      </div>
+      <div class="concept-card green">
+        <h5><a href="{{ '/debug/bist.html' | relative_url }}">BIST</a></h5>
+        <p>Built-In Self-Test. On-chip pattern generation (LFSR) and response compression (MISR). No ATE needed.</p>
+      </div>
+      <div class="concept-card amber">
+        <h5><a href="{{ '/sequential/lfsr.html' | relative_url }}">LFSR</a></h5>
+        <p>Linear Feedback Shift Register. Used for pseudo-random pattern generation in BIST and compression.</p>
+      </div>
+    </div>
   </section>
 
   <footer class="page-footer">
