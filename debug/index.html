@@ -96,14 +96,12 @@ group: debug
             <td>ARM Cortex debug — compact, fast, low pin count</td>
             <td><a href="{{ '/debug/swd.html' | relative_url }}">SWD →</a></td>
           </tr>
-          <tr>
-            <td><strong>BIST</strong></td>
-            <td>On-chip</td>
-            <td>Self-test using LFSR/MISR for manufacturing test</td>
-            <td><a href="{{ '/debug/bist.html' | relative_url }}">BIST →</a></td>
-          </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="callout-info" style="margin-top: 1rem;">
+      <strong>Looking for DFT?</strong> See <a href="{{ '/debug/bist.html' | relative_url }}">BIST</a> and <a href="{{ '/sequential/scan-chain.html' | relative_url }}">Scan Chain</a> in the DFT / Self-Test section.
     </div>
   </section>
 
@@ -118,14 +116,14 @@ group: debug
     <div class="table-responsive">
       <table class="info-table">
         <thead>
-          <tr><th>Feature</th><th>JTAG</th><th>SWD</th><th>BIST</th></tr>
+          <tr><th>Feature</th><th>JTAG</th><th>SWD</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong>Signals</strong></td><td>TCK, TMS, TDI, TDO, (TRST)</td><td>SWCLK, SWDIO</td><td>On-chip only</td></tr>
-          <tr><td><strong>Daisy Chain</strong></td><td>✅ Yes</td><td>❌ No</td><td>❌ N/A</td></tr>
-          <tr><td><strong>Boundary Scan</strong></td><td>✅ Yes (IEEE 1149.1)</td><td>❌ No</td><td>❌ No</td></tr>
-          <tr><td><strong>Architecture</strong></td><td>Any (ARM, RISC-V, FPGA, etc.)</td><td>ARM only</td><td>Any</td></tr>
-          <tr><td><strong>Self-Test</strong></td><td>Via RUNBIST instruction</td><td>❌ No</td><td>✅ Yes</td></tr>
+          <tr><td><strong>Signals</strong></td><td>TCK, TMS, TDI, TDO, (TRST)</td><td>SWCLK, SWDIO</td></tr>
+          <tr><td><strong>Daisy Chain</strong></td><td>✅ Yes</td><td>❌ No</td></tr>
+          <tr><td><strong>Boundary Scan</strong></td><td>✅ Yes (IEEE 1149.1)</td><td>❌ No</td></tr>
+          <tr><td><strong>Architecture</strong></td><td>Any (ARM, RISC-V, FPGA, etc.)</td><td>ARM only</td></tr>
+          <tr><td><strong>Trace Output</strong></td><td>Separate trace port</td><td>SWO (single wire)</td></tr>
         </tbody>
       </table>
     </div>

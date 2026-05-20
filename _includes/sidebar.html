@@ -201,7 +201,15 @@
       <a href="{{ '/debug/index.html' | relative_url }}" class="nav-item{% if page.sidebar == 'debug-index' %} active{% endif %}">Overview</a>
       <a href="{{ '/debug/jtag.html' | relative_url }}" class="nav-item{% if page.sidebar == 'jtag' %} active{% endif %}">JTAG</a>
       <a href="{{ '/debug/swd.html' | relative_url }}" class="nav-item{% if page.sidebar == 'swd' %} active{% endif %}">SWD</a>
+    </div>
+
+    <button class="nav-group-toggle{% if page.group == 'dft' %} open{% endif %}" onclick="toggleGroup(this)">
+      <span>DFT / Self-Test</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="nav-items{% if page.group == 'dft' %} open{% endif %}">
       <a href="{{ '/debug/bist.html' | relative_url }}" class="nav-item{% if page.sidebar == 'bist' %} active{% endif %}">BIST</a>
+      <a href="{{ '/sequential/scan-chain.html' | relative_url }}" class="nav-item{% if page.sidebar == 'scan-chain' %} active{% endif %}">Scan Chain</a>
     </div>
   </div>
 
